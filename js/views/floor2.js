@@ -1,22 +1,38 @@
 /* ============================================================
    FLOOR2.JS — 2층 수주/CS: 내 주문 · 신규 접수
+   Bug-fixed: single visibilitychange handler
    ============================================================ */
 
 const Floor2View = {
-  _session: null,
-  _pollTimer: null,
+  _session:     null,
+  _pollTimer:   null,
+  _pollFn:      null,
+  _visHandler:  null,
 
   init(session) {
     Floor2View._session = session;
     Router.register('my-orders',  () => Floor2View.showMyOrders());
     Router.register('new-order',  () => Floor2View.showNewOrder());
     Router.default('my-orders');
+
+    /* Set up visibilitychange ONCE */
+    Floor2View._visHandler = () => {
+      if (!Floor2View._pollFn) return;
+      if (document.hidden) {
+        clearInterval(Floor2View._pollTimer);
+        Floor2View._pollTimer = null;
+      } else {
+        Floor2View._pollTimer = setInterval(Floor2View._pollFn, 30000);
+        Floor2View._pollFn();
+      }
+    };
+    document.addEventListener('visibilitychange', Floor2View._visHandler);
   },
 
   /* ── 내 주문 ──────────────────────────────────────────────── */
   async showMyOrders() {
     Floor2View._clearPoll();
-    UI.setFilter(`
+    UI.setContent('filter-area', `
       <div class="filter-area-inner">
         <span class="filter-label">상태 필터</span>
         <select id="f2-status" class="filter-select">
@@ -41,7 +57,9 @@ const Floor2View = {
   async _loadMyOrders() {
     const statusEl = document.getElementById('f2-status');
     const status = statusEl ? statusEl.value : '';
-    const filters = status !== '' ? { status: +status } : {};
+    const filters = {};
+    if (status !== '') filters.status = +status;
+
     UI.loading(true);
     try {
       const orders = await Api.getOrders(filters);
@@ -68,10 +86,13 @@ const Floor2View = {
       ? `<span class="order-driver-tag">🚚 ${UI.escHtml(o.assignedDriverName)}</span>` : '';
     const immediate = o.isImmediate ? '<span class="order-immediate">즉시</span>' : '';
     const photo = o.deliveryPhotoUrl
-      ? `<img src="${o.deliveryPhotoUrl}" class="order-photo-thumb" title="배송 사진" onclick="window.open(this.src)">` : '';
+      ? `<img src="${o.deliveryPhotoUrl}" class="order-photo-thumb" title="배송 사진 보기" onclick="window.open(this.src)">` : '';
 
     return `
-      <div class="order-card">
+      <div class="order-card" data-id="${o.id}" data-status="${o.status}">
+        <div class="order-card-check">
+          <span style="font-size:1.1rem;opacity:0.4">#${o.id}</span>
+        </div>
         <div class="order-info">
           <div class="order-top">
             <span class="order-chain">${UI.escHtml(o.chainName || '-')}</span>
@@ -81,7 +102,7 @@ const Floor2View = {
           </div>
           <div class="order-meta">
             <span class="order-meta-item"><span class="order-meta-icon">📍</span>${UI.escHtml(o.deliveryAddress)}</span>
-            <span class="order-meta-item"><span class="order-meta-icon">👤</span>${UI.escHtml(o.recipientName)} ${o.recipientPhone ? '/ ' + UI.escHtml(o.recipientPhone) : ''}</span>
+            <span class="order-meta-item"><span class="order-meta-icon">👤</span>${UI.escHtml(o.recipientName)}${o.recipientPhone ? ' / ' + UI.escHtml(o.recipientPhone) : ''}</span>
             <span class="order-meta-item"><span class="order-meta-icon">🕐</span>${dt}</span>
           </div>
           ${o.ribbonText ? `<div class="order-ribbon">🎀 ${UI.escHtml(o.ribbonText)}</div>` : ''}
@@ -91,16 +112,14 @@ const Floor2View = {
             <span class="order-created">접수: ${created}</span>
           </div>
         </div>
-        <div class="order-actions" style="grid-template-columns:1fr;">
-          <span style="font-size:0.75rem;color:var(--text-muted);padding:0.25rem 0;text-align:right">#${o.id}</span>
-        </div>
+        <div style="width:0.5rem"></div>
       </div>`;
   },
 
   /* ── 신규 접수 ────────────────────────────────────────────── */
   async showNewOrder() {
     Floor2View._clearPoll();
-    UI.setFilter(`
+    UI.setContent('filter-area', `
       <div class="filter-area-inner">
         <span class="filter-label">신규 주문 접수</span>
       </div>`);
@@ -111,20 +130,19 @@ const Floor2View = {
     const productOptions = products.map(p =>
       `<option value="${p.id}">${UI.escHtml(p.name)}</option>`).join('');
 
-    /* 기본 배송 일시: 지금 + 1시간, 10분 단위 반올림 */
     const defDt = (() => {
       const d = new Date(); d.setHours(d.getHours() + 1);
-      d.setSeconds(0, 0); const m = d.getMinutes();
-      d.setMinutes(Math.round(m / 10) * 10);
-      const pad = n => String(n).padStart(2,'0');
-      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      d.setSeconds(0, 0);
+      d.setMinutes(Math.round(d.getMinutes() / 10) * 10);
+      const p = n => String(n).padStart(2,'0');
+      return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
     })();
 
     UI.setMain(`
       <div class="new-order-wrap">
         <div class="new-order-title">신규 주문 접수</div>
         <form id="new-order-form" novalidate>
-          <div class="form-row">
+          <div class="form-row" style="margin-bottom:1rem">
             <div class="form-group">
               <label class="form-label">체인명 (꽃집 상호) <span class="form-required">*</span></label>
               <input type="text" id="no-chain" class="form-control" placeholder="예: 행복꽃집" required>
@@ -137,21 +155,21 @@ const Floor2View = {
               </select>
             </div>
           </div>
-          <div class="form-group">
-            <label class="form-label for-checkbox" style="display:flex;align-items:center;gap:0.5rem">
-              <input type="checkbox" id="no-immediate" style="accent-color:var(--primary);width:16px;height:16px">
-              즉시배송 (배송일시를 현재 + 3시간으로 자동 설정)
+          <div class="form-group" style="margin-bottom:1rem">
+            <label class="form-check">
+              <input type="checkbox" id="no-immediate">
+              <span class="form-check-label">즉시배송 (배송일시를 현재 + 3시간으로 자동 설정)</span>
             </label>
           </div>
-          <div class="form-group" id="no-dt-group">
+          <div class="form-group" id="no-dt-group" style="margin-bottom:1rem">
             <label class="form-label">배송 예정 일시 <span class="form-required">*</span></label>
             <input type="datetime-local" id="no-datetime" class="form-control" value="${defDt}" step="600">
           </div>
-          <div class="form-group">
+          <div class="form-group" style="margin-bottom:1rem">
             <label class="form-label">배송지 주소 <span class="form-required">*</span></label>
             <input type="text" id="no-address" class="form-control" placeholder="배송지 주소" required>
           </div>
-          <div class="form-row">
+          <div class="form-row" style="margin-bottom:1rem">
             <div class="form-group">
               <label class="form-label">받는 분 성함 <span class="form-required">*</span></label>
               <input type="text" id="no-name" class="form-control" placeholder="받는 분 성함" required>
@@ -161,21 +179,22 @@ const Floor2View = {
               <input type="tel" id="no-phone" class="form-control" placeholder="010-0000-0000">
             </div>
           </div>
-          <div class="form-group">
+          <div class="form-group" style="margin-bottom:1.5rem">
             <label class="form-label">리본 문구</label>
             <input type="text" id="no-ribbon" class="form-control" placeholder="예: 개업을 진심으로 축하합니다">
           </div>
-          <div style="display:flex;gap:0.75rem;justify-content:flex-end;margin-top:0.5rem">
+          <div style="display:flex;gap:0.75rem;justify-content:flex-end">
             <button type="button" class="btn btn-ghost" onclick="Router.navigate('my-orders')">취소</button>
             <button type="submit" class="btn btn-primary btn-lg" id="btn-submit-order">접수하기</button>
           </div>
         </form>
       </div>`);
 
-    /* 즉시배송 체크 핸들러 */
     document.getElementById('no-immediate').addEventListener('change', function() {
-      document.getElementById('no-dt-group').style.opacity = this.checked ? '0.4' : '1';
-      document.getElementById('no-datetime').disabled = this.checked;
+      const group = document.getElementById('no-dt-group');
+      const dtInput = document.getElementById('no-datetime');
+      group.style.opacity = this.checked ? '0.4' : '1';
+      dtInput.disabled = this.checked;
     });
 
     document.getElementById('new-order-form').addEventListener('submit', async e => {
@@ -184,22 +203,19 @@ const Floor2View = {
       let deliveryDatetime;
       if (isImmediate) {
         const d = new Date(); d.setHours(d.getHours() + 3);
-        d.setMinutes(Math.round(d.getMinutes() / 10) * 10);
-        d.setSeconds(0, 0);
+        d.setMinutes(Math.round(d.getMinutes() / 10) * 10); d.setSeconds(0, 0);
         deliveryDatetime = d.toISOString();
       } else {
         const raw = document.getElementById('no-datetime').value;
         if (!raw) { UI.toast('배송 일시를 선택해 주세요.', 'warning'); return; }
         const d = new Date(raw);
-        d.setMinutes(Math.round(d.getMinutes() / 10) * 10);
-        d.setSeconds(0, 0);
+        d.setMinutes(Math.round(d.getMinutes() / 10) * 10); d.setSeconds(0, 0);
         deliveryDatetime = d.toISOString();
       }
       const data = {
         chainName:       document.getElementById('no-chain').value.trim(),
         productId:       +document.getElementById('no-product').value,
-        deliveryDatetime,
-        isImmediate,
+        deliveryDatetime, isImmediate,
         deliveryAddress: document.getElementById('no-address').value.trim(),
         recipientName:   document.getElementById('no-name').value.trim(),
         recipientPhone:  document.getElementById('no-phone').value.trim(),
@@ -220,11 +236,13 @@ const Floor2View = {
 
   /* ── Polling ─────────────────────────────────────────────── */
   _startPoll(fn, ms) {
+    Floor2View._pollFn = fn;
+    clearInterval(Floor2View._pollTimer);
     Floor2View._pollTimer = setInterval(fn, ms);
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) Floor2View._clearPoll();
-      else { Floor2View._pollTimer = setInterval(fn, ms); fn(); }
-    });
   },
-  _clearPoll() { clearInterval(Floor2View._pollTimer); Floor2View._pollTimer = null; },
+  _clearPoll() {
+    Floor2View._pollFn = null;
+    clearInterval(Floor2View._pollTimer);
+    Floor2View._pollTimer = null;
+  },
 };
