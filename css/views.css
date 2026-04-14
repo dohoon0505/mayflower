@@ -1,0 +1,125 @@
+/* ============================================================
+   VIEWS.CSS — Login · Role-specific view styles
+   ============================================================ */
+
+/* ── Login Page ──────────────────────────────────────────── */
+.login-body {
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg-base);
+  padding: 1rem;
+}
+
+.login-wrap {
+  width: 100%; max-width: 420px;
+  animation: fadeInUp 0.5s ease both;
+}
+
+.login-logo-area {
+  display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+.login-logo-area img { width: 64px; height: 64px; }
+.login-logo-area h1 { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.03em; }
+.login-logo-area p { font-size: 0.875rem; color: var(--text-muted); }
+
+.login-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+}
+
+.login-tabs { display: flex; border-bottom: 1px solid var(--border); }
+.login-tab {
+  flex: 1; padding: 0.875rem;
+  background: none; border: none; cursor: pointer;
+  font-size: 0.9rem; font-weight: 600;
+  color: var(--text-muted);
+  transition: color var(--tr), border-color var(--tr);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.login-tab.active { color: var(--primary-light); border-bottom-color: var(--primary); }
+
+.login-panel { padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+.login-panel.hidden { display: none; }
+
+.login-hint {
+  text-align: center; font-size: 0.8rem; color: var(--text-muted);
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm); padding: 0.6rem 1rem;
+}
+.login-hint code { color: var(--primary-light); font-family: monospace; }
+
+/* ── Stats View (Admin) ──────────────────────────────────── */
+.stats-tabs { display: flex; gap: 2px; background: var(--bg-elevated); border-radius: var(--radius-sm); padding: 3px; margin-bottom: 1rem; }
+.stats-tab {
+  flex: 1; padding: 0.45rem;
+  background: none; border: none; cursor: pointer;
+  font-size: 0.85rem; font-weight: 600; color: var(--text-muted);
+  border-radius: calc(var(--radius-sm) - 2px);
+  transition: background var(--tr), color var(--tr);
+  text-align: center;
+}
+.stats-tab.active { background: var(--bg-surface); color: var(--primary-light); }
+
+.stats-controls { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
+
+/* ── Admin Inline-edit Table ─────────────────────────────── */
+.inline-input {
+  background: var(--bg-input); border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm); color: var(--text-primary);
+  padding: 0.3rem 0.5rem; font-size: 0.875rem; width: 100%; outline: none;
+  transition: border-color var(--tr);
+}
+.inline-input:focus { border-color: var(--primary); }
+
+.add-row-form {
+  display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;
+  padding: 0.875rem; background: var(--bg-elevated);
+  border-top: 1px solid var(--border);
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+}
+
+/* ── Photo Upload ────────────────────────────────────────── */
+.photo-drop-zone {
+  border: 2px dashed var(--border-strong);
+  border-radius: var(--radius);
+  padding: 2rem; text-align: center;
+  cursor: pointer; color: var(--text-muted);
+  transition: border-color var(--tr), background var(--tr);
+}
+.photo-drop-zone:hover, .photo-drop-zone.drag-over {
+  border-color: var(--primary); background: var(--primary-dim);
+}
+.photo-drop-zone input[type="file"] { display: none; }
+.photo-preview {
+  width: 100%; max-height: 200px; object-fit: cover;
+  border-radius: var(--radius-sm); margin-top: 0.75rem;
+}
+
+/* ── Order Photo Thumbnail ───────────────────────────────── */
+.order-photo-thumb {
+  width: 48px; height: 48px; object-fit: cover;
+  border-radius: var(--radius-sm); cursor: pointer;
+  border: 1px solid var(--border);
+}
+
+/* ── New Order Form ──────────────────────────────────────── */
+.new-order-wrap {
+  max-width: 640px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  display: flex; flex-direction: column; gap: 1.25rem;
+}
+.new-order-title { font-size: 1.125rem; font-weight: 700; margin-bottom: 0.25rem; }
+
+/* ── Responsive tweaks ───────────────────────────────────── */
+@media (max-width: 600px) {
+  .order-card { grid-template-columns: 1fr; }
+  .order-actions { grid-template-columns: repeat(3, 1fr); padding: 0 0.875rem 0.875rem; }
+}

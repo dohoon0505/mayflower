@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>메이대구</title>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/views.css">
+</head>
+<body>
+
+  <!-- Global overlays -->
+  <div id="global-loading" style="display:none"><div class="spinner"></div></div>
+  <div id="toast-container"></div>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <div class="shell">
+
+    <!-- ── Sidebar ─────────────────────────────────────────── -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-top">
+        <div class="sidebar-logo">
+          <img src="assets/logo.svg" alt="메이대구">
+          <span>메이대구</span>
+        </div>
+        <nav class="sidebar-nav" id="sidebar-nav">
+          <!-- filled by AppShell.buildNav() -->
+        </nav>
+      </div>
+      <div class="sidebar-bottom">
+        <button class="nav-item logout-btn" id="btn-logout">
+          <span class="nav-icon">⏻</span>
+          <span>로그아웃</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- ── Main Panel ─────────────────────────────────────── -->
+    <main class="main-panel">
+      <!-- Mobile top bar -->
+      <div class="mobile-header">
+        <button class="hamburger-btn" id="hamburger-btn" aria-label="메뉴 열기">
+          <span></span><span></span><span></span>
+        </button>
+        <span class="mobile-title" id="mobile-title">메이대구</span>
+        <button class="chat-toggle-btn" id="chat-toggle-btn" title="채팅 패널">💬</button>
+      </div>
+
+      <!-- Filter area (filled per view) -->
+      <div class="filter-area" id="filter-area"></div>
+
+      <!-- Content area (filled per view) -->
+      <div class="content-area" id="main-content"></div>
+    </main>
+
+    <!-- ── Chat Panel ────────────────────────────────────── -->
+    <aside class="chat-panel" id="chat-panel">
+      <div class="chat-profile" id="chat-profile"></div>
+      <div class="chat-notice" id="chat-notice"></div>
+      <div class="chat-messages" id="chat-messages"></div>
+      <div class="chat-input-area">
+        <input type="text" id="chat-input" class="chat-input" placeholder="메시지 입력...">
+        <button id="chat-send" class="btn btn-primary btn-sm">전송</button>
+      </div>
+    </aside>
+
+  </div><!-- /.shell -->
+
+  <!-- Scripts — order matters -->
+  <script src="js/store.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/router.js"></script>
+  <script src="js/chat.js"></script>
+  <script src="js/views/floor2.js"></script>
+  <script src="js/views/floor1.js"></script>
+  <script src="js/views/driver.js"></script>
+  <script src="js/views/admin.js"></script>
+
+  <script>
+    /* ═══════════════════════════════════════════════════════
+       AppShell — session guard, nav build, sidebar toggle
+    ═══════════════════════════════════════════════════════ */
+    const AppShell = {
+      _session: null,
+
+      init() {
+        const session = Auth.requireAuth();
+        if (!session) return; /* redirected to index.html */
+        AppShell._session = session;
+
+        AppShell.buildNav(session.role);
+        AppShell.bindLogout();
+        AppShell.bindSidebar();
+        AppShell.bindChatToggle();
+
+        /* initialise views by role */
+        switch (session.role) {
+          case 'floor2': Floor2View.init(session); break;
+          case 'floor1': Floor1View.init(session); break;
+          case 'driver': DriverView.init(session); break;
+          case 'admin':  AdminView.init(session);
+                         Floor1View.init(session); /* admin reuses floor1 order view */
+                         break;
+        }
+
+        Router.init();
+        Chat.init(session);
+      },
+
+      buildNav(role) {
+        const menus = {
+          floor2: [
+            { icon: '📋', label: '내 주문',    route: 'my-orders' },
+            { icon: '✏️', label: '신규 접수',  route: 'new-order' },
+          ],
+          floor1: [
+            { icon: '📦', label: '전체 주문',  route: 'all-orders' },
+          ],
+          driver: [
+            { icon: '🚚', label: '내 배송',    route: 'my-deliveries' },
+          ],
+          admin: [
+            { icon: '📦', label: '전체 주문',       route: 'all-orders' },
+            { icon: '🌸', label: '상품 관리',        route: 'manage-products' },
+            { icon: '🚗', label: '기사 관리',        route: 'manage-drivers' },
+            { icon: '📊', label: '통계 · 정산',      route: 'statistics' },
+          ],
+        };
+
+        const nav = document.getElementById('sidebar-nav');
+        const session = AppShell._session;
+        const items = menus[role] || [];
+
+        nav.innerHTML = `
+          <div class="nav-section-label">${UI.ROLE_LABELS[role] || role}</div>
+          ${items.map(m => `
+            <button class="nav-item" data-route="${m.route}"
+              onclick="Router.navigate('${m.route}'); AppShell.closeSidebar()">
+              <span class="nav-icon">${m.icon}</span>
+              <span>${m.label}</span>
+            </button>`).join('')}`;
+
+        /* user info chip at bottom of nav */
+        nav.insertAdjacentHTML('beforeend', `
+          <div style="margin-top:auto;padding:0.75rem;border-top:1px solid var(--border);margin-top:1rem">
+            <div style="font-size:0.78rem;color:var(--text-muted);">로그인</div>
+            <div style="font-weight:600;font-size:0.9rem;margin-top:2px">${UI.escHtml(session.displayName)}</div>
+            <div style="margin-top:4px">${UI.roleBadge(role)}</div>
+          </div>`);
+      },
+
+      bindLogout() {
+        document.getElementById('btn-logout').addEventListener('click', async () => {
+          const ok = await UI.confirm('로그아웃 하시겠습니까?', '로그아웃');
+          if (ok) Auth.logout();
+        });
+      },
+
+      bindSidebar() {
+        const sidebar  = document.getElementById('sidebar');
+        const overlay  = document.getElementById('sidebar-overlay');
+        const hambBtn  = document.getElementById('hamburger-btn');
+
+        hambBtn.addEventListener('click', () => {
+          const open = sidebar.classList.toggle('open');
+          overlay.classList.toggle('show', open);
+        });
+        overlay.addEventListener('click', () => AppShell.closeSidebar());
+      },
+
+      closeSidebar() {
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('sidebar-overlay').classList.remove('show');
+      },
+
+      bindChatToggle() {
+        const panel = document.getElementById('chat-panel');
+        document.getElementById('chat-toggle-btn').addEventListener('click', () => {
+          panel.classList.toggle('open');
+        });
+        /* close on outside click (tablet) */
+        document.getElementById('sidebar-overlay').addEventListener('click', () => {
+          panel.classList.remove('open');
+        });
+      },
+    };
+
+    AppShell.init();
+  </script>
+</body>
+</html>

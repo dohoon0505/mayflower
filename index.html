@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>메이대구 — 로그인</title>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/views.css">
+  <style>
+    /* page-level override: 3-panel shell not used on login */
+    body { background: var(--bg-base); }
+  </style>
+</head>
+<body class="login-body">
+
+  <div class="login-wrap">
+    <div class="login-logo-area">
+      <img src="assets/logo.svg" alt="메이대구 로고">
+      <h1>메이대구</h1>
+      <p>꽃집 주문 · 배송 관리 시스템</p>
+    </div>
+
+    <div class="login-card">
+      <div class="login-tabs" id="login-tabs"></div>
+      <div id="login-panels"></div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script src="js/store.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/views/login.js"></script>
+  <script>
+    /* 이미 로그인된 경우 바로 이동 */
+    if (Auth.isAuthenticated()) {
+      window.location.href = 'app.html';
+    } else {
+      LoginView.init();
+    }
+  </script>
+</body>
+</html>
