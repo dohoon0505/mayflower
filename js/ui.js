@@ -108,9 +108,9 @@ const UI = {
       if (m > 0)  return `배송요청 시간까지 ${m}분 남음`;
       return '배송요청 시간까지 곧 도착';
     } else {
-      if (h > 0)  return `${h}시간 ${m}분 지남`;
-      if (m > 0)  return `${m}분 지남`;
-      return '방금 지남';
+      if (h > 0)  return `배송요청 시간보다 ${h}시간 ${m}분 지남`;
+      if (m > 0)  return `배송요청 시간보다 ${m}분 지남`;
+      return '배송요청 시간보다 방금 지남';
     }
   },
 
