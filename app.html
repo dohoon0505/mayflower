@@ -229,12 +229,37 @@
        DeliveryPanel — 배송기사 현황 패널
     ═══════════════════════════════════════════════════════ */
     const DeliveryPanel = {
+      /* ═════════════════════════════════════════════════════════════
+         배송기사 상태 알고리즘 (주문 상태 기반 자동 판정)
 
-      _getStatus(driverId) {
-        return localStorage.getItem(`maydaegu.driver.status.${driverId}`) || 'on';
+         뱃지 자동 결정 (우선순위 순):
+           배송중   = delivering(status=3) > 0
+           배차완료 = assigned(status 0-2) > 0, delivering=0
+           복귀중   = delivering=0, assigned=0, 리셋후 completed(status=4) > 0
+           배송대기 = 모두 0 (리셋 직후 또는 당일 활동 없음)
+
+         ⚠️ APP 연동 이후 변경 예정 (현재 미구현):
+           [1] 배송중 = 드라이버 APP "배송출발" 버튼 클릭 시 설정
+               → 현재는 주문 status=3 으로 대체 감지
+           [2] 복귀중 자동 전환 = 배차된 마지막 주문의 배송사진 업로드 시점
+               → 현재는 delivering=0 && assigned=0 && completed>0 으로 대체 감지
+           [3] 배송대기 자동 전환 = GPS 위치 기반
+               (대구 달서구 장기동 666-1 반경 100m 접근)
+               → 현재는 admin 수동 "배송대기로 리셋" 버튼 사용
+           [4] 드라이버 ID/PW 로그인 + admin 페이지에서 계정 관리
+        ════════════════════════════════════════════════════════════ */
+
+      /* 리셋 타임스탬프: 이 시각 이후 updatedAt 주문만 카운트 → 타임라인 초기화 효과 */
+      _getResetTs(driverId) {
+        return localStorage.getItem(`maydaegu.driver.resetTs.${driverId}`) || '';
       },
-      _setStatus(driverId, status) {
-        localStorage.setItem(`maydaegu.driver.status.${driverId}`, status);
+      _setResetTs(driverId, ts) {
+        localStorage.setItem(`maydaegu.driver.resetTs.${driverId}`, ts);
+      },
+      _afterReset(order, resetTs) {
+        if (!resetTs) return true;
+        if (!order.updatedAt) return true;
+        return new Date(order.updatedAt) >= new Date(resetTs);
       },
 
       render() {
@@ -249,20 +274,30 @@
           return;
         }
 
-        /* Build + sort: 배송중(0) → 배차완료(1) → 배송대기(2) → 복귀중(3) */
+        /* Build + sort: 배송중(0) → 배차완료(1) → 복귀중(2) → 배송대기(3) */
         const data = drivers.map(d => {
+          const resetTs     = DeliveryPanel._getResetTs(d.id);
           const myOrders    = allOrders.filter(o => o.assignedDriverId === d.id);
-          const assigned    = myOrders.filter(o => o.status >= 0 && o.status <= 2); // 배차됐지만 미출발
+          const assigned    = myOrders.filter(o => o.status >= 0 && o.status <= 2);
           const delivering  = myOrders.filter(o => o.status === 3);
-          const completed   = myOrders.filter(o => o.status === 4);
-          const isReturning = DeliveryPanel._getStatus(d.id) === 'returning';
-          const total       = delivering.length + completed.length;
-          const pct         = total > 0 ? Math.round((completed.length / total) * 100) : 0;
-          const priority    = isReturning ? 3 : delivering.length > 0 ? 0 : assigned.length > 0 ? 1 : 2;
-          return { d, assigned, delivering, completed, isReturning, total, pct, priority };
+          const completed   = myOrders.filter(o => o.status === 4 && DeliveryPanel._afterReset(o, resetTs));
+
+          /* 자동 뱃지 판정 — 수동 토글 없음 */
+          let badge;
+          if (delivering.length > 0)      badge = 'delivering';
+          else if (assigned.length > 0)   badge = 'assigned';
+          else if (completed.length > 0)  badge = 'returning';  /* [2] APP 사진업로드 대체 */
+          else                            badge = 'waiting';
+
+          const total    = delivering.length + completed.length;
+          const pct      = total > 0 ? Math.round((completed.length / total) * 100) : 0;
+          const priority = badge === 'delivering' ? 0
+                         : badge === 'assigned'   ? 1
+                         : badge === 'returning'  ? 2 : 3;
+          return { d, assigned, delivering, completed, badge, total, pct, priority };
         }).sort((a, b) => a.priority - b.priority);
 
-        const cards = data.map(({ d, assigned, delivering, completed, isReturning, total, pct }) => {
+        const cards = data.map(({ d, assigned, delivering, completed, badge, total, pct }) => {
           const lastDone = completed
             .filter(o => o.updatedAt)
             .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0];
@@ -270,13 +305,11 @@
             ? UI.escHtml((lastDone.deliveryAddress || '').substring(0, 26))
             : '없음';
 
-          const [statusBadge, cardCls] = isReturning
-            ? [`<span class="dp-badge dp-badge-returning">복귀중</span>`,   'dp-card-returning']
-            : delivering.length > 0
-              ? [`<span class="dp-badge dp-badge-delivering">배송중</span>`,  'dp-card-active']
-              : assigned.length > 0
-                ? [`<span class="dp-badge dp-badge-assigned">배차완료</span>`, 'dp-card-assigned']
-                : [`<span class="dp-badge dp-badge-waiting">배송대기</span>`,  ''];
+          const [statusBadge, cardCls] =
+            badge === 'delivering' ? [`<span class="dp-badge dp-badge-delivering">배송중</span>`,  'dp-card-active']    :
+            badge === 'assigned'   ? [`<span class="dp-badge dp-badge-assigned">배차완료</span>`, 'dp-card-assigned']  :
+            badge === 'returning'  ? [`<span class="dp-badge dp-badge-returning">복귀중</span>`,   'dp-card-returning'] :
+                                     [`<span class="dp-badge dp-badge-waiting">배송대기</span>`,  ''];
 
           return `
             <div class="dp-driver-card ${cardCls}">
@@ -309,9 +342,10 @@
         const d = drivers.find(x => String(x.id) === String(driverId));
         if (!d) return;
 
-        const curStatus = DeliveryPanel._getStatus(driverId);
+        const resetTs = DeliveryPanel._getResetTs(driverId);
         const completed = allOrders
-          .filter(o => o.assignedDriverId === d.id && o.status === 4 && o.updatedAt)
+          .filter(o => o.assignedDriverId === d.id && o.status === 4 && o.updatedAt
+                    && DeliveryPanel._afterReset(o, resetTs))
           .sort((a, b) => new Date(a.updatedAt) - new Date(b.updatedAt));
 
         const rows = completed.length
@@ -334,22 +368,20 @@
         });
         overlay.querySelector('.modal-cancel').style.display = 'none';
 
-        /* 상태 변경 버튼: 배송중 · 배송대기 · 복귀중 */
+        /* ⚠️ [3] APP 연동 전 임시: GPS 기반 자동 "배송대기" 전환이 구현되기 전까지
+               admin이 수동으로 배송대기 상태로 리셋 (타임라인 초기화) */
         const footer = overlay.querySelector('.modal-footer');
         const wrap = document.createElement('div');
         wrap.style.cssText = 'display:flex;gap:0.5rem;margin-right:auto';
         wrap.innerHTML = `
-          <button class="btn btn-sm ${curStatus !== 'returning' && curStatus === 'on' ? 'btn-primary' : 'btn-secondary'}"   id="dp-btn-on">🚚 출근</button>
-          <button class="btn btn-sm ${curStatus === 'returning' ? 'btn-warning' : 'btn-secondary'}" id="dp-btn-returning">🔄 복귀중</button>`;
+          <button class="btn btn-sm btn-warning" id="dp-btn-reset" title="타임라인을 초기화하고 배송대기 상태로 전환 (APP GPS 연동 전 임시 버튼)">🔄 배송대기로 리셋</button>`;
         footer.insertBefore(wrap, footer.firstChild);
 
         const close = () => { overlay.classList.remove('show'); setTimeout(() => overlay.remove(), 300); };
-        wrap.querySelector('#dp-btn-on').addEventListener('click', () => {
-          DeliveryPanel._setStatus(driverId, 'on');
-          close(); DeliveryPanel.render();
-        });
-        wrap.querySelector('#dp-btn-returning').addEventListener('click', () => {
-          DeliveryPanel._setStatus(driverId, 'returning');
+        wrap.querySelector('#dp-btn-reset').addEventListener('click', async () => {
+          const ok = await UI.confirm(`${d.name} 기사의 배송 타임라인을 초기화하고 배송대기 상태로 전환합니다.`, '배송대기로 리셋');
+          if (!ok) return;
+          DeliveryPanel._setResetTs(driverId, new Date().toISOString());
           close(); DeliveryPanel.render();
         });
       },
