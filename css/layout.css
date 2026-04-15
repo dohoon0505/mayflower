@@ -5,7 +5,7 @@
 /* ── Shell ───────────────────────────────────────────────── */
 .shell {
   display: grid;
-  grid-template-columns: var(--sidebar-w) 1fr 300px;
+  grid-template-columns: var(--sidebar-w) 1fr 500px;
   grid-template-rows: 100vh;
   height: 100vh;
   overflow: hidden;
@@ -262,7 +262,7 @@
   .shell { grid-template-columns: var(--sidebar-w) 1fr; }
   .chat-panel {
     position: fixed; top: 0; right: 0; bottom: 0;
-    width: 300px; max-width: 90vw;
+    width: 500px; max-width: 90vw;
     transform: translateX(100%);
     z-index: 300;
     box-shadow: var(--shadow-lg);
