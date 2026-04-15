@@ -8,7 +8,7 @@ const KEYS = {
   drivers:  'maydaegu.drivers',
   orders:   'maydaegu.orders',
   chat:     'maydaegu.chat',
-  seeded:   'maydaegu.seeded.v6',   /* bump version to re-seed */
+  seeded:   'maydaegu.seeded.v7',   /* bump version to re-seed */
 };
 
 /* Predefined product categories */
@@ -38,10 +38,22 @@ function _seed() {
   const now = new Date();
 
   _set(KEYS.users, [
-    { id: 1, username: 'floor2', passwordHash: '1234', displayName: '2층 담당자', role: 'floor2', isActive: true, createdAt: '2025-01-01T00:00:00' },
-    { id: 2, username: 'floor1', passwordHash: '1234', displayName: '1층 담당자', role: 'floor1', isActive: true, createdAt: '2025-01-01T00:00:00' },
-    { id: 3, username: 'driver', passwordHash: '1234', displayName: '이민준',     role: 'driver', isActive: true, createdAt: '2025-01-01T00:00:00' },
-    { id: 4, username: 'admin',  passwordHash: '1234', displayName: '관리자',     role: 'admin',  isActive: true, createdAt: '2025-01-01T00:00:00' },
+    { id:  1, username: 'floor2',   passwordHash: '1234', displayName: '2층 담당자', role: 'floor2', isActive: true, createdAt: '2025-01-01T00:00:00' },
+    { id:  2, username: 'floor1',   passwordHash: '1234', displayName: '1층 담당자', role: 'floor1', isActive: true, createdAt: '2025-01-01T00:00:00' },
+    { id:  3, username: 'admin',    passwordHash: '1234', displayName: '관리자',     role: 'admin',  isActive: true, createdAt: '2025-01-01T00:00:00' },
+    /* 기사 계정 (driver1~driver12) */
+    { id:  4, username: 'driver1',  passwordHash: '1234', displayName: '이민준', role: 'driver', isActive: true, createdAt: '2025-01-01T00:00:00' },
+    { id:  5, username: 'driver2',  passwordHash: '1234', displayName: '박서연', role: 'driver', isActive: true, createdAt: '2025-01-01T00:00:00' },
+    { id:  6, username: 'driver3',  passwordHash: '1234', displayName: '정지훈', role: 'driver', isActive: true, createdAt: '2025-01-01T00:00:00' },
+    { id:  7, username: 'driver4',  passwordHash: '1234', displayName: '김도윤', role: 'driver', isActive: true, createdAt: '2025-01-01T00:00:00' },
+    { id:  8, username: 'driver5',  passwordHash: '1234', displayName: '최하준', role: 'driver', isActive: true, createdAt: '2025-01-01T00:00:00' },
+    { id:  9, username: 'driver6',  passwordHash: '1234', displayName: '한시우', role: 'driver', isActive: true, createdAt: '2025-01-01T00:00:00' },
+    { id: 10, username: 'driver7',  passwordHash: '1234', displayName: '윤주원', role: 'driver', isActive: true, createdAt: '2025-01-01T00:00:00' },
+    { id: 11, username: 'driver8',  passwordHash: '1234', displayName: '송지후', role: 'driver', isActive: true, createdAt: '2025-01-01T00:00:00' },
+    { id: 12, username: 'driver9',  passwordHash: '1234', displayName: '임건우', role: 'driver', isActive: true, createdAt: '2025-01-01T00:00:00' },
+    { id: 13, username: 'driver10', passwordHash: '1234', displayName: '강선우', role: 'driver', isActive: true, createdAt: '2025-01-01T00:00:00' },
+    { id: 14, username: 'driver11', passwordHash: '1234', displayName: '조예준', role: 'driver', isActive: true, createdAt: '2025-01-01T00:00:00' },
+    { id: 15, username: 'driver12', passwordHash: '1234', displayName: '배민재', role: 'driver', isActive: true, createdAt: '2025-01-01T00:00:00' },
   ]);
 
   _set(KEYS.products, [
@@ -167,6 +179,15 @@ const Store = {
     _set(KEYS.users, [...users, user]);
     return user;
   },
+  updateUser(id, data) {
+    const users = _get(KEYS.users);
+    const idx = users.findIndex(u => u.id === id);
+    if (idx < 0) return false;
+    users[idx] = { ...users[idx], ...data };
+    _set(KEYS.users, users);
+    return true;
+  },
+  getUsersByRole: (role) => _get(KEYS.users).filter(u => u.role === role && u.isActive),
 
   /* Products */
   getProducts: (activeOnly = true) => {

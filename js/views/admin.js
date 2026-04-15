@@ -152,28 +152,40 @@ const AdminView = {
     UI.loading(true);
     try {
       const drivers = await Api.getDrivers(true); /* include inactive */
-      UI.setMain(AdminView._renderDriverTable(drivers));
-      AdminView._bindDriverActions(drivers);
+      const driverUsers = Store.getUsersByRole('driver');
+      UI.setMain(AdminView._renderDriverTable(drivers, driverUsers));
+      AdminView._bindDriverActions(drivers, driverUsers);
     } catch(e) {
       UI.toast(e.message || '조회 실패', 'error');
     } finally { UI.loading(false); }
   },
 
-  _renderDriverTable(drivers) {
-    const rows = drivers.map(d => `
-      <tr data-id="${d.id}">
-        <td>${d.id}</td>
-        <td class="td-dname">${UI.escHtml(d.name)}</td>
-        <td class="td-dphone">${UI.escHtml(d.phone || '-')}</td>
-        <td>${d.isActive ? '<span class="badge status-complete">활성</span>' : '<span class="badge status-cancel">비활성</span>'}</td>
-        <td>
-          <div class="td-actions">
-            <button class="btn btn-secondary btn-xs d-edit" data-id="${d.id}">수정</button>
-            <button class="btn btn-danger btn-xs d-delete" data-id="${d.id}" ${!d.isActive?'disabled':''}>삭제</button>
-            ${!d.isActive ? `<button class="btn btn-success btn-xs d-restore" data-id="${d.id}">복원</button>` : ''}
-          </div>
-        </td>
-      </tr>`).join('');
+  /* driver users 테이블에서 기사에 연결된 계정 검색 (displayName 매핑) */
+  _findDriverUser(driverName, driverUsers) {
+    return driverUsers.find(u => u.displayName === driverName) || null;
+  },
+
+  _renderDriverTable(drivers, driverUsers) {
+    const rows = drivers.map(d => {
+      const linked = AdminView._findDriverUser(d.name, driverUsers);
+      const loginId = linked ? UI.escHtml(linked.username) : '<span class="text-muted">미설정</span>';
+      return `
+        <tr data-id="${d.id}">
+          <td>${d.id}</td>
+          <td class="td-dname">${UI.escHtml(d.name)}</td>
+          <td class="td-dphone">${UI.escHtml(d.phone || '-')}</td>
+          <td>${loginId}</td>
+          <td>${d.isActive ? '<span class="badge status-complete">활성</span>' : '<span class="badge status-cancel">비활성</span>'}</td>
+          <td>
+            <div class="td-actions">
+              <button class="btn btn-secondary btn-xs d-edit" data-id="${d.id}">수정</button>
+              <button class="btn btn-secondary btn-xs d-cred" data-id="${d.id}" title="아이디·비밀번호 수정">🔑 계정</button>
+              <button class="btn btn-danger btn-xs d-delete" data-id="${d.id}" ${!d.isActive?'disabled':''}>삭제</button>
+              ${!d.isActive ? `<button class="btn btn-success btn-xs d-restore" data-id="${d.id}">복원</button>` : ''}
+            </div>
+          </td>
+        </tr>`;
+    }).join('');
 
     return `
       <div class="section-header">
@@ -181,54 +193,150 @@ const AdminView = {
       </div>
       <div class="table-wrapper">
         <table>
-          <thead><tr><th>ID</th><th>이름</th><th>연락처</th><th>상태</th><th>관리</th></tr></thead>
+          <thead><tr><th>ID</th><th>이름</th><th>연락처</th><th>로그인 아이디</th><th>상태</th><th>관리</th></tr></thead>
           <tbody id="driver-tbody">${rows}</tbody>
         </table>
         <div class="add-row-form">
-          <input type="text" id="new-driver-name" class="inline-input" placeholder="이름" style="max-width:120px">
-          <input type="tel" id="new-driver-phone" class="inline-input" placeholder="010-0000-0000" style="max-width:150px">
+          <input type="text"     id="new-driver-name"  class="inline-input" placeholder="이름"            style="max-width:110px">
+          <input type="tel"      id="new-driver-phone" class="inline-input" placeholder="010-0000-0000"   style="max-width:145px">
+          <input type="text"     id="new-driver-uid"   class="inline-input" placeholder="아이디 (선택)"    style="max-width:120px">
+          <input type="password" id="new-driver-pw"    class="inline-input" placeholder="비밀번호 (선택)"  style="max-width:130px">
           <button class="btn btn-primary btn-sm" id="btn-add-driver">+ 기사 추가</button>
         </div>
       </div>`;
   },
 
-  _bindDriverActions(drivers) {
-    /* 추가 */
+  _bindDriverActions(drivers, driverUsers) {
+    /* ── 추가 ── */
     document.getElementById('btn-add-driver').addEventListener('click', async () => {
       const name  = document.getElementById('new-driver-name').value.trim();
       const phone = document.getElementById('new-driver-phone').value.trim();
+      const uid   = document.getElementById('new-driver-uid').value.trim();
+      const pw    = document.getElementById('new-driver-pw').value.trim();
       if (!name) { UI.toast('이름을 입력해 주세요.', 'warning'); return; }
+      if ((uid && !pw) || (!uid && pw)) {
+        UI.toast('아이디와 비밀번호를 함께 입력해 주세요.', 'warning'); return;
+      }
+      if (uid && Store.getUserByUsername(uid)) {
+        UI.toast('이미 사용 중인 아이디입니다.', 'warning'); return;
+      }
       try {
         await Api.createDriver({ name, phone });
+        if (uid && pw) {
+          Store.createUser({ username: uid, passwordHash: pw, displayName: name, role: 'driver' });
+        }
         UI.toast(`"${name}" 기사가 추가되었습니다.`, 'success');
         AdminView.showDrivers();
       } catch(e) { UI.toast(e.message || '추가 실패', 'error'); }
     });
 
-    /* 수정 */
+    /* ── 이름·연락처 수정 (인라인 → 모달로 교체하여 이벤트 충돌 방지) ── */
     document.querySelectorAll('.d-edit').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = +btn.dataset.id;
-        const d = drivers.find(x => x.id === id);
+        const d  = drivers.find(x => x.id === id);
         if (!d) return;
-        const tr = btn.closest('tr');
-        tr.querySelector('.td-dname').innerHTML  = `<input class="inline-input" id="edit-dn-${id}" value="${UI.escHtml(d.name)}" style="max-width:100px">`;
-        tr.querySelector('.td-dphone').innerHTML = `<input class="inline-input" id="edit-dp-${id}" value="${UI.escHtml(d.phone||'')}" style="max-width:130px">`;
-        btn.textContent = '저장';
-        btn.onclick = async () => {
-          const newName  = document.getElementById(`edit-dn-${id}`).value.trim();
-          const newPhone = document.getElementById(`edit-dp-${id}`).value.trim();
+
+        const overlay = UI.modal({
+          title:       `✏️ 기사 정보 수정 — ${UI.escHtml(d.name)}`,
+          content: `
+            <div class="form-group">
+              <label class="form-label">이름</label>
+              <input type="text" id="medit-name" class="form-control" value="${UI.escHtml(d.name)}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">연락처</label>
+              <input type="tel" id="medit-phone" class="form-control" value="${UI.escHtml(d.phone || '')}" placeholder="010-0000-0000">
+            </div>`,
+          confirmText: '저장',
+          cancelText:  '취소',
+        });
+
+        setTimeout(() => document.getElementById('medit-name')?.focus(), 50);
+
+        overlay.querySelector('.modal-confirm').addEventListener('click', async () => {
+          const newName  = document.getElementById('medit-name').value.trim();
+          const newPhone = document.getElementById('medit-phone').value.trim();
           if (!newName) { UI.toast('이름을 입력해 주세요.', 'warning'); return; }
           try {
             await Api.updateDriver(id, { name: newName, phone: newPhone, isActive: d.isActive });
+
+            /* 이름이 바뀌면 연결된 user 계정의 displayName도 동기화 */
+            if (newName !== d.name) {
+              const linked = AdminView._findDriverUser(d.name, driverUsers);
+              if (linked) Store.updateUser(linked.id, { displayName: newName });
+            }
+
             UI.toast('수정되었습니다.', 'success');
-            AdminView.showDrivers();
+            overlay.classList.remove('show');
+            setTimeout(() => { overlay.remove(); AdminView.showDrivers(); }, 300);
           } catch(e) { UI.toast(e.message || '수정 실패', 'error'); }
-        };
+        });
       });
     });
 
-    /* 삭제 */
+    /* ── 계정(아이디·비밀번호) 수정 ── */
+    document.querySelectorAll('.d-cred').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = +btn.dataset.id;
+        const d  = drivers.find(x => x.id === id);
+        if (!d) return;
+        const linked = AdminView._findDriverUser(d.name, driverUsers);
+
+        const overlay = UI.modal({
+          title:       `🔑 계정 관리 — ${UI.escHtml(d.name)}`,
+          content: `
+            <div class="form-group">
+              <label class="form-label">로그인 아이디</label>
+              <input type="text" id="cred-uid" class="form-control"
+                value="${linked ? UI.escHtml(linked.username) : ''}"
+                placeholder="영문·숫자 조합">
+            </div>
+            <div class="form-group">
+              <label class="form-label">비밀번호${linked ? ' <span class="text-muted" style="font-weight:400">(변경하지 않으려면 비워두세요)</span>' : ''}</label>
+              <input type="password" id="cred-pw" class="form-control"
+                placeholder="${linked ? '변경할 비밀번호 입력' : '비밀번호 입력'}">
+            </div>
+            ${linked ? `<p class="text-muted" style="font-size:0.82rem;margin-top:0.5rem">현재 아이디: <strong>${UI.escHtml(linked.username)}</strong></p>` : '<p class="text-muted" style="font-size:0.82rem;margin-top:0.5rem">이 기사에 연결된 계정이 없습니다. 아이디와 비밀번호를 입력하면 새로 생성됩니다.</p>'}`,
+          confirmText: linked ? '저장' : '계정 생성',
+          cancelText:  '취소',
+        });
+
+        setTimeout(() => document.getElementById('cred-uid')?.focus(), 50);
+
+        overlay.querySelector('.modal-confirm').addEventListener('click', async () => {
+          const newUid = document.getElementById('cred-uid').value.trim();
+          const newPw  = document.getElementById('cred-pw').value.trim();
+
+          if (!newUid) { UI.toast('아이디를 입력해 주세요.', 'warning'); return; }
+          if (!linked && !newPw) { UI.toast('비밀번호를 입력해 주세요.', 'warning'); return; }
+
+          /* 아이디 중복 확인 (자기 자신 제외) */
+          const existing = Store.getUserByUsername(newUid);
+          if (existing && (!linked || existing.id !== linked.id)) {
+            UI.toast('이미 사용 중인 아이디입니다.', 'warning'); return;
+          }
+
+          try {
+            if (linked) {
+              /* 기존 계정 업데이트 */
+              const updates = { username: newUid };
+              if (newPw) updates.passwordHash = newPw;
+              Store.updateUser(linked.id, updates);
+              UI.toast('계정이 수정되었습니다.', 'success');
+            } else {
+              /* 신규 계정 생성 */
+              Store.createUser({ username: newUid, passwordHash: newPw, displayName: d.name, role: 'driver' });
+              UI.toast('계정이 생성되었습니다.', 'success');
+            }
+            overlay.classList.remove('show');
+            setTimeout(() => { overlay.remove(); AdminView.showDrivers(); }, 300);
+          } catch(e) { UI.toast(e.message || '처리 실패', 'error'); }
+        });
+      });
+    });
+
+    /* ── 삭제 ── */
     document.querySelectorAll('.d-delete').forEach(btn => {
       btn.addEventListener('click', async () => {
         const id = +btn.dataset.id;
@@ -243,7 +351,7 @@ const AdminView = {
       });
     });
 
-    /* 복원 */
+    /* ── 복원 ── */
     document.querySelectorAll('.d-restore').forEach(btn => {
       btn.addEventListener('click', async () => {
         const id = +btn.dataset.id;
