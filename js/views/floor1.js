@@ -275,12 +275,12 @@ const Floor1View = {
 
     /* Ribbon field */
     const ribbonHtml = o.ribbonText
-      ? `<span class="ocard-field-icon">🎀</span><span data-ribbon="${UI.escHtml(o.ribbonText)}" class="ocard-field-ribbon" title="클릭 시 클립보드 복사">${UI.escHtml(o.ribbonText)}</span>`
+      ? `<span class="ocard-field-icon">🎀</span><span data-copy="${UI.escHtml(o.ribbonText)}" class="ocard-field-copy" title="클릭 시 클립보드 복사">${UI.escHtml(o.ribbonText)}</span>`
       : `<span class="ocard-field-icon">🎀</span><span style="color:var(--text-muted);font-style:italic">문구 없음</span>`;
 
     /* Occasion field */
     const occasionHtml = o.occasionText
-      ? `<span class="ocard-field-icon">📝</span><span>${UI.escHtml(o.occasionText)}</span>`
+      ? `<span class="ocard-field-icon">📝</span><span data-copy="${UI.escHtml(o.occasionText)}" class="ocard-field-copy" title="클릭 시 클립보드 복사">${UI.escHtml(o.occasionText)}</span>`
       : `<span class="ocard-field-icon">📝</span><span style="color:var(--text-muted);font-style:italic">경조사어 없음</span>`;
 
     /* Driver field */
@@ -376,12 +376,11 @@ const Floor1View = {
       await Floor1View._handleAction(+actionBtn.dataset.id, actionBtn.dataset.action, actionBtn);
       return;
     }
-    const ribbon = e.target.closest('[data-ribbon]') || e.target.closest('.ocard-field-ribbon');
-    if (ribbon) {
-      const text = ribbon.dataset.ribbon || ribbon.textContent.trim();
+    const copyEl = e.target.closest('[data-copy]');
+    if (copyEl) {
       try {
-        await navigator.clipboard.writeText(text);
-        UI.toast('리본 문구를 클립보드에 복사했습니다.', 'success', 2000);
+        await navigator.clipboard.writeText(copyEl.dataset.copy);
+        UI.toast('클립보드에 복사했습니다.', 'success', 2000);
       } catch { UI.toast('클립보드 복사 실패', 'error'); }
       return;
     }

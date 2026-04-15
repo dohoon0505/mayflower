@@ -29,6 +29,14 @@ const Floor2View = {
 
     /* Delegated click — set up once */
     document.getElementById('main-content').addEventListener('click', async e => {
+      const copyEl = e.target.closest('[data-copy]');
+      if (copyEl) {
+        try {
+          await navigator.clipboard.writeText(copyEl.dataset.copy);
+          UI.toast('클립보드에 복사했습니다.', 'success', 2000);
+        } catch { UI.toast('클립보드 복사 실패', 'error'); }
+        return;
+      }
       const btn = e.target.closest('[data-action]');
       if (!btn) return;
       const id     = +btn.dataset.id;
@@ -237,11 +245,11 @@ const Floor2View = {
     const dt = UI.fmtDatetime(o.deliveryDatetime);
 
     const ribbonHtml = o.ribbonText
-      ? `<span class="ocard-field-icon">🎀</span><span>${UI.escHtml(o.ribbonText)}</span>`
+      ? `<span class="ocard-field-icon">🎀</span><span data-copy="${UI.escHtml(o.ribbonText)}" class="ocard-field-copy" title="클릭 시 클립보드 복사">${UI.escHtml(o.ribbonText)}</span>`
       : `<span class="ocard-field-icon">🎀</span><span style="color:var(--text-muted);font-style:italic">문구 없음</span>`;
 
     const occasionHtml = o.occasionText
-      ? `<span class="ocard-field-icon">📝</span><span>${UI.escHtml(o.occasionText)}</span>`
+      ? `<span class="ocard-field-icon">📝</span><span data-copy="${UI.escHtml(o.occasionText)}" class="ocard-field-copy" title="클릭 시 클립보드 복사">${UI.escHtml(o.occasionText)}</span>`
       : `<span class="ocard-field-icon">📝</span><span style="color:var(--text-muted);font-style:italic">경조사어 없음</span>`;
 
     const driverHtml = o.assignedDriverName

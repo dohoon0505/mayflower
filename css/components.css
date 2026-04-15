@@ -299,8 +299,8 @@
 }
 .ocard-field-icon { font-size: 0.85rem; flex-shrink: 0; opacity: 0.65; }
 .ocard-field.ocard-empty { color: var(--text-muted); font-style: italic; }
-.ocard-field-ribbon { cursor: pointer; }
-.ocard-field-ribbon:hover { border-color: var(--primary-light); }
+.ocard-field-copy { cursor: pointer; }
+.ocard-field-copy:hover { color: var(--primary); }
 
 /* 2-column field row */
 .ocard-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
