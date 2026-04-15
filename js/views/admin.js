@@ -31,10 +31,14 @@ const AdminView = {
   },
 
   _renderProductTable(products) {
+    const catOpts = (Store.CATEGORIES || ['화환','꽃바구니','화분','생화','조화','기타'])
+      .map(c => `<option value="${c}">${c}</option>`).join('');
+
     const rows = products.map(p => `
       <tr data-id="${p.id}">
         <td>${p.id}</td>
         <td class="td-name">${UI.escHtml(p.name)}</td>
+        <td class="td-cat"><span class="badge badge-role">${UI.escHtml(p.category || '기타')}</span></td>
         <td>${p.isActive ? '<span class="badge status-complete">활성</span>' : '<span class="badge status-cancel">비활성</span>'}</td>
         <td>
           <div class="td-actions">
@@ -51,11 +55,12 @@ const AdminView = {
       </div>
       <div class="table-wrapper">
         <table>
-          <thead><tr><th>ID</th><th>상품명</th><th>상태</th><th>관리</th></tr></thead>
+          <thead><tr><th>ID</th><th>상품명</th><th>카테고리</th><th>상태</th><th>관리</th></tr></thead>
           <tbody id="product-tbody">${rows}</tbody>
         </table>
         <div class="add-row-form">
-          <input type="text" id="new-product-name" class="inline-input" placeholder="새 상품명" style="max-width:220px">
+          <input type="text" id="new-product-name" class="inline-input" placeholder="새 상품명" style="max-width:180px">
+          <select id="new-product-cat" class="filter-select">${catOpts}</select>
           <button class="btn btn-primary btn-sm" id="btn-add-product">+ 상품 추가</button>
         </div>
       </div>`;
@@ -65,10 +70,12 @@ const AdminView = {
     /* 추가 */
     document.getElementById('btn-add-product').addEventListener('click', async () => {
       const nameEl = document.getElementById('new-product-name');
+      const catEl  = document.getElementById('new-product-cat');
       const name = nameEl.value.trim();
+      const category = catEl?.value || '기타';
       if (!name) { UI.toast('상품명을 입력해 주세요.', 'warning'); return; }
       try {
-        await Api.createProduct({ name });
+        await Api.createProduct({ name, category });
         UI.toast(`"${name}" 상품이 추가되었습니다.`, 'success');
         AdminView.showProducts();
       } catch(e) { UI.toast(e.message || '추가 실패', 'error'); }
@@ -83,18 +90,24 @@ const AdminView = {
         const id = +btn.dataset.id;
         const p = products.find(x => x.id === id);
         if (!p) return;
-        const td = btn.closest('tr').querySelector('.td-name');
-        const oldName = p.name;
-        td.innerHTML = `<input type="text" class="inline-input" id="edit-p-${id}" value="${UI.escHtml(oldName)}" style="max-width:200px">`;
-        const input = document.getElementById(`edit-p-${id}`);
+        const tr = btn.closest('tr');
+        const tdName = tr.querySelector('.td-name');
+        const tdCat  = tr.querySelector('.td-cat');
+        const cats = (Store.CATEGORIES || ['화환','꽃바구니','화분','생화','조화','기타'])
+          .map(c => `<option value="${c}" ${c === p.category ? 'selected' : ''}>${c}</option>`).join('');
+        tdName.innerHTML = `<input type="text" class="inline-input" id="edit-p-${id}" value="${UI.escHtml(p.name)}" style="max-width:160px">`;
+        tdCat.innerHTML  = `<select class="filter-select" id="edit-pc-${id}" style="font-size:0.8rem">${cats}</select>`;
+        const input    = document.getElementById(`edit-p-${id}`);
+        const catInput = document.getElementById(`edit-pc-${id}`);
         input.focus(); input.select();
         btn.textContent = '저장';
         btn.onclick = async () => {
           const newName = input.value.trim();
+          const newCat  = catInput.value;
           if (!newName) { UI.toast('상품명을 입력해 주세요.', 'warning'); return; }
           try {
-            await Api.updateProduct(id, { name: newName, isActive: p.isActive });
-            UI.toast('상품명이 수정되었습니다.', 'success');
+            await Api.updateProduct(id, { name: newName, category: newCat, isActive: p.isActive });
+            UI.toast('상품이 수정되었습니다.', 'success');
             AdminView.showProducts();
           } catch(e) { UI.toast(e.message || '수정 실패', 'error'); }
         };
@@ -122,7 +135,7 @@ const AdminView = {
         const id = +btn.dataset.id;
         const p = products.find(x => x.id === id);
         try {
-          await Api.updateProduct(id, { name: p.name, isActive: true });
+          await Api.updateProduct(id, { name: p.name, category: p.category || '기타', isActive: true });
           UI.toast('복원되었습니다.', 'success');
           AdminView.showProducts();
         } catch(e) { UI.toast(e.message || '복원 실패', 'error'); }

@@ -1,6 +1,6 @@
 /* ============================================================
-   FLOOR2.JS — 2층 수주/CS: 내 주문 · 신규 접수
-   Bug-fixed: single visibilitychange handler
+   FLOOR2.JS — 2층 수주/CS: 내 주문 · 신규 접수 (모달)
+   v2: 3-row filter + modal new order
    ============================================================ */
 
 const Floor2View = {
@@ -9,10 +9,20 @@ const Floor2View = {
   _pollFn:      null,
   _visHandler:  null,
 
+  /* ── Filter state ────────────────────────────────────────── */
+  _filterState: {
+    statusGroup: '',
+    dateFrom: '',
+    dateTo: '',
+    searchChain: '',
+    searchRecipient: '',
+    searchAddress: '',
+  },
+
   init(session) {
     Floor2View._session = session;
     Router.register('my-orders',  () => Floor2View.showMyOrders());
-    Router.register('new-order',  () => Floor2View.showNewOrder());
+    Router.register('new-order',  () => Floor2View.openNewOrderModal());
     Router.default('my-orders');
 
     /* Set up visibilitychange ONCE */
@@ -32,37 +42,174 @@ const Floor2View = {
   /* ── 내 주문 ──────────────────────────────────────────────── */
   async showMyOrders() {
     Floor2View._clearPoll();
+
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = String(today.getMonth()+1).padStart(2,'0');
+    const firstDay = `${y}-${m}-01`;
+    const todayStr = UI.fmtDate(today.toISOString());
+
     UI.setContent('filter-area', `
-      <div class="filter-area-inner">
-        <span class="filter-label">상태 필터</span>
-        <select id="f2-status" class="filter-select">
-          <option value="">전체</option>
-          <option value="0">접수됨</option>
-          <option value="1">리본출력완료</option>
-          <option value="2">제작완료</option>
-          <option value="3">배송중</option>
-          <option value="4">배송완료</option>
-          <option value="5">취소</option>
-          <option value="6">반품</option>
-        </select>
-        <button class="btn btn-secondary btn-sm" id="f2-refresh">↻ 새로고침</button>
+      <div class="filter-section">
+
+        <!-- Row 1: Status tabs -->
+        <div class="filter-row">
+          <span class="filter-label">주문 상태</span>
+          <div class="status-tab-group" id="f2-status-tabs">
+            <button class="status-tab-btn active" data-sg="">전체</button>
+            <button class="status-tab-btn" data-sg="0">접수됨</button>
+            <button class="status-tab-btn" data-sg="1,2,3">진행중</button>
+            <button class="status-tab-btn" data-sg="4">배송완료</button>
+            <button class="status-tab-btn" data-sg="5,6">취소/반품</button>
+          </div>
+          <button class="btn btn-secondary btn-sm" id="f2-refresh" style="margin-left:auto">↻ 새로고침</button>
+        </div>
+
+        <!-- Row 2: Date range -->
+        <div class="filter-row">
+          <span class="filter-label">배송요청일</span>
+          <div class="date-range-box">
+            <span class="date-icon">📅</span>
+            <input type="date" id="f2-date-from" value="${firstDay}">
+            <span class="date-sep">~</span>
+            <input type="date" id="f2-date-to" value="${todayStr}">
+          </div>
+          <div class="quick-date-group">
+            <button class="quick-date-btn f2-quick" data-quick="today">오늘</button>
+            <button class="quick-date-btn f2-quick" data-quick="yesterday">어제</button>
+            <button class="quick-date-btn f2-quick" data-quick="tomorrow">내일</button>
+            <button class="quick-date-btn f2-quick active" data-quick="this-month">이번 달</button>
+            <button class="quick-date-btn f2-quick" data-quick="last-month">지난 달</button>
+          </div>
+        </div>
+
+        <!-- Row 3: Text search -->
+        <div class="filter-row" style="padding-top:0.6rem;padding-bottom:0.6rem">
+          <div class="search-fields-group">
+            <div class="search-field-item">
+              <span class="search-field-label">🔍 체인명 검색</span>
+              <input type="text" id="f2-search-chain" class="search-field-input" placeholder="꽃집 이름·리본 문구">
+            </div>
+            <div class="search-field-item">
+              <span class="search-field-label">🔍 받는분 검색</span>
+              <input type="text" id="f2-search-recipient" class="search-field-input" placeholder="받는 분 성함">
+            </div>
+            <div class="search-field-item">
+              <span class="search-field-label">🔍 주소지 검색</span>
+              <input type="text" id="f2-search-address" class="search-field-input" placeholder="배송지 주소">
+            </div>
+          </div>
+        </div>
+
       </div>`);
 
-    document.getElementById('f2-status').addEventListener('change', () => Floor2View._loadMyOrders());
-    document.getElementById('f2-refresh').addEventListener('click', () => Floor2View._loadMyOrders());
+    Floor2View._bindFilterEvents();
+    Floor2View._applyQuickDate('this-month');
     await Floor2View._loadMyOrders();
     Floor2View._startPoll(() => Floor2View._loadMyOrders(), 30000);
   },
 
-  async _loadMyOrders() {
-    const statusEl = document.getElementById('f2-status');
-    const status = statusEl ? statusEl.value : '';
-    const filters = {};
-    if (status !== '') filters.status = +status;
+  _bindFilterEvents() {
+    /* Status tabs */
+    document.getElementById('f2-status-tabs').addEventListener('click', e => {
+      const btn = e.target.closest('.status-tab-btn');
+      if (!btn) return;
+      document.querySelectorAll('#f2-status-tabs .status-tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      Floor2View._filterState.statusGroup = btn.dataset.sg;
+      Floor2View._loadMyOrders();
+    });
 
+    /* Date range */
+    document.getElementById('f2-date-from').addEventListener('change', e => {
+      Floor2View._filterState.dateFrom = e.target.value;
+      Floor2View._clearQuickActive();
+      Floor2View._loadMyOrders();
+    });
+    document.getElementById('f2-date-to').addEventListener('change', e => {
+      Floor2View._filterState.dateTo = e.target.value;
+      Floor2View._clearQuickActive();
+      Floor2View._loadMyOrders();
+    });
+
+    /* Quick date */
+    document.querySelectorAll('.f2-quick').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.f2-quick').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        Floor2View._applyQuickDate(btn.dataset.quick);
+        Floor2View._loadMyOrders();
+      });
+    });
+
+    /* Text search — debounced */
+    ['f2-search-chain','f2-search-recipient','f2-search-address'].forEach(id => {
+      let t;
+      document.getElementById(id).addEventListener('input', e => {
+        clearTimeout(t);
+        t = setTimeout(() => {
+          if (id === 'f2-search-chain')     Floor2View._filterState.searchChain     = e.target.value.trim();
+          if (id === 'f2-search-recipient') Floor2View._filterState.searchRecipient = e.target.value.trim();
+          if (id === 'f2-search-address')   Floor2View._filterState.searchAddress   = e.target.value.trim();
+          Floor2View._loadMyOrders();
+        }, 280);
+      });
+    });
+
+    /* Refresh */
+    document.getElementById('f2-refresh').addEventListener('click', () => Floor2View._loadMyOrders());
+  },
+
+  _applyQuickDate(quick) {
+    const today = new Date();
+    let from, to;
+    const fmt = d => {
+      const p = n => String(n).padStart(2,'0');
+      return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+    };
+    if (quick === 'today')      { from = to = fmt(today); }
+    else if (quick === 'yesterday') { const d = new Date(today); d.setDate(d.getDate()-1); from = to = fmt(d); }
+    else if (quick === 'tomorrow')  { const d = new Date(today); d.setDate(d.getDate()+1); from = to = fmt(d); }
+    else if (quick === 'this-month') {
+      from = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-01`;
+      to   = fmt(today);
+    } else if (quick === 'last-month') {
+      const d    = new Date(today.getFullYear(), today.getMonth()-1, 1);
+      const last = new Date(today.getFullYear(), today.getMonth(), 0);
+      from = fmt(d); to = fmt(last);
+    }
+    if (from) { Floor2View._filterState.dateFrom = from; const el = document.getElementById('f2-date-from'); if (el) el.value = from; }
+    if (to)   { Floor2View._filterState.dateTo   = to;   const el = document.getElementById('f2-date-to');   if (el) el.value = to; }
+  },
+
+  _clearQuickActive() {
+    document.querySelectorAll('.f2-quick').forEach(b => b.classList.remove('active'));
+  },
+
+  async _loadMyOrders() {
     UI.loading(true);
     try {
-      const orders = await Api.getOrders(filters);
+      /* Api.getOrders automatically filters by createdByUserId for floor2 */
+      const all = await Api.getOrders();
+      const fs = Floor2View._filterState;
+      let orders = all;
+
+      /* Status group */
+      if (fs.statusGroup !== '') {
+        const allowed = fs.statusGroup.split(',').map(Number);
+        orders = orders.filter(o => allowed.includes(o.status));
+      }
+
+      /* Date range */
+      if (fs.dateFrom) orders = orders.filter(o => o.deliveryDatetime >= fs.dateFrom);
+      if (fs.dateTo)   orders = orders.filter(o => o.deliveryDatetime <= fs.dateTo + 'T23:59:59');
+
+      /* Text search */
+      const lc = s => (s || '').toLowerCase();
+      if (fs.searchChain)     orders = orders.filter(o => lc(o.chainName).includes(lc(fs.searchChain)) || lc(o.ribbonText).includes(lc(fs.searchChain)));
+      if (fs.searchRecipient) orders = orders.filter(o => lc(o.recipientName).includes(lc(fs.searchRecipient)));
+      if (fs.searchAddress)   orders = orders.filter(o => lc(o.deliveryAddress).includes(lc(fs.searchAddress)));
+
       orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       UI.setMain(Floor2View._renderOrderList(orders));
     } catch(e) {
@@ -74,24 +221,29 @@ const Floor2View = {
     if (!orders.length) return `
       <div class="empty-state">
         <div class="empty-icon">📋</div>
-        <div class="empty-text">접수된 주문이 없습니다.</div>
+        <div class="empty-text">조건에 맞는 주문이 없습니다.</div>
       </div>`;
     return `<div class="order-list">${orders.map(o => Floor2View._orderCard(o)).join('')}</div>`;
   },
 
   _orderCard(o) {
-    const dt = UI.fmtDatetime(o.deliveryDatetime);
+    const dt      = UI.fmtDatetime(o.deliveryDatetime);
     const created = UI.fmtDatetime(o.createdAt);
     const driverTag = o.assignedDriverName
       ? `<span class="order-driver-tag">🚚 ${UI.escHtml(o.assignedDriverName)}</span>` : '';
     const immediate = o.isImmediate ? '<span class="order-immediate">즉시</span>' : '';
-    const photo = o.deliveryPhotoUrl
-      ? `<img src="${o.deliveryPhotoUrl}" class="order-photo-thumb" title="배송 사진 보기" onclick="window.open(this.src)">` : '';
+
+    const storePhoto = o.storePhotoUrl
+      ? `<img src="${o.storePhotoUrl}" class="order-photo-store-thumb" title="매장사진 보기" onclick="window.open(this.src)">` : '';
+    const delivPhoto = o.deliveryPhotoUrl
+      ? `<img src="${o.deliveryPhotoUrl}" class="order-photo-thumb" title="현장사진 보기" onclick="window.open(this.src)">` : '';
+    const photosSection = (storePhoto || delivPhoto)
+      ? `<div class="order-photos">${storePhoto}${delivPhoto}</div>` : '';
 
     return `
       <div class="order-card" data-id="${o.id}" data-status="${o.status}">
         <div class="order-card-check">
-          <span style="font-size:1.1rem;opacity:0.4">#${o.id}</span>
+          <span class="order-id-chip">#${o.id}</span>
         </div>
         <div class="order-info">
           <div class="order-top">
@@ -106,9 +258,10 @@ const Floor2View = {
             <span class="order-meta-item"><span class="order-meta-icon">🕐</span>${dt}</span>
           </div>
           ${o.ribbonText ? `<div class="order-ribbon">🎀 ${UI.escHtml(o.ribbonText)}</div>` : ''}
+          ${o.occasionText ? `<div class="order-occasion">📝 ${UI.escHtml(o.occasionText)}</div>` : ''}
           <div class="order-footer">
             ${driverTag}
-            ${photo}
+            ${photosSection}
             <span class="order-created">접수: ${created}</span>
           </div>
         </div>
@@ -116,16 +269,11 @@ const Floor2View = {
       </div>`;
   },
 
-  /* ── 신규 접수 ────────────────────────────────────────────── */
-  async showNewOrder() {
-    Floor2View._clearPoll();
-    UI.setContent('filter-area', `
-      <div class="filter-area-inner">
-        <span class="filter-label">신규 주문 접수</span>
-      </div>`);
-
+  /* ── 신규 접수 (모달) ─────────────────────────────────────── */
+  async openNewOrderModal() {
     let products = [];
-    try { products = await Api.getProducts(); } catch(e) { UI.toast('상품 목록 로드 실패', 'error'); }
+    try { products = await Api.getProducts(); }
+    catch(e) { UI.toast('상품 목록 로드 실패', 'error'); }
 
     const productOptions = products.map(p =>
       `<option value="${p.id}">${UI.escHtml(p.name)}</option>`).join('');
@@ -138,100 +286,110 @@ const Floor2View = {
       return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
     })();
 
-    UI.setMain(`
-      <div class="new-order-wrap">
-        <div class="new-order-title">신규 주문 접수</div>
-        <form id="new-order-form" novalidate>
-          <div class="form-row" style="margin-bottom:1rem">
-            <div class="form-group">
-              <label class="form-label">체인명 (꽃집 상호) <span class="form-required">*</span></label>
-              <input type="text" id="no-chain" class="form-control" placeholder="예: 행복꽃집" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label">상품 <span class="form-required">*</span></label>
-              <select id="no-product" class="form-control" required>
-                <option value="">선택하세요</option>
-                ${productOptions}
-              </select>
-            </div>
-          </div>
-          <div class="form-group" style="margin-bottom:1rem">
-            <label class="form-check">
-              <input type="checkbox" id="no-immediate">
-              <span class="form-check-label">즉시배송 (배송일시를 현재 + 3시간으로 자동 설정)</span>
-            </label>
-          </div>
-          <div class="form-group" id="no-dt-group" style="margin-bottom:1rem">
-            <label class="form-label">배송 예정 일시 <span class="form-required">*</span></label>
-            <input type="datetime-local" id="no-datetime" class="form-control" value="${defDt}" step="600">
-          </div>
-          <div class="form-group" style="margin-bottom:1rem">
-            <label class="form-label">배송지 주소 <span class="form-required">*</span></label>
-            <input type="text" id="no-address" class="form-control" placeholder="배송지 주소" required>
-          </div>
-          <div class="form-row" style="margin-bottom:1rem">
-            <div class="form-group">
-              <label class="form-label">받는 분 성함 <span class="form-required">*</span></label>
-              <input type="text" id="no-name" class="form-control" placeholder="받는 분 성함" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label">받는 분 연락처</label>
-              <input type="tel" id="no-phone" class="form-control" placeholder="010-0000-0000">
-            </div>
-          </div>
-          <div class="form-group" style="margin-bottom:1.5rem">
-            <label class="form-label">리본 문구</label>
-            <input type="text" id="no-ribbon" class="form-control" placeholder="예: 개업을 진심으로 축하합니다">
-          </div>
-          <div style="display:flex;gap:0.75rem;justify-content:flex-end">
-            <button type="button" class="btn btn-ghost" onclick="Router.navigate('my-orders')">취소</button>
-            <button type="submit" class="btn btn-primary btn-lg" id="btn-submit-order">접수하기</button>
-          </div>
-        </form>
-      </div>`);
+    const content = `
+      <div class="form-row" style="margin-bottom:0.75rem">
+        <div class="form-group">
+          <label class="form-label">체인명 (꽃집 상호) <span class="form-required">*</span></label>
+          <input type="text" id="no-chain" class="form-control" placeholder="예: 행복꽃집">
+        </div>
+        <div class="form-group">
+          <label class="form-label">상품 <span class="form-required">*</span></label>
+          <select id="no-product" class="form-control">
+            <option value="">선택하세요</option>
+            ${productOptions}
+          </select>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:0.75rem">
+        <label class="form-check">
+          <input type="checkbox" id="no-immediate">
+          <span class="form-check-label">즉시배송 (배송일시를 현재 + 3시간으로 자동 설정)</span>
+        </label>
+      </div>
+      <div class="form-group" id="no-dt-group" style="margin-bottom:0.75rem">
+        <label class="form-label">배송 예정 일시 <span class="form-required">*</span></label>
+        <input type="datetime-local" id="no-datetime" class="form-control" value="${defDt}" step="600">
+      </div>
+      <div class="form-group" style="margin-bottom:0.75rem">
+        <label class="form-label">배송지 주소 <span class="form-required">*</span></label>
+        <input type="text" id="no-address" class="form-control" placeholder="배송지 주소">
+      </div>
+      <div class="form-row" style="margin-bottom:0.75rem">
+        <div class="form-group">
+          <label class="form-label">받는 분 성함 <span class="form-required">*</span></label>
+          <input type="text" id="no-name" class="form-control" placeholder="받는 분 성함">
+        </div>
+        <div class="form-group">
+          <label class="form-label">받는 분 연락처</label>
+          <input type="tel" id="no-phone" class="form-control" placeholder="010-0000-0000">
+        </div>
+      </div>
+      <div class="form-row" style="margin-bottom:0.75rem">
+        <div class="form-group">
+          <label class="form-label">보내는분 문구 (리본)</label>
+          <input type="text" id="no-ribbon" class="form-control" placeholder="예: 개업을 진심으로 축하합니다">
+        </div>
+        <div class="form-group">
+          <label class="form-label">경조사어 문구</label>
+          <input type="text" id="no-occasion" class="form-control" placeholder="예: 삼가 고인의 명복을 빕니다">
+        </div>
+      </div>`;
 
-    document.getElementById('no-immediate').addEventListener('change', function() {
-      const group = document.getElementById('no-dt-group');
-      const dtInput = document.getElementById('no-datetime');
+    const overlay = UI.modal({
+      title: '신규 주문 접수',
+      content,
+      confirmText: '접수하기',
+      cancelText: '취소',
+      size: 'modal-lg',
+    });
+
+    /* Immediate checkbox toggle */
+    overlay.querySelector('#no-immediate').addEventListener('change', function() {
+      const group   = overlay.querySelector('#no-dt-group');
+      const dtInput = overlay.querySelector('#no-datetime');
       group.style.opacity = this.checked ? '0.4' : '1';
       dtInput.disabled = this.checked;
     });
 
-    document.getElementById('new-order-form').addEventListener('submit', async e => {
-      e.preventDefault();
-      const isImmediate = document.getElementById('no-immediate').checked;
+    const confirmBtn = overlay.querySelector('.modal-confirm');
+    confirmBtn.onclick = async () => {
+      const isImmediate = overlay.querySelector('#no-immediate').checked;
       let deliveryDatetime;
       if (isImmediate) {
         const d = new Date(); d.setHours(d.getHours() + 3);
         d.setMinutes(Math.round(d.getMinutes() / 10) * 10); d.setSeconds(0, 0);
         deliveryDatetime = d.toISOString();
       } else {
-        const raw = document.getElementById('no-datetime').value;
+        const raw = overlay.querySelector('#no-datetime').value;
         if (!raw) { UI.toast('배송 일시를 선택해 주세요.', 'warning'); return; }
         const d = new Date(raw);
         d.setMinutes(Math.round(d.getMinutes() / 10) * 10); d.setSeconds(0, 0);
         deliveryDatetime = d.toISOString();
       }
       const data = {
-        chainName:       document.getElementById('no-chain').value.trim(),
-        productId:       +document.getElementById('no-product').value,
+        chainName:       overlay.querySelector('#no-chain').value.trim(),
+        productId:       +overlay.querySelector('#no-product').value,
         deliveryDatetime, isImmediate,
-        deliveryAddress: document.getElementById('no-address').value.trim(),
-        recipientName:   document.getElementById('no-name').value.trim(),
-        recipientPhone:  document.getElementById('no-phone').value.trim(),
-        ribbonText:      document.getElementById('no-ribbon').value.trim(),
+        deliveryAddress: overlay.querySelector('#no-address').value.trim(),
+        recipientName:   overlay.querySelector('#no-name').value.trim(),
+        recipientPhone:  overlay.querySelector('#no-phone').value.trim(),
+        ribbonText:      overlay.querySelector('#no-ribbon').value.trim(),
+        occasionText:    overlay.querySelector('#no-occasion').value.trim(),
       };
-      const btn = document.getElementById('btn-submit-order');
-      btn.disabled = true; btn.textContent = '접수 중...';
+
+      confirmBtn.disabled = true; confirmBtn.textContent = '접수 중...';
       try {
         await Api.createOrder(data);
-        UI.toast('주문이 접수되었습니다!', 'success');
+        UI.toast('주문이 접수되었습니다! 🎉', 'success');
+        overlay.classList.remove('show');
+        setTimeout(() => overlay.remove(), 300);
+        /* Navigate to my-orders and reload */
         Router.navigate('my-orders');
       } catch(err) {
         UI.toast(err.message || '접수 실패', 'error');
-        btn.disabled = false; btn.textContent = '접수하기';
+        confirmBtn.disabled = false; confirmBtn.textContent = '접수하기';
       }
-    });
+    };
   },
 
   /* ── Polling ─────────────────────────────────────────────── */

@@ -1,5 +1,5 @@
 /* ============================================================
-   FLOOR1.JS — 1층 제작/배차: 전체 주문 · 상태변경 · 기사배정
+   FLOOR1.JS — 1층 제작/배차: 전체 주문 · 상태변경 · 기사배정 · 주문수정
    Bug-fixed: single event listener, single visibilitychange handler
    ============================================================ */
 
@@ -8,7 +8,7 @@ const Floor1View = {
   _pollTimer:   null,
   _pollFn:      null,
   _visHandler:  null,
-  _actionsBound: false,    /* prevent duplicate listeners */
+  _actionsBound: false,
 
   /* ── Init (called once) ──────────────────────────────────── */
   init(session) {
@@ -35,7 +35,7 @@ const Floor1View = {
 
   /* ── Filter state ────────────────────────────────────────── */
   _filterState: {
-    statusGroup: '',    /* '', '0', '1,2,3', '4' */
+    statusGroup: '',
     photoYes: true,
     photoNo: true,
     dateFrom: '',
@@ -49,7 +49,6 @@ const Floor1View = {
   showAllOrders() {
     Floor1View._clearPoll();
 
-    /* Build the new 3-row filter */
     const today = new Date();
     const y = today.getFullYear();
     const m = String(today.getMonth()+1).padStart(2,'0');
@@ -127,7 +126,6 @@ const Floor1View = {
       </div>`);
 
     Floor1View._bindFilterEvents();
-    /* initial load with "이번 달" already active */
     Floor1View._applyQuickDate('this-month');
     Floor1View._loadOrders();
     Floor1View._startPoll(() => Floor1View._loadOrders(), 30000);
@@ -135,7 +133,6 @@ const Floor1View = {
 
   /* ── Bind filter events ──────────────────────────────────── */
   _bindFilterEvents() {
-    /* Status tabs */
     document.getElementById('f1-status-tabs').addEventListener('click', e => {
       const btn = e.target.closest('.status-tab-btn');
       if (!btn) return;
@@ -146,7 +143,6 @@ const Floor1View = {
       Floor1View._loadOrders();
     });
 
-    /* Photo filter */
     document.getElementById('f1-photo-yes').addEventListener('change', e => {
       Floor1View._filterState.photoYes = e.target.checked;
       Floor1View._loadOrders();
@@ -156,7 +152,6 @@ const Floor1View = {
       Floor1View._loadOrders();
     });
 
-    /* Date range */
     document.getElementById('f1-date-from').addEventListener('change', e => {
       Floor1View._filterState.dateFrom = e.target.value;
       Floor1View._clearQuickActive();
@@ -168,7 +163,6 @@ const Floor1View = {
       Floor1View._loadOrders();
     });
 
-    /* Quick date buttons */
     document.querySelectorAll('.quick-date-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.quick-date-btn').forEach(b => b.classList.remove('active'));
@@ -178,7 +172,6 @@ const Floor1View = {
       });
     });
 
-    /* Text search — debounced */
     ['f1-search-profile','f1-search-recipient','f1-search-address'].forEach(id => {
       let t;
       document.getElementById(id).addEventListener('input', e => {
@@ -192,7 +185,6 @@ const Floor1View = {
       });
     });
 
-    /* Refresh */
     document.getElementById('f1-refresh').addEventListener('click', () => Floor1View._loadOrders());
   },
 
@@ -215,7 +207,7 @@ const Floor1View = {
       from = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-01`;
       to   = fmt(today);
     } else if (quick === 'last-month') {
-      const d = new Date(today.getFullYear(), today.getMonth()-1, 1);
+      const d    = new Date(today.getFullYear(), today.getMonth()-1, 1);
       const last = new Date(today.getFullYear(), today.getMonth(), 0);
       from = fmt(d); to = fmt(last);
     }
@@ -242,35 +234,27 @@ const Floor1View = {
   async _loadOrders() {
     UI.loading(true);
     try {
-      /* Fetch all (floor1/admin get all orders) */
       const all = Store.getOrders();
-
-      /* Client-side filtering */
       const fs = Floor1View._filterState;
       let orders = all;
 
-      /* Status group */
       if (fs.statusGroup !== '') {
         const allowed = fs.statusGroup.split(',').map(Number);
         orders = orders.filter(o => allowed.includes(o.status));
       }
 
-      /* Photo filter */
       if (fs.photoYes && !fs.photoNo)  orders = orders.filter(o => !!o.deliveryPhotoUrl);
       if (!fs.photoYes && fs.photoNo)  orders = orders.filter(o => !o.deliveryPhotoUrl);
       if (!fs.photoYes && !fs.photoNo) orders = [];
 
-      /* Date range */
       if (fs.dateFrom) orders = orders.filter(o => o.deliveryDatetime >= fs.dateFrom);
       if (fs.dateTo)   orders = orders.filter(o => o.deliveryDatetime <= fs.dateTo + 'T23:59:59');
 
-      /* Text search */
       const lc = s => (s || '').toLowerCase();
       if (fs.searchProfile)   orders = orders.filter(o => lc(o.chainName).includes(lc(fs.searchProfile)) || lc(o.ribbonText).includes(lc(fs.searchProfile)));
       if (fs.searchRecipient) orders = orders.filter(o => lc(o.recipientName).includes(lc(fs.searchRecipient)));
       if (fs.searchAddress)   orders = orders.filter(o => lc(o.deliveryAddress).includes(lc(fs.searchAddress)));
 
-      /* Sort by delivery datetime */
       orders.sort((a, b) => new Date(a.deliveryDatetime) - new Date(b.deliveryDatetime));
 
       Floor1View._renderOrders(orders);
@@ -293,20 +277,30 @@ const Floor1View = {
     Floor1View._updateBulkBar();
   },
 
-  /* ── Order card ──────────────────────────────────────────── */
+  /* ── Order card (redesigned) ─────────────────────────────── */
   _orderCard(o, showActions) {
-    const dt = UI.fmtDatetime(o.deliveryDatetime);
+    const dt      = UI.fmtDatetime(o.deliveryDatetime);
     const created = UI.fmtDatetime(o.createdAt);
     const immediate = o.isImmediate ? '<span class="order-immediate">즉시</span>' : '';
     const driverTag = o.assignedDriverName
       ? `<span class="order-driver-tag">🚚 ${UI.escHtml(o.assignedDriverName)}</span>` : '';
-    const photo = o.deliveryPhotoUrl
-      ? `<img src="${o.deliveryPhotoUrl}" class="order-photo-thumb" title="배송 사진 보기" onclick="window.open(this.src)">` : '';
 
+    /* Photos */
+    const storePhoto = o.storePhotoUrl
+      ? `<img src="${o.storePhotoUrl}" class="order-photo-store-thumb" title="매장사진 보기 (클릭)" onclick="window.open(this.src)">` : '';
+    const delivPhoto = o.deliveryPhotoUrl
+      ? `<img src="${o.deliveryPhotoUrl}" class="order-photo-thumb" title="현장사진 보기 (클릭)" onclick="window.open(this.src)">` : '';
+    const photosSection = (storePhoto || delivPhoto)
+      ? `<div class="order-photos">${storePhoto}${delivPhoto}</div>` : '';
+
+    /* Edit button — only for floor1 / admin */
+    const editBtn = showActions
+      ? `<button class="order-edit-btn f1-action" data-id="${o.id}" data-action="edit">✏️ 수정</button>` : '';
+
+    /* Action buttons by status */
     let actionBtns = '';
     if (showActions) {
       const s = o.status;
-      /* Show only contextually relevant buttons */
       if (s === 0) {
         actionBtns = `
           <button class="btn btn-secondary btn-sm f1-action" data-id="${o.id}" data-action="ribbon">리본출력완료</button>
@@ -326,7 +320,6 @@ const Floor1View = {
         actionBtns = `
           <button class="btn btn-danger btn-sm f1-action" data-id="${o.id}" data-action="return">반품</button>`;
       }
-      /* status 4,5,6 — no actions */
     }
 
     return `
@@ -335,21 +328,27 @@ const Floor1View = {
           <input type="checkbox" class="order-checkbox" data-id="${o.id}" title="선택">
         </div>
         <div class="order-info">
+          <!-- Top: id · chain · product · immediate · status · edit -->
           <div class="order-top">
+            <span class="order-id-chip">#${o.id}</span>
             <span class="order-chain">${UI.escHtml(o.chainName || '-')}</span>
             <span class="order-product">${UI.escHtml(o.productName)}</span>
             ${immediate}
             ${UI.statusBadge(o.status)}
+            ${editBtn}
           </div>
+          <!-- Meta fields -->
           <div class="order-meta">
             <span class="order-meta-item"><span class="order-meta-icon">📍</span>${UI.escHtml(o.deliveryAddress)}</span>
             <span class="order-meta-item"><span class="order-meta-icon">👤</span>${UI.escHtml(o.recipientName)}${o.recipientPhone ? ' / ' + UI.escHtml(o.recipientPhone) : ''}</span>
             <span class="order-meta-item"><span class="order-meta-icon">🕐</span>${dt}</span>
           </div>
           ${o.ribbonText ? `<div class="order-ribbon" data-ribbon="${UI.escHtml(o.ribbonText)}" title="클릭 시 클립보드 복사" style="cursor:pointer">🎀 ${UI.escHtml(o.ribbonText)}</div>` : ''}
+          ${o.occasionText ? `<div class="order-occasion">📝 ${UI.escHtml(o.occasionText)}</div>` : ''}
+          <!-- Footer: driver · created · photos -->
           <div class="order-footer">
             ${driverTag}
-            ${photo}
+            ${photosSection}
             <span class="order-created">접수: ${UI.escHtml(o.createdByName)} / ${created}</span>
           </div>
         </div>
@@ -359,14 +358,11 @@ const Floor1View = {
 
   /* ── Click handler (single, delegated) ───────────────────── */
   _handleClick: async function(e) {
-    /* Action buttons */
     const actionBtn = e.target.closest('.f1-action');
     if (actionBtn) {
       await Floor1View._handleAction(+actionBtn.dataset.id, actionBtn.dataset.action, actionBtn);
       return;
     }
-
-    /* Ribbon copy */
     const ribbon = e.target.closest('[data-ribbon]');
     if (ribbon) {
       try {
@@ -375,8 +371,6 @@ const Floor1View = {
       } catch { UI.toast('클립보드 복사 실패', 'error'); }
       return;
     }
-
-    /* Checkbox — update bulk bar */
     const checkbox = e.target.closest('.order-checkbox');
     if (checkbox) {
       Floor1View._updateBulkBar();
@@ -388,6 +382,10 @@ const Floor1View = {
   async _handleAction(id, action, btn) {
     if (action === 'assign') {
       await Floor1View._openAssignModal([id]);
+      return;
+    }
+    if (action === 'edit') {
+      await Floor1View._openEditModal(id);
       return;
     }
     const statusMap = { ribbon: 1, prod: 2, deliv: 3, cancel: 5, return: 6 };
@@ -404,6 +402,172 @@ const Floor1View = {
       UI.toast(e.message || '상태 변경 실패', 'error');
       btn.disabled = false;
     }
+  },
+
+  /* ── Order Edit Modal ────────────────────────────────────── */
+  async _openEditModal(orderId) {
+    const o = Store.getOrderById(orderId);
+    if (!o) { UI.toast('주문 정보를 찾을 수 없습니다.', 'error'); return; }
+
+    let products = [], drivers = [];
+    try { [products, drivers] = await Promise.all([Api.getProducts(), Api.getDrivers()]); }
+    catch(e) { UI.toast('데이터 로드 실패', 'error'); return; }
+
+    const productOpts = products.map(p =>
+      `<option value="${p.id}" ${p.id === o.productId ? 'selected' : ''}>${UI.escHtml(p.name)}</option>`
+    ).join('');
+    const driverOpts = `<option value="0" ${!o.assignedDriverId ? 'selected' : ''}>— 미배정 —</option>` +
+      drivers.map(d =>
+        `<option value="${d.id}" ${d.id === o.assignedDriverId ? 'selected' : ''}>${UI.escHtml(d.name)}</option>`
+      ).join('');
+
+    /* Convert ISO datetime to datetime-local value */
+    const toLocalDT = iso => {
+      if (!iso) return '';
+      const d = new Date(iso);
+      const p = n => String(n).padStart(2,'0');
+      return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+    };
+
+    let storeFile = null, delivFile = null;
+    let storeObjectUrl = o.storePhotoUrl || null;
+    let delivObjectUrl = o.deliveryPhotoUrl || null;
+
+    const content = `
+      <div class="form-row" style="margin-bottom:0.75rem">
+        <div class="form-group">
+          <label class="form-label">주문접수자</label>
+          <input type="text" class="form-control" value="${UI.escHtml(o.createdByName)}" readonly style="opacity:0.6">
+        </div>
+        <div class="form-group">
+          <label class="form-label">상품명 <span class="form-required">*</span></label>
+          <select id="eo-product" class="form-control">${productOpts}</select>
+        </div>
+      </div>
+      <div class="form-row" style="margin-bottom:0.75rem">
+        <div class="form-group">
+          <label class="form-label">체인명 (꽃집 상호) <span class="form-required">*</span></label>
+          <input type="text" id="eo-chain" class="form-control" value="${UI.escHtml(o.chainName || '')}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">배송 예정 일시 <span class="form-required">*</span></label>
+          <input type="datetime-local" id="eo-datetime" class="form-control" value="${toLocalDT(o.deliveryDatetime)}" step="600">
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:0.75rem">
+        <label class="form-label">배송지 주소 <span class="form-required">*</span></label>
+        <input type="text" id="eo-address" class="form-control" value="${UI.escHtml(o.deliveryAddress || '')}">
+      </div>
+      <div class="form-row" style="margin-bottom:0.75rem">
+        <div class="form-group">
+          <label class="form-label">받는 분 성함 <span class="form-required">*</span></label>
+          <input type="text" id="eo-name" class="form-control" value="${UI.escHtml(o.recipientName || '')}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">받는 분 연락처</label>
+          <input type="tel" id="eo-phone" class="form-control" value="${UI.escHtml(o.recipientPhone || '')}">
+        </div>
+      </div>
+      <div class="form-row" style="margin-bottom:0.75rem">
+        <div class="form-group">
+          <label class="form-label">보내는분 문구 (리본)</label>
+          <input type="text" id="eo-ribbon" class="form-control" value="${UI.escHtml(o.ribbonText || '')}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">경조사어 문구</label>
+          <input type="text" id="eo-occasion" class="form-control" value="${UI.escHtml(o.occasionText || '')}" placeholder="예: 삼가 고인의 명복을 빕니다">
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:0.75rem">
+        <label class="form-label">배송기사 배차</label>
+        <select id="eo-driver" class="form-control">${driverOpts}</select>
+      </div>
+      <div class="form-group" style="margin-bottom:0.5rem">
+        <label class="form-label">사진 첨부</label>
+        <div class="edit-photo-row">
+          <div class="edit-photo-box" id="eo-store-box">
+            <input type="file" id="eo-store-file" accept="image/jpeg,image/png">
+            ${storeObjectUrl ? `<img id="eo-store-preview" src="${storeObjectUrl}" alt="매장사진">` : `<img id="eo-store-preview" style="display:none">`}
+            <span class="edit-photo-label">${storeObjectUrl ? '🏪 매장사진 변경' : '🏪 매장사진 업로드'}</span>
+          </div>
+          <div class="edit-photo-box" id="eo-deliv-box">
+            <input type="file" id="eo-deliv-file" accept="image/jpeg,image/png">
+            ${delivObjectUrl ? `<img id="eo-deliv-preview" src="${delivObjectUrl}" alt="현장사진">` : `<img id="eo-deliv-preview" style="display:none">`}
+            <span class="edit-photo-label">${delivObjectUrl ? '📷 현장사진 변경' : '📷 현장사진 업로드'}</span>
+          </div>
+        </div>
+      </div>`;
+
+    const overlay = UI.modal({
+      title: `주문서 수정 — #${orderId}`,
+      content,
+      confirmText: '저장',
+      cancelText: '취소',
+      size: 'modal-lg',
+    });
+
+    /* Photo file handlers */
+    const handlePhotoFile = (file, previewId, labelId, which) => {
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) { UI.toast('5MB 이하 파일만 허용됩니다.', 'error'); return; }
+      if (!['image/jpeg','image/jpg','image/png'].includes(file.type)) { UI.toast('jpg, png 파일만 허용됩니다.', 'error'); return; }
+      const url = URL.createObjectURL(file);
+      const preview = overlay.querySelector(`#${previewId}`);
+      preview.src = url; preview.style.display = 'block';
+      if (which === 'store') { storeFile = file; storeObjectUrl = url; }
+      else                   { delivFile = file; delivObjectUrl = url; }
+    };
+
+    overlay.querySelector('#eo-store-file').addEventListener('change', e => handlePhotoFile(e.target.files[0], 'eo-store-preview', 'eo-store-box', 'store'));
+    overlay.querySelector('#eo-deliv-file').addEventListener('change', e => handlePhotoFile(e.target.files[0], 'eo-deliv-preview', 'eo-deliv-box', 'deliv'));
+
+    const confirmBtn = overlay.querySelector('.modal-confirm');
+    confirmBtn.onclick = async () => {
+      const chainName      = overlay.querySelector('#eo-chain').value.trim();
+      const productId      = +overlay.querySelector('#eo-product').value;
+      const rawDT          = overlay.querySelector('#eo-datetime').value;
+      const deliveryAddress= overlay.querySelector('#eo-address').value.trim();
+      const recipientName  = overlay.querySelector('#eo-name').value.trim();
+      const recipientPhone = overlay.querySelector('#eo-phone').value.trim();
+      const ribbonText     = overlay.querySelector('#eo-ribbon').value.trim();
+      const occasionText   = overlay.querySelector('#eo-occasion').value.trim();
+      const driverIdRaw    = overlay.querySelector('#eo-driver').value;
+
+      if (!chainName)       { UI.toast('체인명을 입력해 주세요.', 'warning'); return; }
+      if (!productId)       { UI.toast('상품을 선택해 주세요.', 'warning'); return; }
+      if (!rawDT)           { UI.toast('배송 일시를 선택해 주세요.', 'warning'); return; }
+      if (!deliveryAddress) { UI.toast('배송지를 입력해 주세요.', 'warning'); return; }
+      if (!recipientName)   { UI.toast('받는 분 성함을 입력해 주세요.', 'warning'); return; }
+
+      const d = new Date(rawDT);
+      d.setMinutes(Math.round(d.getMinutes()/10)*10); d.setSeconds(0,0);
+      const deliveryDatetime = d.toISOString();
+
+      confirmBtn.disabled = true; confirmBtn.textContent = '저장 중...';
+      try {
+        /* Upload photos if new files selected */
+        let newStoreUrl = o.storePhotoUrl;
+        let newDelivUrl = o.deliveryPhotoUrl;
+        if (storeFile) { const r = await Api.uploadStorePhoto(storeFile); newStoreUrl = r.url; }
+        if (delivFile) { const r = await Api.uploadDeliveryPhoto(delivFile); newDelivUrl = r.url; }
+
+        await Api.updateOrder(orderId, {
+          chainName, productId, deliveryDatetime,
+          deliveryAddress, recipientName, recipientPhone,
+          ribbonText, occasionText,
+          assignedDriverId: driverIdRaw,
+          storePhotoUrl:    newStoreUrl,
+          deliveryPhotoUrl: newDelivUrl,
+        });
+        UI.toast('주문서가 수정되었습니다.', 'success');
+        overlay.classList.remove('show');
+        setTimeout(() => overlay.remove(), 300);
+        Floor1View._loadOrders();
+      } catch(e) {
+        UI.toast(e.message || '수정 실패', 'error');
+        confirmBtn.disabled = false; confirmBtn.textContent = '저장';
+      }
+    };
   },
 
   /* ── Bulk bar ────────────────────────────────────────────── */
@@ -470,7 +634,7 @@ const Floor1View = {
     overlay.querySelector('.modal-footer').innerHTML =
       `<button class="btn btn-ghost modal-cancel">닫기</button>`;
     overlay.querySelector('.modal-cancel').onclick = () => {
-      overlay.classList.remove('show'); setTimeout(() => overlay.remove(), 250);
+      overlay.classList.remove('show'); setTimeout(() => overlay.remove(), 300);
     };
 
     overlay.querySelectorAll('[data-assign]').forEach(btn => {
@@ -482,8 +646,7 @@ const Floor1View = {
             await Api.assignDriver(id, driverId);
           }
           UI.toast(`${orderIds.length}건 기사 배정 완료!`, 'success');
-          overlay.classList.remove('show'); setTimeout(() => overlay.remove(), 250);
-          /* Clear checkboxes */
+          overlay.classList.remove('show'); setTimeout(() => overlay.remove(), 300);
           document.querySelectorAll('.order-checkbox:checked').forEach(cb => { cb.checked = false; });
           Floor1View._removeBulkBar();
           Floor1View._loadOrders();

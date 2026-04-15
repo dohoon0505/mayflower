@@ -1,5 +1,5 @@
 /* ============================================================
-   STORE.JS — localStorage CRUD + Seed Data
+   STORE.JS — localStorage CRUD + Seed Data  (v3)
    ============================================================ */
 
 const KEYS = {
@@ -8,8 +8,11 @@ const KEYS = {
   drivers:  'maydaegu.drivers',
   orders:   'maydaegu.orders',
   chat:     'maydaegu.chat',
-  seeded:   'maydaegu.seeded',
+  seeded:   'maydaegu.seeded.v3',   /* bump version to re-seed */
 };
+
+/* Predefined product categories */
+const CATEGORIES = ['화환', '꽃바구니', '화분', '생화', '조화', '기타'];
 
 function _get(key) {
   try { return JSON.parse(localStorage.getItem(key)) || []; } catch { return []; }
@@ -42,10 +45,11 @@ function _seed() {
   ]);
 
   _set(KEYS.products, [
-    { id: 1, name: '개업 화환', isActive: true, createdAt: '2025-01-01T00:00:00' },
-    { id: 2, name: '졸업 화환', isActive: true, createdAt: '2025-01-01T00:00:00' },
-    { id: 3, name: '축하 화환', isActive: true, createdAt: '2025-01-01T00:00:00' },
-    { id: 4, name: '근조 화환', isActive: true, createdAt: '2025-01-01T00:00:00' },
+    { id: 1, name: '개업 화환', category: '화환',   isActive: true, createdAt: '2025-01-01T00:00:00' },
+    { id: 2, name: '졸업 화환', category: '화환',   isActive: true, createdAt: '2025-01-01T00:00:00' },
+    { id: 3, name: '축하 화환', category: '화환',   isActive: true, createdAt: '2025-01-01T00:00:00' },
+    { id: 4, name: '근조 화환', category: '화환',   isActive: true, createdAt: '2025-01-01T00:00:00' },
+    { id: 5, name: '꽃바구니',  category: '꽃바구니', isActive: true, createdAt: '2025-01-01T00:00:00' },
   ]);
 
   _set(KEYS.drivers, [
@@ -55,16 +59,16 @@ function _seed() {
   ]);
 
   _set(KEYS.orders, [
-    { id:1,  chainName:'행복꽃집', productId:1, productName:'개업 화환', deliveryDatetime:_addHours(now,2),   isImmediate:false, deliveryAddress:'대구시 중구 동성로 123',    recipientName:'김철수', recipientPhone:'010-1234-5678', ribbonText:'개업을 축하합니다',       status:0, assignedDriverId:null, assignedDriverName:null, deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-1),  updatedAt:_addHours(now,-1) },
-    { id:2,  chainName:'봄꽃집',   productId:2, productName:'졸업 화환', deliveryDatetime:_addHours(now,3),   isImmediate:false, deliveryAddress:'대구시 수성구 범어동 456',   recipientName:'이영희', recipientPhone:'010-2345-6789', ribbonText:'졸업을 축하합니다',       status:0, assignedDriverId:null, assignedDriverName:null, deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-2),  updatedAt:_addHours(now,-2) },
-    { id:3,  chainName:'사랑꽃집', productId:3, productName:'축하 화환', deliveryDatetime:_addHours(now,4),   isImmediate:false, deliveryAddress:'대구시 달서구 상인동 789',   recipientName:'박민수', recipientPhone:'010-3456-7890', ribbonText:'취임을 축하드립니다',     status:1, assignedDriverId:null, assignedDriverName:null, deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-3),  updatedAt:_addHours(now,-1) },
-    { id:4,  chainName:'꽃향기',   productId:1, productName:'개업 화환', deliveryDatetime:_addHours(now,5),   isImmediate:false, deliveryAddress:'대구시 북구 칠성동 321',    recipientName:'최지원', recipientPhone:'010-4567-8901', ribbonText:'번창하세요',              status:2, assignedDriverId:null, assignedDriverName:null, deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-4),  updatedAt:_addHours(now,-2) },
-    { id:5,  chainName:'미소꽃집', productId:2, productName:'졸업 화환', deliveryDatetime:_addHours(now,1),   isImmediate:true,  deliveryAddress:'대구시 동구 신천동 654',    recipientName:'정승현', recipientPhone:'010-5678-9012', ribbonText:'수고하셨습니다',          status:3, assignedDriverId:1,    assignedDriverName:'이민준', deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-5),  updatedAt:_addHours(now,-1) },
-    { id:6,  chainName:'꽃나라',   productId:3, productName:'축하 화환', deliveryDatetime:_addHours(now,2),   isImmediate:false, deliveryAddress:'대구시 서구 내당동 987',    recipientName:'홍길동', recipientPhone:'010-6789-0123', ribbonText:'항상 응원합니다',         status:3, assignedDriverId:2,    assignedDriverName:'박서연', deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-6),  updatedAt:_addHours(now,-2) },
-    { id:7,  chainName:'새봄꽃집', productId:1, productName:'개업 화환', deliveryDatetime:_addHours(now,-2),  isImmediate:false, deliveryAddress:'대구시 남구 대명동 111',    recipientName:'김민정', recipientPhone:'010-7890-1234', ribbonText:'좋은 시작 되세요',        status:4, assignedDriverId:1,    assignedDriverName:'이민준', deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-8),  updatedAt:_addHours(now,-3) },
-    { id:8,  chainName:'꽃길',     productId:4, productName:'근조 화환', deliveryDatetime:_addHours(now,-4),  isImmediate:false, deliveryAddress:'대구시 중구 서문로 222',    recipientName:'이상호', recipientPhone:'010-8901-2345', ribbonText:'삼가 고인의 명복을 빕니다', status:4, assignedDriverId:2,    assignedDriverName:'박서연', deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-10), updatedAt:_addHours(now,-5) },
-    { id:9,  chainName:'꽃피다',   productId:2, productName:'졸업 화환', deliveryDatetime:_addHours(now,6),   isImmediate:false, deliveryAddress:'대구시 수성구 지산동 333',  recipientName:'박지연', recipientPhone:'010-9012-3456', ribbonText:'고생 많으셨습니다',       status:5, assignedDriverId:null, assignedDriverName:null, deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-12), updatedAt:_addHours(now,-6) },
-    { id:10, chainName:'꽃마을',   productId:3, productName:'축하 화환', deliveryDatetime:_addHours(now,-6),  isImmediate:false, deliveryAddress:'대구시 달서구 진천동 444',  recipientName:'최건우', recipientPhone:'010-0123-4567', ribbonText:'축하드립니다',            status:6, assignedDriverId:3,    assignedDriverName:'정지훈', deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-14), updatedAt:_addHours(now,-7) },
+    { id:1,  chainName:'행복꽃집', productId:1, productName:'개업 화환', deliveryDatetime:_addHours(now,2),   isImmediate:false, deliveryAddress:'대구시 중구 동성로 123',    recipientName:'김철수', recipientPhone:'010-1234-5678', ribbonText:'개업을 축하합니다',       occasionText:'', storePhotoUrl:null, status:0, assignedDriverId:null, assignedDriverName:null, deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-1),  updatedAt:_addHours(now,-1) },
+    { id:2,  chainName:'봄꽃집',   productId:2, productName:'졸업 화환', deliveryDatetime:_addHours(now,3),   isImmediate:false, deliveryAddress:'대구시 수성구 범어동 456',   recipientName:'이영희', recipientPhone:'010-2345-6789', ribbonText:'졸업을 축하합니다',       occasionText:'', storePhotoUrl:null, status:0, assignedDriverId:null, assignedDriverName:null, deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-2),  updatedAt:_addHours(now,-2) },
+    { id:3,  chainName:'사랑꽃집', productId:3, productName:'축하 화환', deliveryDatetime:_addHours(now,4),   isImmediate:false, deliveryAddress:'대구시 달서구 상인동 789',   recipientName:'박민수', recipientPhone:'010-3456-7890', ribbonText:'취임을 축하드립니다',     occasionText:'', storePhotoUrl:null, status:1, assignedDriverId:null, assignedDriverName:null, deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-3),  updatedAt:_addHours(now,-1) },
+    { id:4,  chainName:'꽃향기',   productId:1, productName:'개업 화환', deliveryDatetime:_addHours(now,5),   isImmediate:false, deliveryAddress:'대구시 북구 칠성동 321',    recipientName:'최지원', recipientPhone:'010-4567-8901', ribbonText:'번창하세요',              occasionText:'', storePhotoUrl:null, status:2, assignedDriverId:null, assignedDriverName:null, deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-4),  updatedAt:_addHours(now,-2) },
+    { id:5,  chainName:'미소꽃집', productId:2, productName:'졸업 화환', deliveryDatetime:_addHours(now,1),   isImmediate:true,  deliveryAddress:'대구시 동구 신천동 654',    recipientName:'정승현', recipientPhone:'010-5678-9012', ribbonText:'수고하셨습니다',          occasionText:'', storePhotoUrl:null, status:3, assignedDriverId:1,    assignedDriverName:'이민준', deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-5),  updatedAt:_addHours(now,-1) },
+    { id:6,  chainName:'꽃나라',   productId:3, productName:'축하 화환', deliveryDatetime:_addHours(now,2),   isImmediate:false, deliveryAddress:'대구시 서구 내당동 987',    recipientName:'홍길동', recipientPhone:'010-6789-0123', ribbonText:'항상 응원합니다',         occasionText:'', storePhotoUrl:null, status:3, assignedDriverId:2,    assignedDriverName:'박서연', deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-6),  updatedAt:_addHours(now,-2) },
+    { id:7,  chainName:'새봄꽃집', productId:1, productName:'개업 화환', deliveryDatetime:_addHours(now,-2),  isImmediate:false, deliveryAddress:'대구시 남구 대명동 111',    recipientName:'김민정', recipientPhone:'010-7890-1234', ribbonText:'좋은 시작 되세요',        occasionText:'', storePhotoUrl:null, status:4, assignedDriverId:1,    assignedDriverName:'이민준', deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-8),  updatedAt:_addHours(now,-3) },
+    { id:8,  chainName:'꽃길',     productId:4, productName:'근조 화환', deliveryDatetime:_addHours(now,-4),  isImmediate:false, deliveryAddress:'대구시 중구 서문로 222',    recipientName:'이상호', recipientPhone:'010-8901-2345', ribbonText:'삼가 고인의 명복을 빕니다', occasionText:'삼가 고인의 명복을 빕니다', storePhotoUrl:null, status:4, assignedDriverId:2, assignedDriverName:'박서연', deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-10), updatedAt:_addHours(now,-5) },
+    { id:9,  chainName:'꽃피다',   productId:2, productName:'졸업 화환', deliveryDatetime:_addHours(now,6),   isImmediate:false, deliveryAddress:'대구시 수성구 지산동 333',  recipientName:'박지연', recipientPhone:'010-9012-3456', ribbonText:'고생 많으셨습니다',       occasionText:'', storePhotoUrl:null, status:5, assignedDriverId:null, assignedDriverName:null, deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-12), updatedAt:_addHours(now,-6) },
+    { id:10, chainName:'꽃마을',   productId:3, productName:'축하 화환', deliveryDatetime:_addHours(now,-6),  isImmediate:false, deliveryAddress:'대구시 달서구 진천동 444',  recipientName:'최건우', recipientPhone:'010-0123-4567', ribbonText:'축하드립니다',            occasionText:'', storePhotoUrl:null, status:6, assignedDriverId:3,    assignedDriverName:'정지훈', deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-14), updatedAt:_addHours(now,-7) },
   ]);
 
   _set(KEYS.chat, []);
@@ -92,7 +96,13 @@ const Store = {
   getProductById: (id) => _get(KEYS.products).find(p => p.id === id),
   createProduct(data) {
     const list = _get(KEYS.products);
-    const item = { id: _nextId(list), name: data.name, isActive: true, createdAt: new Date().toISOString() };
+    const item = {
+      id: _nextId(list),
+      name: data.name,
+      category: data.category || '기타',
+      isActive: true,
+      createdAt: new Date().toISOString()
+    };
     _set(KEYS.products, [...list, item]);
     return item;
   },
@@ -163,8 +173,10 @@ const Store = {
       recipientName:    data.recipientName,
       recipientPhone:   data.recipientPhone || '',
       ribbonText:       data.ribbonText || '',
+      occasionText:     data.occasionText || '',
       status:           0,
       assignedDriverId: null, assignedDriverName: null,
+      storePhotoUrl:    null,
       deliveryPhotoUrl: null,
       createdByUserId:  session.userId,
       createdByName:    session.displayName,
@@ -173,6 +185,44 @@ const Store = {
     };
     _set(KEYS.orders, [...list, order]);
     return order;
+  },
+  updateOrder(id, data) {
+    const list = _get(KEYS.orders);
+    const idx = list.findIndex(o => o.id === id);
+    if (idx < 0) return false;
+    const cur = list[idx];
+    const updates = { updatedAt: new Date().toISOString() };
+
+    if (data.chainName        != null) updates.chainName        = data.chainName;
+    if (data.deliveryDatetime != null) updates.deliveryDatetime = data.deliveryDatetime;
+    if (data.deliveryAddress  != null) updates.deliveryAddress  = data.deliveryAddress;
+    if (data.recipientName    != null) updates.recipientName    = data.recipientName;
+    if (data.recipientPhone   != null) updates.recipientPhone   = data.recipientPhone;
+    if (data.ribbonText       != null) updates.ribbonText       = data.ribbonText;
+    if (data.occasionText     != null) updates.occasionText     = data.occasionText;
+    if (data.isImmediate      != null) updates.isImmediate      = data.isImmediate;
+    if (data.storePhotoUrl    !== undefined) updates.storePhotoUrl    = data.storePhotoUrl;
+    if (data.deliveryPhotoUrl !== undefined) updates.deliveryPhotoUrl = data.deliveryPhotoUrl;
+
+    if (data.productId != null) {
+      updates.productId = +data.productId;
+      const product = Store.getProductById(+data.productId);
+      updates.productName = product ? product.name : cur.productName;
+    }
+    if ('assignedDriverId' in data) {
+      if (!data.assignedDriverId || data.assignedDriverId === '0') {
+        updates.assignedDriverId = null;
+        updates.assignedDriverName = null;
+      } else {
+        updates.assignedDriverId = +data.assignedDriverId;
+        const driver = Store.getDriverById(+data.assignedDriverId);
+        updates.assignedDriverName = driver ? driver.name : cur.assignedDriverName;
+      }
+    }
+
+    list[idx] = { ...cur, ...updates };
+    _set(KEYS.orders, list);
+    return true;
   },
   updateOrderStatus(id, status) {
     const list = _get(KEYS.orders);
@@ -207,6 +257,19 @@ const Store = {
     list.push(msg);
     _set(KEYS.chat, list);
   },
+  checkChatMsg(msgId, user) {
+    const list = _get(KEYS.chat);
+    const idx = list.findIndex(m => m.id === msgId);
+    if (idx < 0) return false;
+    if (!list[idx].checkedBy) list[idx].checkedBy = [];
+    if (list[idx].checkedBy.find(c => c.userId === user.userId)) return false; /* already checked */
+    list[idx].checkedBy.push({ userId: user.userId, name: user.displayName, role: user.role, ts: new Date().toISOString() });
+    _set(KEYS.chat, list);
+    return true;
+  },
 };
+
+/* CATEGORIES exported for use in admin view */
+Store.CATEGORIES = CATEGORIES;
 
 _seed();

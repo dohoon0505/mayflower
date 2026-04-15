@@ -1,5 +1,6 @@
 /* ============================================================
    CHAT.JS — Right panel: dummy chat (localStorage-backed)
+   v2: check/acknowledge feature + role-aware sender display
    ============================================================ */
 
 const Chat = {
@@ -12,11 +13,29 @@ const Chat = {
     admin:   '🛠 관리자 공지: 이번 달 통계를 정기적으로 확인하세요.',
   },
 
+  ROLE_LABELS: { floor2: '2층 수주', floor1: '1층 제작', driver: '배송기사', admin: '관리자', system: '시스템' },
+
   SEED_MSGS: {
-    floor2:  ['안녕하세요! 오늘도 잘 부탁드립니다 😊', '주문 접수 완료됐습니다!', '1층에서 제작 시작했다고 합니다.'],
-    floor1:  ['오늘 배송 건수가 많네요. 기사 배정 서둘러 주세요.', '리본 출력기 정상 작동 중입니다.', '수고하세요!'],
-    driver:  ['오늘 날씨 좋으니 배송 파이팅입니다! 🌤', '배송지 주소 꼭 확인하세요.', '완료 처리 잘 부탁드립니다.'],
-    admin:   ['이번 달 배송 완료율이 높습니다 👍', '기사 추가가 필요하면 기사 관리 탭을 이용하세요.', '통계 데이터 업데이트됨.'],
+    floor2:  [
+      { name: '1층 담당자', role: 'floor1', text: '오늘 접수 건수 많습니다. 서둘러 주세요! 😊' },
+      { name: '관리자',     role: 'admin',  text: '주문 접수 완료됐습니다!' },
+      { name: '이민준',     role: 'driver', text: '배송 출발했습니다. 곧 도착 예정입니다.' },
+    ],
+    floor1:  [
+      { name: '2층 담당자', role: 'floor2', text: '신규 주문 방금 접수했습니다.' },
+      { name: '관리자',     role: 'admin',  text: '리본 출력기 정상 작동 중입니다.' },
+      { name: '이민준',     role: 'driver', text: '배송 완료했습니다! 수고하세요.' },
+    ],
+    driver:  [
+      { name: '1층 담당자', role: 'floor1', text: '오늘 날씨 좋으니 배송 파이팅입니다! 🌤' },
+      { name: '2층 담당자', role: 'floor2', text: '배송지 주소 꼭 확인해 주세요.' },
+      { name: '관리자',     role: 'admin',  text: '완료 처리 잘 부탁드립니다.' },
+    ],
+    admin:   [
+      { name: '2층 담당자', role: 'floor2', text: '이번 달 배송 완료율이 높습니다 👍' },
+      { name: '1층 담당자', role: 'floor1', text: '기사 추가가 필요합니다.' },
+      { name: '이민준',     role: 'driver', text: '통계 데이터 업데이트됨.' },
+    ],
   },
 
   init(session) {
@@ -26,6 +45,7 @@ const Chat = {
     Chat._renderNotice();
     Chat._renderMessages();
     Chat._bindInput();
+    Chat._bindChatActions();
   },
 
   _ensureSeed(role) {
@@ -33,13 +53,15 @@ const Chat = {
     if (existing.length) return;
     const seeds = Chat.SEED_MSGS[role] || [];
     const now = Date.now();
-    seeds.forEach((text, i) => {
+    seeds.forEach((s, i) => {
       Store.addChat({
-        id:     now - (seeds.length - i) * 60000,
-        sender: 'system',
-        name:   '시스템',
-        text,
-        ts:     new Date(now - (seeds.length - i) * 60000).toISOString(),
+        id:         now - (seeds.length - i) * 120000,
+        sender:     `seed_${i}`,
+        name:       s.name,
+        role:       s.role,
+        text:       s.text,
+        checkedBy:  [],
+        ts:         new Date(now - (seeds.length - i) * 120000).toISOString(),
       });
     });
   },
@@ -48,12 +70,15 @@ const Chat = {
     const s = Chat._session;
     const el = document.getElementById('chat-profile');
     if (!el) return;
+    const roleLabel = Chat.ROLE_LABELS[s.role] || s.role;
+    const roleCls   = `chat-role-${s.role}`;
+    const avatarCls = `chat-avatar-role-${s.role}`;
     el.innerHTML = `
       <div class="chat-profile-inner">
-        <div class="avatar">${UI.escHtml(UI.initials(s.displayName))}</div>
+        <div class="avatar ${avatarCls}" style="width:42px;height:42px;font-size:1.1rem">${UI.escHtml(UI.initials(s.displayName))}</div>
         <div class="chat-profile-info">
           <div class="chat-profile-name">${UI.escHtml(s.displayName)}</div>
-          <div class="chat-profile-role">${UI.roleBadge(s.role)}</div>
+          <div style="margin-top:2px"><span class="chat-sender-badge ${roleCls}">${roleLabel}</span></div>
         </div>
       </div>`;
   },
@@ -70,22 +95,59 @@ const Chat = {
     const el = document.getElementById('chat-messages');
     if (!el) return;
     const msgs = Store.getChat();
-    if (!msgs.length) { el.innerHTML = '<div class="empty-state"><div class="empty-text">메시지가 없습니다.</div></div>'; return; }
+    if (!msgs.length) {
+      el.innerHTML = '<div class="empty-state"><div class="empty-text">메시지가 없습니다.</div></div>';
+      return;
+    }
     el.innerHTML = msgs.map(m => Chat._msgHtml(m)).join('');
     el.scrollTop = el.scrollHeight;
   },
 
   _msgHtml(m) {
-    const isMe = m.sender === Chat._session?.userId || m.sender === 'me';
+    const session = Chat._session;
+    const isMe = m.sender === session?.userId || m.sender === 'me';
     const cls = isMe ? 'me' : 'other';
     const d = new Date(m.ts);
     const time = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-    const senderLine = !isMe ? `<span class="chat-msg-sender">${UI.escHtml(m.name || '시스템')}</span>` : '';
+
+    const roleLabel = Chat.ROLE_LABELS[m.role] || m.role || '';
+    const roleCls   = `chat-role-${m.role || 'system'}`;
+    const avatarCls = `chat-avatar-role-${m.role || 'system'}`;
+
+    /* Checked-by chips */
+    const checkedBy = m.checkedBy || [];
+    const checkChips = checkedBy.map(c =>
+      `<span class="check-chip">✓ ${UI.escHtml(c.name)}</span>`
+    ).join('');
+    const alreadyChecked = checkedBy.some(c => c.userId === session?.userId);
+    const checkBtn = !isMe
+      ? `<button class="chat-check-btn${alreadyChecked ? ' checked' : ''}" data-mid="${m.id}">${alreadyChecked ? '✓ 확인함' : '✓ 확인'}</button>`
+      : '';
+
+    if (isMe) {
+      return `
+        <div class="chat-msg ${cls}">
+          <div class="chat-bubble">${UI.escHtml(m.text)}</div>
+          <div class="chat-msg-footer">
+            <span class="chat-msg-time">${time}</span>
+            ${checkChips ? `<div class="chat-checked-by">${checkChips}</div>` : ''}
+          </div>
+        </div>`;
+    }
+
     return `
       <div class="chat-msg ${cls}">
-        ${senderLine}
+        <div class="chat-msg-header">
+          <div class="chat-avatar-sm ${avatarCls}">${UI.escHtml(UI.initials(m.name || '?'))}</div>
+          <span class="chat-sender-name">${UI.escHtml(m.name || '시스템')}</span>
+          ${roleLabel ? `<span class="chat-sender-badge ${roleCls}">${roleLabel}</span>` : ''}
+        </div>
         <div class="chat-bubble">${UI.escHtml(m.text)}</div>
-        <span class="chat-msg-time">${time}</span>
+        <div class="chat-msg-footer">
+          <span class="chat-msg-time">${time}</span>
+          ${checkBtn}
+          ${checkChips ? `<div class="chat-checked-by">${checkChips}</div>` : ''}
+        </div>
       </div>`;
   },
 
@@ -97,12 +159,15 @@ const Chat = {
     const send = () => {
       const text = input.value.trim();
       if (!text) return;
+      const s = Chat._session;
       const msg = {
-        id:     Date.now(),
-        sender: 'me',
-        name:   Chat._session?.displayName || '나',
+        id:        Date.now(),
+        sender:    s?.userId || 'me',
+        name:      s?.displayName || '나',
+        role:      s?.role || '',
         text,
-        ts:     new Date().toISOString(),
+        checkedBy: [],
+        ts:        new Date().toISOString(),
       };
       Store.addChat(msg);
       input.value = '';
@@ -111,5 +176,20 @@ const Chat = {
 
     btn.addEventListener('click', send);
     input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
+  },
+
+  _bindChatActions() {
+    const el = document.getElementById('chat-messages');
+    if (!el) return;
+    el.addEventListener('click', e => {
+      const btn = e.target.closest('.chat-check-btn');
+      if (!btn) return;
+      const msgId = +btn.dataset.mid;
+      const s = Chat._session;
+      if (!s) return;
+      const checked = Store.checkChatMsg(msgId, s);
+      if (!checked) { UI.toast('이미 확인한 메시지입니다.', 'info', 1500); return; }
+      Chat._renderMessages();
+    });
   },
 };

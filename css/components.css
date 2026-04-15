@@ -438,6 +438,120 @@ tr:hover td { background: var(--bg-elevated); }
 .filter-input::placeholder { color: var(--text-muted); }
 .filter-area-inner { display: flex; flex-wrap: wrap; gap: 0.625rem; align-items: center; padding: 0.75rem 1.25rem; }
 
+/* ── Chat message redesign ───────────────────────────────── */
+.chat-msg-header {
+  display: flex; align-items: center; gap: 0.45rem;
+  margin-bottom: 3px;
+}
+.chat-avatar-sm {
+  width: 26px; height: 26px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.72rem; font-weight: 800; flex-shrink: 0;
+}
+.chat-avatar-role-floor2 { background: #d1fae5; color: #059669; }
+.chat-avatar-role-floor1 { background: #fef3c7; color: #d97706; }
+.chat-avatar-role-driver { background: #dbeafe; color: #2563eb; }
+.chat-avatar-role-admin  { background: #ede9fe; color: #7c3aed; }
+.chat-avatar-role-system { background: #f1f5f9; color: #64748b; }
+.chat-avatar-role-me     { background: #eff6ff; color: var(--primary); }
+
+.chat-sender-name {
+  font-weight: 700; font-size: 0.875rem; color: var(--text-primary); line-height: 1;
+}
+.chat-sender-badge {
+  display: inline-flex; align-items: center;
+  padding: 0.1rem 0.4rem; border-radius: 99px;
+  font-size: 0.68rem; font-weight: 600; white-space: nowrap;
+}
+.chat-role-floor2 { background: #d1fae5; color: #059669; }
+.chat-role-floor1 { background: #fef3c7; color: #d97706; }
+.chat-role-driver { background: #dbeafe; color: #2563eb; }
+.chat-role-admin  { background: #ede9fe; color: #7c3aed; }
+.chat-role-system { background: #f1f5f9; color: #64748b; }
+
+.chat-msg-footer {
+  display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;
+  margin-top: 3px;
+}
+.chat-msg.me .chat-msg-footer { justify-content: flex-end; }
+
+.chat-check-btn {
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 99px;
+  background: transparent;
+  font-size: 0.7rem; font-weight: 600; color: var(--text-muted);
+  cursor: pointer; transition: all 0.15s; white-space: nowrap;
+}
+.chat-check-btn:hover { border-color: var(--success); color: var(--success); background: #f0fdf4; }
+.chat-check-btn.checked { border-color: var(--success); color: var(--success); background: #f0fdf4; }
+
+.chat-checked-by {
+  display: flex; flex-wrap: wrap; gap: 2px; align-items: center;
+}
+.check-chip {
+  display: inline-flex; align-items: center; gap: 2px;
+  background: #f0fdf4; border: 1px solid #bbf7d0;
+  color: #059669; border-radius: 99px;
+  padding: 0.08rem 0.4rem; font-size: 0.68rem; font-weight: 600;
+}
+
+/* Make chat bubble slightly larger in the redesign */
+.chat-bubble { max-width: 85%; }
+
+/* ── Order card additions ─────────────────────────────────── */
+.order-id-chip {
+  font-size: 0.72rem; font-weight: 700; color: var(--text-muted);
+  background: var(--bg-elevated); border: 1px solid var(--border);
+  border-radius: 99px; padding: 0.1rem 0.45rem; flex-shrink: 0;
+}
+.order-occasion {
+  font-size: 0.825rem; color: var(--text-secondary);
+  border-left: 2px solid #fde68a; padding-left: 0.5rem; font-style: italic;
+}
+.order-photos {
+  display: flex; gap: 0.35rem; align-items: center; flex-shrink: 0;
+}
+.order-photo-thumb {
+  width: 44px; height: 44px; object-fit: cover;
+  border-radius: var(--radius-sm); cursor: pointer; border: 1px solid var(--border);
+  transition: opacity var(--tr);
+}
+.order-photo-thumb:hover { opacity: 0.8; }
+.order-photo-store-thumb {
+  width: 44px; height: 44px; object-fit: cover;
+  border-radius: var(--radius-sm); cursor: pointer;
+  border: 2px solid #bfdbfe; /* blue border = store photo */
+  transition: opacity var(--tr);
+}
+.order-photo-store-thumb:hover { opacity: 0.8; }
+.order-edit-btn {
+  margin-left: auto; padding: 0.15rem 0.6rem;
+  font-size: 0.75rem; font-weight: 600;
+  color: var(--text-muted); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); background: transparent; cursor: pointer;
+  transition: all 0.15s; flex-shrink: 0;
+}
+.order-edit-btn:hover { border-color: var(--primary); color: var(--primary); background: #eff6ff; }
+
+/* Edit modal photo section */
+.edit-photo-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;
+}
+.edit-photo-box {
+  border: 1.5px dashed var(--border-strong); border-radius: var(--radius-sm);
+  padding: 0.75rem; display: flex; flex-direction: column; gap: 0.4rem; align-items: center; cursor: pointer;
+  transition: border-color var(--tr);
+  position: relative; overflow: hidden;
+}
+.edit-photo-box:hover { border-color: var(--primary); }
+.edit-photo-box input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.edit-photo-box img { width: 100%; height: 80px; object-fit: cover; border-radius: var(--radius-sm); }
+.edit-photo-label { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); }
+
+/* ── Modal large form ─────────────────────────────────────── */
+.modal-xl { max-width: 720px; }
+
 /* Animations */
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }

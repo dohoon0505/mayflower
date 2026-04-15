@@ -59,6 +59,23 @@ const Api = {
     return true;
   },
 
+  async updateOrder(id, data) {
+    await _delay();
+    const s = Auth.getSession();
+    if (!s) throw { status: 401, message: '인증이 필요합니다.' };
+    if (!Auth.can('updateStatus', s.role)) throw { status: 403, message: '권한이 없습니다.' };
+    if (!Store.updateOrder(id, data)) throw { status: 404, message: '주문을 찾을 수 없습니다.' };
+    return true;
+  },
+
+  async uploadStorePhoto(file) {
+    await _delay(200, 600);
+    if (file.size > 5 * 1024 * 1024) throw { status: 400, message: '파일 크기는 5MB 이하여야 합니다.' };
+    const allowed = ['image/jpeg', 'image/jpg', 'image/png'];
+    if (!allowed.includes(file.type)) throw { status: 400, message: 'jpg, png 파일만 허용됩니다.' };
+    return { url: URL.createObjectURL(file) };
+  },
+
   /* ── Products ───────────────────────────────────────────── */
   async getProducts(includeInactive = false) {
     await _delay();
