@@ -251,30 +251,15 @@
             ? UI.escHtml((lastDone.deliveryAddress || '').substring(0, 26))
             : '없음';
 
-          /* Timeline — completed orders sorted ascending */
-          const timelineItems = completed
-            .filter(o => o.updatedAt)
-            .sort((a, b) => new Date(a.updatedAt) - new Date(b.updatedAt))
-            .map(o => `
-              <div class="dp-tl-item">
-                <span class="dp-tl-time">${UI.fmtDatetime(o.updatedAt)}</span>
-                <span class="dp-tl-addr">${UI.escHtml((o.deliveryAddress || '').substring(0, 24))}</span>
-                <span class="dp-tl-done">배송완료</span>
-              </div>`).join('');
-
-          const timelineHtml = `
-            <div class="dp-timeline" id="dp-tl-${d.id}" style="display:none">
-              ${timelineItems || '<span class="dp-tl-empty">완료 이력 없음</span>'}
-            </div>`;
-
           return `
             <div class="dp-driver-card ${delivering.length ? 'dp-card-active' : ''}">
-              <div class="dp-card-top">
-                <button class="dp-driver-name-btn" onclick="DeliveryPanel.toggleTimeline('${d.id}')" title="타임라인 보기/숨기기">
+              <div class="dp-card-name-row">
+                <button class="dp-driver-name-btn" onclick="DeliveryPanel.openTimeline('${d.id}')" title="배송 타임라인 보기">
                   ${UI.escHtml(d.name)}
                 </button>
-                <span class="dp-driver-meta">${UI.escHtml(d.phone || '')} | 여분: ${remaining.length}개</span>
+                ${remaining.length > 0 ? `<span class="dp-badge dp-badge-remain">여분 ${remaining.length}개</span>` : ''}
               </div>
+              <span class="dp-driver-meta">${UI.escHtml(d.phone || '')}</span>
               <div class="dp-card-row2">
                 <span class="dp-row2-item dp-row2-delivering">배송중 ${delivering.length}개</span>
                 <span class="dp-row2-sep">|</span>
@@ -285,21 +270,41 @@
                 <div class="dp-progress-bar" style="width:${pct}%"></div>
               </div>
               <div class="dp-progress-label">${completed.length} / ${total}건 완료</div>
-              ${timelineHtml}
             </div>`;
         }).join('');
 
         el.innerHTML = cards;
       },
 
-      toggleTimeline(driverId) {
-        const el = document.getElementById(`dp-tl-${driverId}`);
-        if (!el) return;
-        const open = el.style.display === 'none';
-        el.style.display = open ? 'flex' : 'none';
-        /* update button label */
-        const btn = el.closest('.dp-driver-card')?.querySelector('.dp-driver-name-btn');
-        if (btn) btn.style.textDecorationStyle = open ? 'solid' : 'dotted';
+      openTimeline(driverId) {
+        const drivers   = Store.getDrivers();
+        const allOrders = Store.getOrders();
+        const d = drivers.find(x => String(x.id) === String(driverId));
+        if (!d) return;
+
+        const completed = allOrders
+          .filter(o => o.assignedDriverId === d.id && o.status === 4 && o.updatedAt)
+          .sort((a, b) => new Date(a.updatedAt) - new Date(b.updatedAt));
+
+        const rows = completed.length
+          ? completed.map(o => `
+              <div class="dp-tl-item">
+                <span class="dp-tl-time">${UI.fmtDatetime(o.updatedAt)}</span>
+                <span class="dp-tl-addr">${UI.escHtml(o.deliveryAddress || '')}</span>
+                <span class="dp-tl-done">배송완료</span>
+              </div>`).join('')
+          : '<p class="dp-tl-empty">완료된 배송 이력이 없습니다.</p>';
+
+        const content = `<div class="dp-tl-modal-body" style="pointer-events:none;user-select:text">${rows}</div>`;
+
+        const overlay = UI.modal({
+          title: `🚚 ${UI.escHtml(d.name)} — 배송 타임라인`,
+          content,
+          confirmText: '닫기',
+          cancelText: '',
+          size: 'modal-timeline',
+        });
+        overlay.querySelector('.modal-cancel').style.display = 'none';
       },
     };
 

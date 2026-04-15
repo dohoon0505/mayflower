@@ -597,7 +597,28 @@ tr:hover td { background: var(--bg-elevated); }
 .edit-photo-label { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); }
 
 /* ── Modal large form ─────────────────────────────────────── */
-.modal-xl { max-width: 720px; }
+.modal-xl       { max-width: 720px; }
+.modal-timeline { max-width: 560px; }
+
+/* Timeline modal body */
+.dp-tl-modal-body {
+  display: flex; flex-direction: column; gap: 0.4rem;
+  max-height: 60vh; overflow-y: auto;
+}
+.dp-tl-modal-body .dp-tl-item {
+  display: grid;
+  grid-template-columns: 150px 1fr auto;
+  gap: 0.6rem; align-items: baseline;
+  padding: 0.45rem 0.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+.dp-tl-modal-body .dp-tl-time { color: var(--text-muted); white-space: nowrap; }
+.dp-tl-modal-body .dp-tl-addr { color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dp-tl-modal-body .dp-tl-done { color: #15803d; font-weight: 700; white-space: nowrap; }
+.dp-tl-modal-body .dp-tl-empty { color: var(--text-muted); font-style: italic; text-align: center; padding: 1.5rem 0; }
 
 /* Photo drop zone — portrait 4:5 */
 .photo-drop-zone-portrait {

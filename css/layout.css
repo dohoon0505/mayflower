@@ -248,11 +248,10 @@
 }
 .dp-driver-card.dp-card-active { border-color: var(--primary-light); background: #f0f7ff; }
 
-/* Row 1: Name (clickable) + phone | 여분 */
-.dp-card-top {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
+/* Row 1: Name (clickable) + 여분 badge */
+.dp-card-name-row {
+  display: flex; align-items: center;
+  justify-content: space-between; gap: 0.4rem;
 }
 .dp-driver-name-btn {
   background: none; border: none; padding: 0; margin: 0;
@@ -261,9 +260,15 @@
   text-decoration: underline dotted;
 }
 .dp-driver-name-btn:hover { color: var(--primary-hover); }
-.dp-driver-meta {
-  font-size: 0.78rem; color: var(--text-muted);
+.dp-driver-meta { font-size: 0.78rem; color: var(--text-muted); }
+
+/* 여분 badge */
+.dp-badge {
+  font-size: 0.74rem; font-weight: 700;
+  padding: 0.18rem 0.55rem; border-radius: 999px;
+  white-space: nowrap; flex-shrink: 0;
 }
+.dp-badge-remain { background: #fef3c7; color: #92400e; }
 
 /* Row 2: 배송중 n개 | 배송완료 n개 */
 .dp-card-row2 {
