@@ -52,9 +52,10 @@ const Floor1View = {
           <span class="filter-label">주문현황</span>
           <div class="status-tab-group" id="f1-status-tabs">
             <button class="status-tab-btn active" data-sg="">전체</button>
-            <button class="status-tab-btn" data-sg="0">접수대기</button>
-            <button class="status-tab-btn" data-sg="1,2,3">주문접수</button>
+            <button class="status-tab-btn" data-sg="0,1,2">주문접수</button>
+            <button class="status-tab-btn" data-sg="3">배송중</button>
             <button class="status-tab-btn" data-sg="4">배송완료</button>
+            <button class="status-tab-btn" data-sg="5,6">주문취소</button>
           </div>
           <div class="filter-divider"></div>
           <span class="filter-label">사진 필터</span>
@@ -67,9 +68,9 @@ const Floor1View = {
             </label>
           </div>
           <div class="status-flow">
-            <span class="flow-step" id="flow-waiting">접수대기</span>
+            <span class="flow-step" id="flow-waiting">주문접수</span>
             <span class="flow-arrow">→</span>
-            <span class="flow-step" id="flow-processing">주문접수</span>
+            <span class="flow-step" id="flow-processing">배송중</span>
             <span class="flow-arrow">→</span>
             <span class="flow-step" id="flow-complete">배송완료</span>
           </div>
@@ -90,6 +91,7 @@ const Floor1View = {
             <button class="quick-date-btn" data-quick="tomorrow">내일</button>
             <button class="quick-date-btn active" data-quick="this-month">이번 달</button>
             <button class="quick-date-btn" data-quick="last-month">지난 달</button>
+            <button class="quick-date-btn" data-quick="future">예약건</button>
           </div>
           <button class="btn btn-secondary btn-sm" id="f1-refresh" style="margin-left:auto">↻ 새로고침</button>
         </div>
@@ -198,6 +200,10 @@ const Floor1View = {
       const d    = new Date(today.getFullYear(), today.getMonth()-1, 1);
       const last = new Date(today.getFullYear(), today.getMonth(), 0);
       from = fmt(d); to = fmt(last);
+    } else if (quick === 'future') {
+      const d = new Date(today); d.setDate(d.getDate()+1);
+      const far = new Date(today); far.setFullYear(far.getFullYear()+1);
+      from = fmt(d); to = fmt(far);
     }
     if (from) { Floor1View._filterState.dateFrom = from; const el = document.getElementById('f1-date-from'); if (el) el.value = from; }
     if (to)   { Floor1View._filterState.dateTo   = to;   const el = document.getElementById('f1-date-to');   if (el) el.value = to; }
@@ -213,8 +219,8 @@ const Floor1View = {
     const c = document.getElementById('flow-complete');
     if (!w) return;
     w.className = 'flow-step'; p.className = 'flow-step'; c.className = 'flow-step';
-    if (sg === '0')     { w.className = 'flow-step flow-active'; }
-    if (sg === '1,2,3') { p.className = 'flow-step flow-active'; }
+    if (sg === '0,1,2') { w.className = 'flow-step flow-active'; }
+    if (sg === '3')     { p.className = 'flow-step flow-active'; }
     if (sg === '4')     { c.className = 'flow-step flow-complete'; }
   },
 
