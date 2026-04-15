@@ -1,0 +1,210 @@
+/* ============================================================
+   백업: chat-panel 관련 CSS (layout.css + components.css 에서 추출)
+   백업 시점: Firebase 연동 직전
+   ============================================================ */
+
+/* ══════ layout.css Line 157~168 — mobile header chat toggle ══════ */
+.hamburger-btn, .chat-toggle-btn {
+  background: none; border: none;
+  color: var(--text-secondary); font-size: 1.2rem;
+  padding: 0.4rem; border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+}
+.hamburger-btn:hover, .chat-toggle-btn:hover { background: var(--bg-elevated); color: var(--text-primary); }
+
+/* ══════ layout.css Line 340~469 — chat panel main ══════ */
+/* ── Chat Panel ──────────────────────────────────────────── */
+.chat-panel {
+  background: var(--bg-surface);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Chat panel header — mirrors dp-header */
+.chat-header {
+  height: var(--header-h);
+  padding: 0 1rem;
+  display: flex; align-items: center;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.875rem; font-weight: 700;
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+  flex-shrink: 0;
+  letter-spacing: 0.01em;
+}
+
+/* Sidebar profile card */
+.sidebar-profile {
+  margin: 0.5rem 0.75rem;
+  margin-bottom: 0.25rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+  flex-shrink: 0;
+}
+.chat-profile-inner { display: flex; align-items: center; gap: 0.625rem; width: 100%; min-width: 0; }
+.shell.sidebar-collapsed .sidebar-profile { display: none; }
+.avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: #eff6ff;
+  border: 2px solid var(--primary-light);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 0.85rem; color: var(--primary);
+  flex-shrink: 0;
+}
+.chat-profile-info { flex: 1; min-width: 0; }
+.chat-profile-name { font-weight: 600; font-size: 0.875rem; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.chat-notice {
+  background: #eff6ff;
+  border-left: 3px solid var(--primary);
+  padding: 0.5rem 1rem;
+  font-size: 0.825rem;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background: var(--bg-base);
+}
+
+.chat-msg { display: flex; flex-direction: column; gap: 2px; }
+.chat-msg.me { align-items: flex-end; }
+.chat-msg.other { align-items: flex-start; }
+.chat-msg-sender { font-size: 0.72rem; color: var(--text-muted); padding: 0 0.25rem; }
+.chat-bubble {
+  max-width: 85%; padding: 0.5rem 0.75rem;
+  border-radius: var(--radius); font-size: 1rem; line-height: 1.5; word-break: break-word;
+}
+.chat-msg.me    .chat-bubble { background: var(--primary); color: #fff; border-bottom-right-radius: 3px; }
+.chat-msg.other .chat-bubble { background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border); border-bottom-left-radius: 3px; }
+.chat-msg-time { font-size: 0.78rem; color: var(--text-muted); padding: 0 0.25rem; }
+
+/* ── Driver Status Section (사용 안 함, 유지) ─────────────── */
+.chat-driver-status {
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: #f8fafc;
+  flex-shrink: 0;
+  max-height: 170px;
+  overflow-y: auto;
+}
+.driver-status-header {
+  font-size: 0.72rem; font-weight: 700; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.06em;
+  padding: 0.45rem 0.875rem 0.25rem;
+}
+.driver-status-item {
+  display: flex; align-items: center; gap: 0.375rem;
+  padding: 0.3rem 0.875rem; border-bottom: 1px solid var(--border);
+  font-size: 0.82rem; line-height: 1.3;
+}
+.driver-status-item:last-child { border-bottom: none; }
+.ds-name  { font-weight: 700; color: var(--text-primary); min-width: 3.5rem; flex-shrink: 0; }
+.ds-time  { font-size: 0.74rem; color: var(--primary); min-width: 3.5rem; flex-shrink: 0; }
+.ds-addr  { flex: 1; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ds-done  { font-size: 0.72rem; font-weight: 700; color: var(--success); flex-shrink: 0; background: #d1fae5; border-radius: 3px; padding: 1px 4px; }
+.driver-status-empty { padding: 0.5rem 0.875rem; font-size: 0.8rem; color: var(--text-muted); }
+
+.chat-input-area {
+  display: flex; gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--bg-surface);
+}
+.chat-input {
+  flex: 1;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color var(--tr);
+}
+.chat-input:focus { border-color: var(--primary); background: var(--bg-surface); }
+.chat-input::placeholder { color: var(--text-muted); }
+
+/* 반응형 — chat-panel 모바일/태블릿 슬라이드 */
+@media (max-width: 1199px) {
+  .chat-panel {
+    position: fixed; top: 0; right: 0; bottom: 0;
+    width: 500px; max-width: 90vw;
+    transform: translateX(100%);
+    z-index: 300;
+  }
+  .chat-panel.open { transform: translateX(0); }
+}
+
+/* ══════ components.css Line 516~575 — chat message redesign ══════ */
+/* ── Chat message redesign ───────────────────────────────── */
+.chat-msg-header {
+  display: flex; align-items: center; gap: 0.45rem;
+  margin-bottom: 3px;
+}
+.chat-avatar-sm {
+  width: 26px; height: 26px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.72rem; font-weight: 800; flex-shrink: 0;
+}
+.chat-avatar-role-floor2 { background: #d1fae5; color: #059669; }
+.chat-avatar-role-floor1 { background: #fef3c7; color: #d97706; }
+.chat-avatar-role-driver { background: #dbeafe; color: #2563eb; }
+.chat-avatar-role-admin  { background: #ede9fe; color: #7c3aed; }
+.chat-avatar-role-system { background: #f1f5f9; color: #64748b; }
+.chat-avatar-role-me     { background: #eff6ff; color: var(--primary); }
+
+.chat-sender-name {
+  font-weight: 700; font-size: 1rem; color: var(--text-primary); line-height: 1;
+}
+.chat-sender-badge {
+  display: inline-flex; align-items: center;
+  padding: 0.1rem 0.4rem; border-radius: 99px;
+  font-size: 0.68rem; font-weight: 600; white-space: nowrap;
+}
+.chat-role-floor2 { background: #d1fae5; color: #059669; }
+.chat-role-floor1 { background: #fef3c7; color: #d97706; }
+.chat-role-driver { background: #dbeafe; color: #2563eb; }
+.chat-role-admin  { background: #ede9fe; color: #7c3aed; }
+.chat-role-system { background: #f1f5f9; color: #64748b; }
+
+.chat-msg-footer {
+  display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;
+  margin-top: 3px;
+}
+.chat-msg.me .chat-msg-footer { justify-content: flex-end; }
+
+.chat-check-btn {
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 99px;
+  background: transparent;
+  font-size: 0.7rem; font-weight: 600; color: var(--text-muted);
+  cursor: pointer; transition: all 0.15s; white-space: nowrap;
+}
+.chat-check-btn:hover { border-color: var(--success); color: var(--success); background: #f0fdf4; }
+.chat-check-btn.checked { border-color: var(--success); color: var(--success); background: #f0fdf4; }
+
+.chat-checked-by {
+  display: flex; flex-wrap: wrap; gap: 2px; align-items: center;
+}
+.check-chip {
+  display: inline-flex; align-items: center; gap: 2px;
+  background: #f0fdf4; border: 1px solid #bbf7d0;
+  color: #059669; border-radius: 99px;
+  padding: 0.08rem 0.4rem; font-size: 0.68rem; font-weight: 600;
+}
+
+.chat-bubble { max-width: 85%; }

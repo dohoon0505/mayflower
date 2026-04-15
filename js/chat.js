@@ -1,75 +1,85 @@
 /* ============================================================
-   CHAT.JS — Right panel: dummy chat (localStorage-backed)
-   v2: check/acknowledge feature + role-aware sender display
+   CHAT.JS — Firebase Realtime Database 연동 버전
+   v3: localStorage mock 제거, 실시간 동기화
    ============================================================ */
 
 const Chat = {
-  _session: null,
+  _session:  null,
+  _msgsRef:  null,   // 읽기용 (정렬·제한 적용)
+  _writeRef: null,   // 쓰기용 (push/update)
+  _cache:    {},     // key → message object
 
   NOTICES: {
-    floor2:  '📦 오늘 접수된 주문은 1층에서 빠르게 확인됩니다.',
-    floor1:  '🔔 제작 완료 후 기사 배정을 잊지 마세요.',
-    driver:  '🚚 배송 완료 시 사진을 꼭 첨부해 주세요.',
-    admin:   '🛠 관리자 공지: 이번 달 통계를 정기적으로 확인하세요.',
+    floor2: '📦 오늘 접수된 주문은 1층에서 빠르게 확인됩니다.',
+    floor1: '🔔 제작 완료 후 기사 배정을 잊지 마세요.',
+    driver: '🚚 배송 완료 시 사진을 꼭 첨부해 주세요.',
+    admin:  '🛠 관리자 공지: 이번 달 통계를 정기적으로 확인하세요.',
   },
 
   ROLE_LABELS: { floor2: '2층 수주', floor1: '1층 제작', driver: '배송기사', admin: '관리자', system: '시스템' },
 
-  SEED_MSGS: {
-    floor2:  [
-      { name: '1층 담당자', role: 'floor1', text: '오늘 접수 건수 많습니다. 서둘러 주세요! 😊' },
-      { name: '관리자',     role: 'admin',  text: '주문 접수 완료됐습니다!' },
-      { name: '이민준',     role: 'driver', text: '배송 출발했습니다. 곧 도착 예정입니다.' },
-    ],
-    floor1:  [
-      { name: '2층 담당자', role: 'floor2', text: '신규 주문 방금 접수했습니다.' },
-      { name: '관리자',     role: 'admin',  text: '리본 출력기 정상 작동 중입니다.' },
-      { name: '이민준',     role: 'driver', text: '배송 완료했습니다! 수고하세요.' },
-    ],
-    driver:  [
-      { name: '1층 담당자', role: 'floor1', text: '오늘 날씨 좋으니 배송 파이팅입니다! 🌤' },
-      { name: '2층 담당자', role: 'floor2', text: '배송지 주소 꼭 확인해 주세요.' },
-      { name: '관리자',     role: 'admin',  text: '완료 처리 잘 부탁드립니다.' },
-    ],
-    admin:   [
-      { name: '2층 담당자', role: 'floor2', text: '이번 달 배송 완료율이 높습니다 👍' },
-      { name: '1층 담당자', role: 'floor1', text: '기사 추가가 필요합니다.' },
-      { name: '이민준',     role: 'driver', text: '통계 데이터 업데이트됨.' },
-    ],
-  },
-
   init(session) {
     Chat._session = session;
-    Chat._ensureSeed(session.role);
     Chat._renderProfile();
     Chat._renderNotice();
-    Chat._renderMessages();
+
+    if (!window.FirebaseDB) {
+      console.error('[Chat] FirebaseDB가 초기화되지 않았습니다. firebase-config.js 로드 순서를 확인하세요.');
+      const el = document.getElementById('chat-messages');
+      if (el) el.innerHTML = '<div class="empty-state"><div class="empty-text">⚠️ Firebase 연결 실패</div></div>';
+      return;
+    }
+
+    /* 읽기: ts 순 정렬 + 최근 200개 */
+    Chat._msgsRef  = window.FirebaseDB.ref('messages').orderByChild('ts').limitToLast(200);
+    /* 쓰기: 정렬 없는 base ref */
+    Chat._writeRef = window.FirebaseDB.ref('messages');
+    Chat._cache    = {};
+
     Chat._bindInput();
     Chat._bindChatActions();
+    Chat._initRealtime();
   },
 
-  _ensureSeed(role) {
-    const existing = Store.getChat();
-    if (existing.length) return;
-    const seeds = Chat.SEED_MSGS[role] || [];
-    const now = Date.now();
-    seeds.forEach((s, i) => {
-      Store.addChat({
-        id:         now - (seeds.length - i) * 120000,
-        sender:     `seed_${i}`,
-        name:       s.name,
-        role:       s.role,
-        text:       s.text,
-        checkedBy:  [],
-        ts:         new Date(now - (seeds.length - i) * 120000).toISOString(),
-      });
+  /* ── Realtime listeners ──────────────────────────────────── */
+  _initRealtime() {
+    const el = document.getElementById('chat-messages');
+    if (!el) return;
+    el.innerHTML = '';
+
+    Chat._msgsRef.on('child_added', snap => {
+      const m = { ...snap.val(), _key: snap.key };
+      Chat._cache[snap.key] = m;
+      el.insertAdjacentHTML('beforeend', Chat._msgHtml(m));
+      el.scrollTop = el.scrollHeight;
+    }, err => console.error('[Chat] child_added error:', err));
+
+    Chat._msgsRef.on('child_changed', snap => {
+      const m = { ...snap.val(), _key: snap.key };
+      Chat._cache[snap.key] = m;
+      Chat._rerenderAll();
+    }, err => console.error('[Chat] child_changed error:', err));
+
+    Chat._msgsRef.on('child_removed', snap => {
+      delete Chat._cache[snap.key];
+      Chat._rerenderAll();
     });
   },
 
+  _rerenderAll() {
+    const el = document.getElementById('chat-messages');
+    if (!el) return;
+    const sorted = Object.values(Chat._cache)
+      .sort((a, b) => new Date(a.ts) - new Date(b.ts));
+    el.innerHTML = sorted.map(m => Chat._msgHtml(m)).join('');
+    el.scrollTop = el.scrollHeight;
+  },
+
+  /* ── Profile / Notice ────────────────────────────────────── */
   _renderProfile() {
     const s = Chat._session;
     const el = document.getElementById('sidebar-profile');
-    if (!el) return;
+    if (!el || !s) return;
     const roleLabel = Chat.ROLE_LABELS[s.role] || s.role;
     const roleCls   = `chat-role-${s.role}`;
     const avatarCls = `chat-avatar-role-${s.role}`;
@@ -85,27 +95,16 @@ const Chat = {
 
   _renderNotice() {
     const el = document.getElementById('chat-notice');
-    if (!el) return;
+    if (!el) return;  // 요소 제거됨 — no-op
     const notice = Chat.NOTICES[Chat._session?.role] || '';
     el.textContent = notice;
     el.style.display = notice ? 'block' : 'none';
   },
 
-  _renderMessages() {
-    const el = document.getElementById('chat-messages');
-    if (!el) return;
-    const msgs = Store.getChat();
-    if (!msgs.length) {
-      el.innerHTML = '<div class="empty-state"><div class="empty-text">메시지가 없습니다.</div></div>';
-      return;
-    }
-    el.innerHTML = msgs.map(m => Chat._msgHtml(m)).join('');
-    el.scrollTop = el.scrollHeight;
-  },
-
+  /* ── Message HTML ────────────────────────────────────────── */
   _msgHtml(m) {
     const session = Chat._session;
-    const isMe = m.sender === session?.userId || m.sender === 'me';
+    const isMe = m.sender === session?.userId;
     const cls = isMe ? 'me' : 'other';
     const d = new Date(m.ts);
     const time = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
@@ -114,14 +113,13 @@ const Chat = {
     const roleCls   = `chat-role-${m.role || 'system'}`;
     const avatarCls = `chat-avatar-role-${m.role || 'system'}`;
 
-    /* Checked-by chips */
     const checkedBy = m.checkedBy || [];
     const checkChips = checkedBy.map(c =>
       `<span class="check-chip">✓ ${UI.escHtml(c.name)}</span>`
     ).join('');
     const alreadyChecked = checkedBy.some(c => c.userId === session?.userId);
     const checkBtn = !isMe
-      ? `<button class="chat-check-btn${alreadyChecked ? ' checked' : ''}" data-mid="${m.id}">${alreadyChecked ? '✓ 확인함' : '✓ 확인'}</button>`
+      ? `<button class="chat-check-btn${alreadyChecked ? ' checked' : ''}" data-mkey="${m._key}">${alreadyChecked ? '✓ 확인함' : '✓ 확인'}</button>`
       : '';
 
     if (isMe) {
@@ -151,6 +149,7 @@ const Chat = {
       </div>`;
   },
 
+  /* ── Send (Firebase push) ────────────────────────────────── */
   _bindInput() {
     const input = document.getElementById('chat-input');
     const btn   = document.getElementById('chat-send');
@@ -160,63 +159,66 @@ const Chat = {
       const text = input.value.trim();
       if (!text) return;
       const s = Chat._session;
-      const msg = {
-        id:        Date.now(),
-        sender:    s?.userId || 'me',
-        name:      s?.displayName || '나',
-        role:      s?.role || '',
+      if (!s) return;
+
+      Chat._writeRef.push({
+        sender:    s.userId,
+        name:      s.displayName || '익명',
+        role:      s.role || '',
         text,
         checkedBy: [],
         ts:        new Date().toISOString(),
-      };
-      Store.addChat(msg);
+      }).catch(err => {
+        console.error('[Chat] push 실패:', err);
+        UI.toast('메시지 전송 실패', 'error');
+      });
+
       input.value = '';
-      Chat._renderMessages();
+      /* DOM 갱신은 child_added가 담당 */
     };
 
     btn.addEventListener('click', send);
-    input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+    });
   },
 
-  /* ── Driver status section ───────────────────────────────── */
-  _renderDriverStatus() {
-    const el = document.getElementById('chat-driver-status');
+  /* ── Check button (Firebase update) ──────────────────────── */
+  _bindChatActions() {
+    const el = document.getElementById('chat-messages');
     if (!el) return;
 
-    const completed = Store.getOrders({ status: 4 });
-    /* Group by driver, keep most recent (by updatedAt) */
-    const map = {};
-    completed.forEach(o => {
-      if (!o.assignedDriverName) return;
-      const cur = map[o.assignedDriverName];
-      if (!cur || new Date(o.updatedAt) > new Date(cur.updatedAt)) {
-        map[o.assignedDriverName] = o;
+    el.addEventListener('click', e => {
+      const btn = e.target.closest('.chat-check-btn');
+      if (!btn) return;
+      const key = btn.dataset.mkey;
+      const s   = Chat._session;
+      const m   = Chat._cache[key];
+      if (!key || !s || !m) return;
+
+      const already = (m.checkedBy || []).some(c => c.userId === s.userId);
+      if (already) {
+        UI.toast('이미 확인한 메시지입니다.', 'info', 1500);
+        return;
       }
+
+      const updated = [...(m.checkedBy || []), {
+        userId: s.userId,
+        name:   s.displayName,
+        role:   s.role,
+        ts:     new Date().toISOString(),
+      }];
+
+      Chat._writeRef.child(key).child('checkedBy').set(updated)
+        .catch(err => {
+          console.error('[Chat] checkedBy 업데이트 실패:', err);
+          UI.toast('확인 처리 실패', 'error');
+        });
+      /* DOM 갱신은 child_changed가 담당 */
     });
-
-    const items = Object.values(map).sort(
-      (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
-    );
-
-    if (!items.length) {
-      el.innerHTML = '<div class="driver-status-empty">배송 완료 기록 없음</div>';
-      return;
-    }
-
-    const rows = items.map(o => {
-      const addr = (o.deliveryAddress || '').substring(0, 18);
-      return `
-        <div class="driver-status-item">
-          <span class="ds-name">${UI.escHtml(o.assignedDriverName)}</span>
-          <span class="ds-time">${Chat._timeAgo(o.updatedAt)}</span>
-          <span class="ds-addr">${UI.escHtml(addr)}…</span>
-          <span class="ds-done">완료</span>
-        </div>`;
-    }).join('');
-
-    el.innerHTML = `<div class="driver-status-header">🚚 배송기사 현황</div>${rows}`;
   },
 
+  /* ── Utility ─────────────────────────────────────────────── */
   _timeAgo(iso) {
     const diff = Date.now() - new Date(iso).getTime();
     const mins = Math.floor(diff / 60000);
@@ -225,20 +227,5 @@ const Chat = {
     const hrs = Math.floor(mins / 60);
     if (hrs < 24)  return `${hrs}시간 전`;
     return `${Math.floor(hrs / 24)}일 전`;
-  },
-
-  _bindChatActions() {
-    const el = document.getElementById('chat-messages');
-    if (!el) return;
-    el.addEventListener('click', e => {
-      const btn = e.target.closest('.chat-check-btn');
-      if (!btn) return;
-      const msgId = +btn.dataset.mid;
-      const s = Chat._session;
-      if (!s) return;
-      const checked = Store.checkChatMsg(msgId, s);
-      if (!checked) { UI.toast('이미 확인한 메시지입니다.', 'info', 1500); return; }
-      Chat._renderMessages();
-    });
   },
 };
