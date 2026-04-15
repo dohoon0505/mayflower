@@ -343,15 +343,30 @@
   overflow: hidden;
 }
 
-.chat-profile {
+/* Chat panel header — mirrors dp-header */
+.chat-header {
   height: var(--header-h);
   padding: 0 1rem;
   display: flex; align-items: center;
   border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
+  font-size: 0.875rem; font-weight: 700;
+  color: var(--text-primary);
   background: var(--bg-elevated);
+  flex-shrink: 0;
+  letter-spacing: 0.01em;
+}
+
+/* Sidebar profile card */
+.sidebar-profile {
+  margin: 0.5rem 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+  flex-shrink: 0;
 }
 .chat-profile-inner { display: flex; align-items: center; gap: 0.625rem; width: 100%; min-width: 0; }
+.shell.sidebar-collapsed .sidebar-profile { display: none; }
 .avatar {
   width: 32px; height: 32px;
   border-radius: 50%;

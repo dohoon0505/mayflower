@@ -68,7 +68,7 @@ const Chat = {
 
   _renderProfile() {
     const s = Chat._session;
-    const el = document.getElementById('chat-profile');
+    const el = document.getElementById('sidebar-profile');
     if (!el) return;
     const roleLabel = Chat.ROLE_LABELS[s.role] || s.role;
     const roleCls   = `chat-role-${s.role}`;
