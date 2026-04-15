@@ -31,8 +31,19 @@ const AdminView = {
   },
 
   _renderProductTable(products) {
-    const catOpts = (Store.CATEGORIES || ['화환','꽃바구니','화분','생화','조화','기타'])
-      .map(c => `<option value="${c}">${c}</option>`).join('');
+    const categories = Store.getCategories();
+    const catOpts = categories.map(c => `<option value="${c}">${c}</option>`).join('');
+
+    /* 카테고리별 활성 상품 수 집계 */
+    const usageCount = (cat) => products.filter(p => p.isActive && p.category === cat).length;
+
+    const catChips = categories.map(c => `
+      <div class="cat-chip" data-cat="${UI.escHtml(c)}">
+        <span class="cat-chip-name">${UI.escHtml(c)}</span>
+        <span class="cat-chip-count">${usageCount(c)}</span>
+        <button class="cat-chip-btn cat-rename" data-cat="${UI.escHtml(c)}" title="이름 변경">✏️</button>
+        <button class="cat-chip-btn cat-delete" data-cat="${UI.escHtml(c)}" title="삭제">✕</button>
+      </div>`).join('');
 
     const rows = products.map(p => `
       <tr data-id="${p.id}">
@@ -51,6 +62,17 @@ const AdminView = {
 
     return `
       <div class="section-header">
+        <div><div class="section-title">카테고리 관리</div><div class="section-sub">${categories.length}개 · 숫자는 활성 상품 수</div></div>
+      </div>
+      <div class="cat-manage-box">
+        <div class="cat-chip-list" id="cat-chip-list">${catChips}</div>
+        <div class="cat-add-row">
+          <input type="text" id="new-cat-name" class="inline-input" placeholder="새 카테고리명" style="max-width:180px">
+          <button class="btn btn-primary btn-sm" id="btn-add-cat">+ 카테고리 추가</button>
+        </div>
+      </div>
+
+      <div class="section-header" style="margin-top:1.25rem">
         <div><div class="section-title">상품 목록</div><div class="section-sub">${products.filter(p=>p.isActive).length}개 활성</div></div>
       </div>
       <div class="table-wrapper">
@@ -67,7 +89,57 @@ const AdminView = {
   },
 
   _bindProductActions(products) {
-    /* 추가 */
+    /* ── 카테고리: 추가 ── */
+    const addCatBtn   = document.getElementById('btn-add-cat');
+    const newCatInput = document.getElementById('new-cat-name');
+    const doAddCat = () => {
+      const name = newCatInput.value.trim();
+      if (!name) { UI.toast('카테고리명을 입력해 주세요.', 'warning'); return; }
+      if (!Store.createCategory(name)) {
+        UI.toast('이미 존재하는 카테고리입니다.', 'warning'); return;
+      }
+      UI.toast(`"${name}" 카테고리가 추가되었습니다.`, 'success');
+      AdminView.showProducts();
+    };
+    addCatBtn.addEventListener('click', doAddCat);
+    newCatInput.addEventListener('keydown', e => { if (e.key === 'Enter') doAddCat(); });
+
+    /* ── 카테고리: 이름 변경 ── */
+    document.querySelectorAll('.cat-rename').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const old = btn.dataset.cat;
+        const newName = await UI.prompt?.(`"${old}" 카테고리의 새 이름을 입력하세요.`, '카테고리 이름 변경', old)
+          ?? window.prompt(`"${old}" 카테고리의 새 이름`, old);
+        if (!newName || newName.trim() === old) return;
+        if (!Store.renameCategory(old, newName.trim())) {
+          UI.toast('이름 변경 실패 (중복 또는 공백)', 'error'); return;
+        }
+        UI.toast('카테고리 이름이 변경되었습니다.', 'success');
+        AdminView.showProducts();
+      });
+    });
+
+    /* ── 카테고리: 삭제 ── */
+    document.querySelectorAll('.cat-delete').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const name = btn.dataset.cat;
+        const ok = await UI.confirm(`"${name}" 카테고리를 삭제할까요?`, '카테고리 삭제');
+        if (!ok) return;
+        const res = Store.deleteCategory(name);
+        if (!res.ok) {
+          if (res.reason === 'in_use') {
+            UI.toast(`사용 중인 상품이 ${res.count}건 있어 삭제할 수 없습니다.`, 'warning');
+          } else {
+            UI.toast('삭제 실패', 'error');
+          }
+          return;
+        }
+        UI.toast('카테고리가 삭제되었습니다.', 'success');
+        AdminView.showProducts();
+      });
+    });
+
+    /* 상품 추가 */
     document.getElementById('btn-add-product').addEventListener('click', async () => {
       const nameEl = document.getElementById('new-product-name');
       const catEl  = document.getElementById('new-product-cat');

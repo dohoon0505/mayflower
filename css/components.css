@@ -513,6 +513,50 @@ tr:hover td { background: var(--bg-elevated); }
 .filter-input::placeholder { color: var(--text-muted); }
 .filter-area-inner { display: flex; flex-wrap: wrap; gap: 0.625rem; align-items: center; padding: 0.75rem 1.25rem; }
 
+/* ── Category management (admin > products) ─────────────── */
+.cat-manage-box {
+  padding: 0.875rem 1rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 1rem;
+}
+.cat-chip-list {
+  display: flex; flex-wrap: wrap; gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.cat-chip {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.35rem 0.6rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  font-size: 0.85rem;
+  transition: border-color var(--tr);
+}
+.cat-chip:hover { border-color: var(--primary); }
+.cat-chip-name { font-weight: 600; color: var(--text-primary); }
+.cat-chip-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 20px; height: 18px; padding: 0 6px;
+  background: var(--primary-dim); color: var(--primary);
+  font-size: 0.72rem; font-weight: 700; border-radius: 999px;
+}
+.cat-chip-btn {
+  background: none; border: none; cursor: pointer;
+  padding: 2px 4px; font-size: 0.8rem; line-height: 1;
+  color: var(--text-muted); border-radius: 4px;
+  transition: background var(--tr), color var(--tr);
+}
+.cat-chip-btn:hover { background: var(--bg-elevated); color: var(--text-primary); }
+.cat-chip-btn.cat-delete:hover { color: var(--danger); }
+.cat-add-row {
+  display: flex; gap: 0.5rem; align-items: center;
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--border);
+}
+.cat-add-row .inline-input { flex: 1; max-width: 240px; }
+
 /* ── Chat message redesign ───────────────────────────────── */
 .chat-msg-header {
   display: flex; align-items: center; gap: 0.45rem;

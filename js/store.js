@@ -3,16 +3,17 @@
    ============================================================ */
 
 const KEYS = {
-  users:    'maydaegu.users',
-  products: 'maydaegu.products',
-  drivers:  'maydaegu.drivers',
-  orders:   'maydaegu.orders',
-  chat:     'maydaegu.chat',
-  seeded:   'maydaegu.seeded.v7',   /* bump version to re-seed */
+  users:      'maydaegu.users',
+  products:   'maydaegu.products',
+  drivers:    'maydaegu.drivers',
+  orders:     'maydaegu.orders',
+  chat:       'maydaegu.chat',
+  categories: 'maydaegu.categories',
+  seeded:     'maydaegu.seeded.v8',   /* bump version to re-seed */
 };
 
-/* Predefined product categories */
-const CATEGORIES = ['화환', '꽃바구니', '화분', '생화', '조화', '기타'];
+/* Default product categories (used only on first seed) */
+const DEFAULT_CATEGORIES = ['화환', '꽃바구니', '화분', '생화', '조화', '기타'];
 
 function _get(key) {
   try { return JSON.parse(localStorage.getItem(key)) || []; } catch { return []; }
@@ -55,6 +56,8 @@ function _seed() {
     { id: 14, username: 'driver11', passwordHash: '1234', displayName: '조예준', role: 'driver', isActive: true, createdAt: '2025-01-01T00:00:00' },
     { id: 15, username: 'driver12', passwordHash: '1234', displayName: '배민재', role: 'driver', isActive: true, createdAt: '2025-01-01T00:00:00' },
   ]);
+
+  _set(KEYS.categories, DEFAULT_CATEGORIES.slice());
 
   _set(KEYS.products, [
     { id: 1, name: '개업 화환', category: '화환',   isActive: true, createdAt: '2025-01-01T00:00:00' },
@@ -184,6 +187,51 @@ const Store = {
     return true;
   },
   getUsersByRole: (role) => _get(KEYS.users).filter(u => u.role === role && u.isActive),
+
+  /* Categories */
+  getCategories() {
+    const list = _get(KEYS.categories);
+    return list.length ? list : DEFAULT_CATEGORIES.slice();
+  },
+  createCategory(name) {
+    const n = String(name || '').trim();
+    if (!n) return false;
+    const list = Store.getCategories();
+    if (list.includes(n)) return false;      /* 중복 방지 */
+    list.push(n);
+    _set(KEYS.categories, list);
+    return true;
+  },
+  renameCategory(oldName, newName) {
+    const n = String(newName || '').trim();
+    if (!n || oldName === n) return false;
+    const list = Store.getCategories();
+    const idx = list.indexOf(oldName);
+    if (idx < 0) return false;
+    if (list.includes(n)) return false;      /* 이미 존재 */
+    list[idx] = n;
+    _set(KEYS.categories, list);
+    /* 해당 카테고리를 사용하는 상품도 일괄 갱신 */
+    const products = _get(KEYS.products);
+    let changed = false;
+    products.forEach(p => {
+      if (p.category === oldName) { p.category = n; changed = true; }
+    });
+    if (changed) _set(KEYS.products, products);
+    return true;
+  },
+  deleteCategory(name) {
+    const list = Store.getCategories();
+    const idx = list.indexOf(name);
+    if (idx < 0) return { ok: false, reason: 'not_found' };
+    /* 사용 중인 상품이 있으면 차단 */
+    const products = _get(KEYS.products);
+    const inUse = products.filter(p => p.isActive && p.category === name).length;
+    if (inUse > 0) return { ok: false, reason: 'in_use', count: inUse };
+    list.splice(idx, 1);
+    _set(KEYS.categories, list);
+    return { ok: true };
+  },
 
   /* Products */
   getProducts: (activeOnly = true) => {
@@ -373,7 +421,9 @@ const Store = {
   },
 };
 
-/* CATEGORIES exported for use in admin view */
-Store.CATEGORIES = CATEGORIES;
+/* Backward-compat: Store.CATEGORIES → 동적 getter로 대체 */
+Object.defineProperty(Store, 'CATEGORIES', {
+  get() { return Store.getCategories(); },
+});
 
 _seed();
