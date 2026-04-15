@@ -182,32 +182,45 @@ const DriverView = {
     const dt = UI.fmtDatetime(o.deliveryDatetime);
     const immediate = o.isImmediate ? '<span class="order-immediate">즉시</span>' : '';
 
-    const storePhoto = o.storePhotoUrl
-      ? `<img src="${o.storePhotoUrl}" class="order-photo-store-thumb" title="매장사진 보기" onclick="window.open(this.src)">` : '';
+    const textContent = o.occasionText || o.ribbonText || '';
+    const textHtml = textContent
+      ? `<span class="ocard-field-icon">${o.occasionText ? '📝' : '🎀'}</span><span>${UI.escHtml(textContent)}</span>`
+      : `<span class="ocard-field-icon">🎀</span><span style="color:var(--text-muted);font-style:italic">문구 없음</span>`;
+
+    const storePhotoSlot = o.storePhotoUrl
+      ? `<button class="ocard-action oa-muted" onclick="window.open('${o.storePhotoUrl}')">
+           <img src="${o.storePhotoUrl}" alt="매장사진"><span style="font-size:0.7rem">매장사진 보기</span>
+         </button>`
+      : `<div class="ocard-action oa-muted" style="cursor:default">🏪<br><span style="font-size:0.7rem">매장사진 없음</span></div>`;
 
     return `
       <div class="order-card" data-id="${o.id}" data-status="${o.status}">
-        <div class="order-card-check">
-          <span class="order-id-chip">#${o.id}</span>
-        </div>
-        <div class="order-info">
-          <div class="order-top">
-            <span class="order-chain">${UI.escHtml(o.chainName || '-')}</span>
+        <div class="ocard-body">
+          <div class="ocard-header">
+            ${UI.statusBadge(o.status)}
             <span class="order-product">${UI.escHtml(o.productName)}</span>
             ${immediate}
-            ${UI.statusBadge(o.status)}
+            <span class="ocard-datetime">🕐 ${dt}</span>
+            <span class="ocard-chain">${UI.escHtml(o.chainName || '-')}</span>
+            <span class="ocard-id">#${o.id}</span>
           </div>
-          <div class="order-meta">
-            <span class="order-meta-item"><span class="order-meta-icon">📍</span>${UI.escHtml(o.deliveryAddress)}</span>
-            <span class="order-meta-item"><span class="order-meta-icon">👤</span>${UI.escHtml(o.recipientName)}${o.recipientPhone ? ' / ' + UI.escHtml(o.recipientPhone) : ''}</span>
-            <span class="order-meta-item"><span class="order-meta-icon">🕐</span>${dt}</span>
+          <div class="ocard-field">
+            <span class="ocard-field-icon">📍</span>
+            <span>${UI.escHtml(o.deliveryAddress)}</span>
           </div>
-          ${o.ribbonText ? `<div class="order-ribbon">🎀 ${UI.escHtml(o.ribbonText)}</div>` : ''}
-          ${o.occasionText ? `<div class="order-occasion">📝 ${UI.escHtml(o.occasionText)}</div>` : ''}
-          ${storePhoto ? `<div class="order-footer"><div class="order-photos">${storePhoto}<span style="font-size:0.75rem;color:var(--text-muted)">매장사진</span></div></div>` : ''}
+          <div class="ocard-2col">
+            <div class="ocard-field">
+              <span class="ocard-field-icon">👤</span>
+              <span>${UI.escHtml(o.recipientName)}${o.recipientPhone ? ' / ' + UI.escHtml(o.recipientPhone) : ''}</span>
+            </div>
+            <div class="ocard-field ${!textContent ? 'ocard-empty' : ''}">
+              ${textHtml}
+            </div>
+          </div>
         </div>
-        <div class="order-actions">
-          <button class="btn btn-success drv-complete" data-id="${o.id}">📷 완료 처리</button>
+        <div class="ocard-actions">
+          ${storePhotoSlot}
+          <button class="ocard-action oa-success drv-complete" data-id="${o.id}">📷<br>완료 처리</button>
         </div>
       </div>`;
   },

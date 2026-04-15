@@ -277,82 +277,99 @@ const Floor1View = {
     Floor1View._updateBulkBar();
   },
 
-  /* ── Order card (redesigned) ─────────────────────────────── */
+  /* ── Order card (wireframe design) ──────────────────────── */
   _orderCard(o, showActions) {
     const dt      = UI.fmtDatetime(o.deliveryDatetime);
     const created = UI.fmtDatetime(o.createdAt);
     const immediate = o.isImmediate ? '<span class="order-immediate">즉시</span>' : '';
-    const driverTag = o.assignedDriverName
-      ? `<span class="order-driver-tag">🚚 ${UI.escHtml(o.assignedDriverName)}</span>` : '';
 
-    /* Photos */
-    const storePhoto = o.storePhotoUrl
-      ? `<img src="${o.storePhotoUrl}" class="order-photo-store-thumb" title="매장사진 보기 (클릭)" onclick="window.open(this.src)">` : '';
-    const delivPhoto = o.deliveryPhotoUrl
-      ? `<img src="${o.deliveryPhotoUrl}" class="order-photo-thumb" title="현장사진 보기 (클릭)" onclick="window.open(this.src)">` : '';
-    const photosSection = (storePhoto || delivPhoto)
-      ? `<div class="order-photos">${storePhoto}${delivPhoto}</div>` : '';
+    /* Text field: occasion > ribbon > empty */
+    const textContent = o.occasionText || o.ribbonText || '';
+    const textHtml = textContent
+      ? (o.ribbonText
+          ? `<span class="ocard-field-icon">🎀</span><span data-ribbon="${UI.escHtml(o.ribbonText)}" class="ocard-field-ribbon" title="클릭 시 클립보드 복사">${UI.escHtml(textContent)}</span>`
+          : `<span class="ocard-field-icon">📝</span><span>${UI.escHtml(textContent)}</span>`)
+      : `<span class="ocard-field-icon">🎀</span><span style="color:var(--text-muted);font-style:italic">문구 없음</span>`;
 
-    /* Edit button — only for floor1 / admin */
-    const editBtn = showActions
-      ? `<button class="order-edit-btn f1-action" data-id="${o.id}" data-action="edit">✏️ 수정</button>` : '';
+    /* Driver row */
+    const driverHtml = o.assignedDriverName
+      ? `<span class="ocard-field-icon">🚚</span><span class="ocard-driver-tag">${UI.escHtml(o.assignedDriverName)}</span>`
+      : `<span class="ocard-field-icon">🚚</span><span class="ocard-driver-none">배송기사 배차 전</span>`;
 
-    /* Action buttons by status */
-    let actionBtns = '';
+    /* ── Action slots ───────────────────────────────────── */
+    let actionSlots = '';
     if (showActions) {
+      /* Slot 1: Edit */
+      actionSlots += `<button class="ocard-action oa-primary f1-action" data-id="${o.id}" data-action="edit">✏️<br>주문서 수정</button>`;
+
+      /* Slot 2: Store photo */
+      if (o.storePhotoUrl) {
+        actionSlots += `<button class="ocard-action oa-success f1-action" data-id="${o.id}" data-action="view-store-photo">
+          <img src="${o.storePhotoUrl}" alt="매장사진"><span style="font-size:0.7rem">매장사진 보기</span>
+        </button>`;
+      } else {
+        actionSlots += `<button class="ocard-action oa-muted f1-action" data-id="${o.id}" data-action="store-photo">🏪<br>매장사진 없음</button>`;
+      }
+
+      /* Slot 3+: Status-based actions */
       const s = o.status;
       if (s === 0) {
-        actionBtns = `
-          <button class="btn btn-secondary btn-sm f1-action" data-id="${o.id}" data-action="ribbon">리본출력완료</button>
-          <button class="btn btn-ghost btn-sm f1-action" data-id="${o.id}" data-action="assign">기사배정</button>
-          <button class="btn btn-danger btn-sm f1-action" data-id="${o.id}" data-action="cancel">취소</button>`;
+        actionSlots += `<button class="ocard-action oa-success f1-action" data-id="${o.id}" data-action="ribbon">리본출력<br>완료</button>`;
+        actionSlots += `<button class="ocard-action oa-primary f1-action" data-id="${o.id}" data-action="assign">기사 배정</button>`;
+        actionSlots += `<button class="ocard-action oa-danger f1-action" data-id="${o.id}" data-action="cancel">취소</button>`;
       } else if (s === 1) {
-        actionBtns = `
-          <button class="btn btn-secondary btn-sm f1-action" data-id="${o.id}" data-action="prod">제작완료</button>
-          <button class="btn btn-ghost btn-sm f1-action" data-id="${o.id}" data-action="assign">기사배정</button>
-          <button class="btn btn-danger btn-sm f1-action" data-id="${o.id}" data-action="cancel">취소</button>`;
+        actionSlots += `<button class="ocard-action oa-success f1-action" data-id="${o.id}" data-action="prod">제작 완료</button>`;
+        actionSlots += `<button class="ocard-action oa-primary f1-action" data-id="${o.id}" data-action="assign">기사 배정</button>`;
+        actionSlots += `<button class="ocard-action oa-danger f1-action" data-id="${o.id}" data-action="cancel">취소</button>`;
       } else if (s === 2) {
-        actionBtns = `
-          <button class="btn btn-warning btn-sm f1-action" data-id="${o.id}" data-action="deliv">배송출발</button>
-          <button class="btn btn-primary btn-sm f1-action" data-id="${o.id}" data-action="assign">기사배정</button>
-          <button class="btn btn-danger btn-sm f1-action" data-id="${o.id}" data-action="cancel">취소</button>`;
+        actionSlots += `<button class="ocard-action oa-warning f1-action" data-id="${o.id}" data-action="deliv">배송 출발</button>`;
+        actionSlots += `<button class="ocard-action oa-primary f1-action" data-id="${o.id}" data-action="assign">기사 배정</button>`;
+        actionSlots += `<button class="ocard-action oa-danger f1-action" data-id="${o.id}" data-action="cancel">취소</button>`;
       } else if (s === 3) {
-        actionBtns = `
-          <button class="btn btn-danger btn-sm f1-action" data-id="${o.id}" data-action="return">반품</button>`;
+        actionSlots += `<button class="ocard-action oa-primary f1-action" data-id="${o.id}" data-action="assign">기사 배정</button>`;
+        actionSlots += `<button class="ocard-action oa-danger f1-action" data-id="${o.id}" data-action="return">반품</button>`;
+      } else if (s === 4 && o.deliveryPhotoUrl) {
+        actionSlots += `<button class="ocard-action oa-success f1-action" data-id="${o.id}" data-action="view-deliv-photo">
+          <img src="${o.deliveryPhotoUrl}" alt="현장사진"><span style="font-size:0.7rem">현장사진 보기</span>
+        </button>`;
       }
     }
 
     return `
       <div class="order-card" data-id="${o.id}" data-status="${o.status}">
-        <div class="order-card-check">
-          <input type="checkbox" class="order-checkbox" data-id="${o.id}" title="선택">
-        </div>
-        <div class="order-info">
-          <!-- Top: id · chain · product · immediate · status · edit -->
-          <div class="order-top">
-            <span class="order-id-chip">#${o.id}</span>
-            <span class="order-chain">${UI.escHtml(o.chainName || '-')}</span>
+        <div class="ocard-body">
+          <!-- Header: checkbox · status · product · immediate · time · chain -->
+          <div class="ocard-header">
+            <input type="checkbox" class="ocard-checkbox order-checkbox" data-id="${o.id}" title="선택">
+            ${UI.statusBadge(o.status)}
             <span class="order-product">${UI.escHtml(o.productName)}</span>
             ${immediate}
-            ${UI.statusBadge(o.status)}
-            ${editBtn}
+            <span class="ocard-datetime">🕐 ${dt}</span>
+            <span class="ocard-chain">${UI.escHtml(o.chainName || '-')}</span>
+            <span class="ocard-id">#${o.id}</span>
           </div>
-          <!-- Meta fields -->
-          <div class="order-meta">
-            <span class="order-meta-item"><span class="order-meta-icon">📍</span>${UI.escHtml(o.deliveryAddress)}</span>
-            <span class="order-meta-item"><span class="order-meta-icon">👤</span>${UI.escHtml(o.recipientName)}${o.recipientPhone ? ' / ' + UI.escHtml(o.recipientPhone) : ''}</span>
-            <span class="order-meta-item"><span class="order-meta-icon">🕐</span>${dt}</span>
+          <!-- Address field -->
+          <div class="ocard-field">
+            <span class="ocard-field-icon">📍</span>
+            <span>${UI.escHtml(o.deliveryAddress)}</span>
           </div>
-          ${o.ribbonText ? `<div class="order-ribbon" data-ribbon="${UI.escHtml(o.ribbonText)}" title="클릭 시 클립보드 복사" style="cursor:pointer">🎀 ${UI.escHtml(o.ribbonText)}</div>` : ''}
-          ${o.occasionText ? `<div class="order-occasion">📝 ${UI.escHtml(o.occasionText)}</div>` : ''}
-          <!-- Footer: driver · created · photos -->
-          <div class="order-footer">
-            ${driverTag}
-            ${photosSection}
-            <span class="order-created">접수: ${UI.escHtml(o.createdByName)} / ${created}</span>
+          <!-- Recipient | Text field (2-col) -->
+          <div class="ocard-2col">
+            <div class="ocard-field">
+              <span class="ocard-field-icon">👤</span>
+              <span>${UI.escHtml(o.recipientName)}${o.recipientPhone ? ' / ' + UI.escHtml(o.recipientPhone) : ''}</span>
+            </div>
+            <div class="ocard-field ${!textContent ? 'ocard-empty' : ''}">
+              ${textHtml}
+            </div>
+          </div>
+          <!-- Driver + created footer -->
+          <div class="ocard-footer">
+            ${driverHtml}
+            <span class="ocard-created">접수: ${UI.escHtml(o.createdByName)}</span>
           </div>
         </div>
-        ${showActions && actionBtns ? `<div class="order-actions">${actionBtns}</div>` : '<div style="width:0.5rem"></div>'}
+        ${showActions ? `<div class="ocard-actions">${actionSlots}</div>` : ''}
       </div>`;
   },
 
@@ -363,10 +380,11 @@ const Floor1View = {
       await Floor1View._handleAction(+actionBtn.dataset.id, actionBtn.dataset.action, actionBtn);
       return;
     }
-    const ribbon = e.target.closest('[data-ribbon]');
+    const ribbon = e.target.closest('[data-ribbon]') || e.target.closest('.ocard-field-ribbon');
     if (ribbon) {
+      const text = ribbon.dataset.ribbon || ribbon.textContent.trim();
       try {
-        await navigator.clipboard.writeText(ribbon.dataset.ribbon);
+        await navigator.clipboard.writeText(text);
         UI.toast('리본 문구를 클립보드에 복사했습니다.', 'success', 2000);
       } catch { UI.toast('클립보드 복사 실패', 'error'); }
       return;
@@ -380,14 +398,20 @@ const Floor1View = {
 
   /* ── Action handler ──────────────────────────────────────── */
   async _handleAction(id, action, btn) {
-    if (action === 'assign') {
-      await Floor1View._openAssignModal([id]);
+    if (action === 'assign') { await Floor1View._openAssignModal([id]); return; }
+    if (action === 'edit')   { await Floor1View._openEditModal(id);     return; }
+    if (action === 'store-photo') { await Floor1View._openStorePhotoModal(id); return; }
+    if (action === 'view-store-photo') {
+      const o = Store.getOrderById(id);
+      if (o?.storePhotoUrl) window.open(o.storePhotoUrl);
       return;
     }
-    if (action === 'edit') {
-      await Floor1View._openEditModal(id);
+    if (action === 'view-deliv-photo') {
+      const o = Store.getOrderById(id);
+      if (o?.deliveryPhotoUrl) window.open(o.deliveryPhotoUrl);
       return;
     }
+
     const statusMap = { ribbon: 1, prod: 2, deliv: 3, cancel: 5, return: 6 };
     const labelMap  = { ribbon: '리본출력완료', prod: '제작완료', deliv: '배송출발', cancel: '취소', return: '반품' };
     const status = statusMap[action];
@@ -402,6 +426,68 @@ const Floor1View = {
       UI.toast(e.message || '상태 변경 실패', 'error');
       btn.disabled = false;
     }
+  },
+
+  /* ── Store Photo Upload Modal ────────────────────────────── */
+  _openStorePhotoModal(orderId) {
+    const o = Store.getOrderById(orderId);
+    if (!o) { UI.toast('주문 정보를 찾을 수 없습니다.', 'error'); return; }
+
+    let selectedFile = null;
+    let objectUrl = null;
+
+    const content = `
+      <p style="color:var(--text-secondary);margin-bottom:0.5rem">
+        <strong>#${orderId}</strong> — ${UI.escHtml(o.chainName || '-')}
+      </p>
+      <label class="photo-drop-zone" id="sp-drop-zone" for="sp-input">
+        <input type="file" id="sp-input" accept="image/jpeg,image/png">
+        <div id="sp-msg">
+          <div style="font-size:2rem;margin-bottom:0.5rem">🏪</div>
+          <div style="font-size:0.95rem">매장사진을 클릭 또는 드래그하여 업로드</div>
+          <div style="font-size:0.825rem;color:var(--text-muted);margin-top:0.25rem">jpg, png / 최대 5MB</div>
+        </div>
+        <img id="sp-preview" class="photo-preview" style="display:none" alt="미리보기">
+      </label>
+      <div id="sp-info" style="font-size:0.825rem;color:var(--text-muted);margin-top:0.35rem"></div>`;
+
+    const overlay = UI.modal({ title: `매장사진 등록 — #${orderId}`, content, confirmText: '저장', cancelText: '취소' });
+
+    const handleFile = file => {
+      if (!file) return;
+      if (file.size > 5*1024*1024) { UI.toast('5MB 이하 파일만 허용됩니다.', 'error'); return; }
+      if (!['image/jpeg','image/jpg','image/png'].includes(file.type)) { UI.toast('jpg, png만 허용됩니다.', 'error'); return; }
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      objectUrl = URL.createObjectURL(file);
+      selectedFile = file;
+      const preview = overlay.querySelector('#sp-preview');
+      overlay.querySelector('#sp-msg').style.display = 'none';
+      preview.src = objectUrl; preview.style.display = 'block';
+      overlay.querySelector('#sp-info').textContent = `${file.name} (${(file.size/1024).toFixed(0)} KB)`;
+    };
+
+    overlay.querySelector('#sp-input').addEventListener('change', e => handleFile(e.target.files[0]));
+    const dz = overlay.querySelector('#sp-drop-zone');
+    dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('drag-over'); });
+    dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+    dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag-over'); handleFile(e.dataTransfer.files[0]); });
+
+    const confirmBtn = overlay.querySelector('.modal-confirm');
+    confirmBtn.onclick = async () => {
+      if (!selectedFile) { UI.toast('사진을 선택해 주세요.', 'warning'); return; }
+      confirmBtn.disabled = true; confirmBtn.textContent = '저장 중...';
+      try {
+        const { url } = await Api.uploadStorePhoto(selectedFile);
+        await Api.updateOrder(orderId, { storePhotoUrl: url });
+        UI.toast('매장사진이 등록되었습니다.', 'success');
+        overlay.classList.remove('show');
+        setTimeout(() => { overlay.remove(); if (objectUrl) URL.revokeObjectURL(objectUrl); }, 300);
+        Floor1View._loadOrders();
+      } catch(e) {
+        UI.toast(e.message || '저장 실패', 'error');
+        confirmBtn.disabled = false; confirmBtn.textContent = '저장';
+      }
+    };
   },
 
   /* ── Order Edit Modal ────────────────────────────────────── */
