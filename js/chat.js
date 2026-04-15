@@ -47,8 +47,6 @@ const Chat = {
     Chat._renderDriverStatus();
     Chat._bindInput();
     Chat._bindChatActions();
-    /* Auto-refresh driver status every 30 s */
-    setInterval(() => Chat._renderDriverStatus(), 30000);
   },
 
   _ensureSeed(role) {

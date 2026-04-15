@@ -22,18 +22,7 @@ const DriverView = {
     Router.register('my-deliveries', () => DriverView.showMyDeliveries());
     Router.default('my-deliveries');
 
-    /* Set up visibilitychange ONCE */
-    DriverView._visHandler = () => {
-      if (!DriverView._pollFn) return;
-      if (document.hidden) {
-        clearInterval(DriverView._pollTimer);
-        DriverView._pollTimer = null;
-      } else {
-        DriverView._pollTimer = setInterval(DriverView._pollFn, 60000);
-        DriverView._pollFn();
-      }
-    };
-    document.addEventListener('visibilitychange', DriverView._visHandler);
+
 
     /* Delegated click — set up once */
     document.getElementById('main-content').addEventListener('click', async e => {
@@ -96,7 +85,6 @@ const DriverView = {
 
     DriverView._bindFilterEvents();
     await DriverView._loadDeliveries();
-    DriverView._startPoll(() => DriverView._loadDeliveries(), 60000);
   },
 
   _bindFilterEvents() {
@@ -211,7 +199,6 @@ const DriverView = {
       <div class="order-card" data-id="${o.id}" data-status="${o.status}">
         <div class="ocard-body">
           <div class="ocard-header">
-            ${UI.statusBadge(o.status)}
             <span class="order-product">${UI.escHtml(o.productName)}</span>
             ${immediate}
             <span class="ocard-datetime">🕐 ${dt}</span>

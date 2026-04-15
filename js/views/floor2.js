@@ -25,18 +25,7 @@ const Floor2View = {
     Router.register('new-order',  () => Floor2View.openNewOrderModal());
     Router.default('my-orders');
 
-    /* Set up visibilitychange ONCE */
-    Floor2View._visHandler = () => {
-      if (!Floor2View._pollFn) return;
-      if (document.hidden) {
-        clearInterval(Floor2View._pollTimer);
-        Floor2View._pollTimer = null;
-      } else {
-        Floor2View._pollTimer = setInterval(Floor2View._pollFn, 30000);
-        Floor2View._pollFn();
-      }
-    };
-    document.addEventListener('visibilitychange', Floor2View._visHandler);
+
 
     /* Delegated click — set up once */
     document.getElementById('main-content').addEventListener('click', async e => {
@@ -121,7 +110,6 @@ const Floor2View = {
     Floor2View._bindFilterEvents();
     Floor2View._applyQuickDate('this-month');
     await Floor2View._loadMyOrders();
-    Floor2View._startPoll(() => Floor2View._loadMyOrders(), 30000);
   },
 
   _bindFilterEvents() {
@@ -265,7 +253,6 @@ const Floor2View = {
       <div class="order-card" data-id="${o.id}" data-status="${o.status}">
         <div class="ocard-body">
           <div class="ocard-header">
-            ${UI.statusBadge(o.status)}
             <span class="order-product">${UI.escHtml(o.productName)}</span>
             ${immediate}
             <span class="ocard-datetime">🕐 ${dt}</span>

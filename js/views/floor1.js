@@ -19,18 +19,7 @@ const Floor1View = {
     /* Set up click delegation ONCE */
     document.getElementById('main-content').addEventListener('click', Floor1View._handleClick);
 
-    /* Set up visibilitychange ONCE */
-    Floor1View._visHandler = () => {
-      if (!Floor1View._pollFn) return;
-      if (document.hidden) {
-        clearInterval(Floor1View._pollTimer);
-        Floor1View._pollTimer = null;
-      } else {
-        Floor1View._pollTimer = setInterval(Floor1View._pollFn, 30000);
-        Floor1View._pollFn();
-      }
-    };
-    document.addEventListener('visibilitychange', Floor1View._visHandler);
+
   },
 
   /* ── Filter state ────────────────────────────────────────── */
@@ -128,7 +117,6 @@ const Floor1View = {
     Floor1View._bindFilterEvents();
     Floor1View._applyQuickDate('this-month');
     Floor1View._loadOrders();
-    Floor1View._startPoll(() => Floor1View._loadOrders(), 30000);
   },
 
   /* ── Bind filter events ──────────────────────────────────── */
@@ -258,6 +246,7 @@ const Floor1View = {
       orders.sort((a, b) => new Date(a.deliveryDatetime) - new Date(b.deliveryDatetime));
 
       Floor1View._renderOrders(orders);
+      if (typeof DeliveryPanel !== 'undefined') DeliveryPanel.render();
     } catch(e) {
       UI.toast(e.message || '조회 실패', 'error');
     } finally {
@@ -306,7 +295,6 @@ const Floor1View = {
           <!-- Header: checkbox · status · product · immediate · time · chain -->
           <div class="ocard-header">
             <input type="checkbox" class="ocard-checkbox order-checkbox" data-id="${o.id}" title="선택">
-            ${UI.statusBadge(o.status)}
             <span class="order-product">${UI.escHtml(o.productName)}</span>
             ${immediate}
             <span class="ocard-datetime">🕐 ${dt}</span>
