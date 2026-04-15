@@ -14,9 +14,9 @@ const Floor2View = {
     statusGroup: '',
     dateFrom: '',
     dateTo: '',
-    searchChain: '',
-    searchRecipient: '',
     searchAddress: '',
+    searchRecipient: '',
+    searchRibbon: '',
   },
 
   init(session) {
@@ -69,10 +69,10 @@ const Floor2View = {
           <span class="filter-label">주문 상태</span>
           <div class="status-tab-group" id="f2-status-tabs">
             <button class="status-tab-btn active" data-sg="">전체</button>
-            <button class="status-tab-btn" data-sg="0">접수됨</button>
-            <button class="status-tab-btn" data-sg="1,2,3">진행중</button>
+            <button class="status-tab-btn" data-sg="0,1,2">주문접수</button>
+            <button class="status-tab-btn" data-sg="3">배송중</button>
             <button class="status-tab-btn" data-sg="4">배송완료</button>
-            <button class="status-tab-btn" data-sg="5,6">취소/반품</button>
+            <button class="status-tab-btn" data-sg="5,6">주문취소</button>
           </div>
           <button class="btn btn-secondary btn-sm" id="f2-refresh" style="margin-left:auto">↻ 새로고침</button>
         </div>
@@ -92,6 +92,7 @@ const Floor2View = {
             <button class="quick-date-btn f2-quick" data-quick="tomorrow">내일</button>
             <button class="quick-date-btn f2-quick active" data-quick="this-month">이번 달</button>
             <button class="quick-date-btn f2-quick" data-quick="last-month">지난 달</button>
+            <button class="quick-date-btn f2-quick" data-quick="future">예약건</button>
           </div>
         </div>
 
@@ -99,16 +100,16 @@ const Floor2View = {
         <div class="filter-row" style="padding-top:0.6rem;padding-bottom:0.6rem">
           <div class="search-fields-group">
             <div class="search-field-item">
-              <span class="search-field-label">🔍 체인명 검색</span>
-              <input type="text" id="f2-search-chain" class="search-field-input" placeholder="꽃집 이름·리본 문구">
+              <span class="search-field-label">🔍 주소지 검색</span>
+              <input type="text" id="f2-search-address" class="search-field-input" placeholder="배송지 주소">
             </div>
             <div class="search-field-item">
               <span class="search-field-label">🔍 받는분 검색</span>
               <input type="text" id="f2-search-recipient" class="search-field-input" placeholder="받는 분 성함">
             </div>
             <div class="search-field-item">
-              <span class="search-field-label">🔍 주소지 검색</span>
-              <input type="text" id="f2-search-address" class="search-field-input" placeholder="배송지 주소">
+              <span class="search-field-label">🔍 보낸문구 검색</span>
+              <input type="text" id="f2-search-ribbon" class="search-field-input" placeholder="리본 문구를 입력해주세요">
             </div>
           </div>
         </div>
@@ -154,14 +155,14 @@ const Floor2View = {
     });
 
     /* Text search — debounced */
-    ['f2-search-chain','f2-search-recipient','f2-search-address'].forEach(id => {
+    ['f2-search-address','f2-search-recipient','f2-search-ribbon'].forEach(id => {
       let t;
       document.getElementById(id).addEventListener('input', e => {
         clearTimeout(t);
         t = setTimeout(() => {
-          if (id === 'f2-search-chain')     Floor2View._filterState.searchChain     = e.target.value.trim();
-          if (id === 'f2-search-recipient') Floor2View._filterState.searchRecipient = e.target.value.trim();
           if (id === 'f2-search-address')   Floor2View._filterState.searchAddress   = e.target.value.trim();
+          if (id === 'f2-search-recipient') Floor2View._filterState.searchRecipient = e.target.value.trim();
+          if (id === 'f2-search-ribbon')    Floor2View._filterState.searchRibbon    = e.target.value.trim();
           Floor2View._loadMyOrders();
         }, 280);
       });
@@ -188,6 +189,10 @@ const Floor2View = {
       const d    = new Date(today.getFullYear(), today.getMonth()-1, 1);
       const last = new Date(today.getFullYear(), today.getMonth(), 0);
       from = fmt(d); to = fmt(last);
+    } else if (quick === 'future') {
+      const tomorrow = new Date(today); tomorrow.setDate(today.getDate()+1);
+      const farFuture = new Date(today); farFuture.setFullYear(today.getFullYear()+1);
+      from = fmt(tomorrow); to = fmt(farFuture);
     }
     if (from) { Floor2View._filterState.dateFrom = from; const el = document.getElementById('f2-date-from'); if (el) el.value = from; }
     if (to)   { Floor2View._filterState.dateTo   = to;   const el = document.getElementById('f2-date-to');   if (el) el.value = to; }
@@ -217,9 +222,9 @@ const Floor2View = {
 
       /* Text search */
       const lc = s => (s || '').toLowerCase();
-      if (fs.searchChain)     orders = orders.filter(o => lc(o.chainName).includes(lc(fs.searchChain)) || lc(o.ribbonText).includes(lc(fs.searchChain)));
-      if (fs.searchRecipient) orders = orders.filter(o => lc(o.recipientName).includes(lc(fs.searchRecipient)));
       if (fs.searchAddress)   orders = orders.filter(o => lc(o.deliveryAddress).includes(lc(fs.searchAddress)));
+      if (fs.searchRecipient) orders = orders.filter(o => lc(o.recipientName).includes(lc(fs.searchRecipient)));
+      if (fs.searchRibbon)    orders = orders.filter(o => lc(o.ribbonText).includes(lc(fs.searchRibbon)));
 
       const _cg = s => s === 3 ? 1 : s === 4 ? 2 : s >= 5 ? 3 : 0;
       orders.sort((a, b) => {

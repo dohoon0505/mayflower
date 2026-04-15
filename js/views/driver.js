@@ -13,8 +13,9 @@ const DriverView = {
   _filterState: {
     dateFrom: '',
     dateTo: '',
-    searchRecipient: '',
     searchAddress: '',
+    searchRecipient: '',
+    searchRibbon: '',
   },
 
   init(session) {
@@ -70,6 +71,7 @@ const DriverView = {
             <button class="quick-date-btn drv-quick" data-quick="today">오늘</button>
             <button class="quick-date-btn drv-quick" data-quick="tomorrow">내일</button>
             <button class="quick-date-btn drv-quick" data-quick="this-month">이번 달</button>
+            <button class="quick-date-btn drv-quick" data-quick="future">예약건</button>
           </div>
           <button class="btn btn-ghost btn-sm" id="drv-clear-date" title="날짜 필터 해제">✕ 날짜 해제</button>
           <button class="btn btn-secondary btn-sm" id="drv-refresh" style="margin-left:auto">↻ 새로고침</button>
@@ -77,14 +79,18 @@ const DriverView = {
 
         <!-- Row 2: Text search -->
         <div class="filter-row" style="padding-top:0.6rem;padding-bottom:0.6rem">
-          <div class="search-fields-group" style="grid-template-columns:1fr 1fr">
+          <div class="search-fields-group">
+            <div class="search-field-item">
+              <span class="search-field-label">🔍 주소지 검색</span>
+              <input type="text" id="drv-search-address" class="search-field-input" placeholder="배송지 주소">
+            </div>
             <div class="search-field-item">
               <span class="search-field-label">🔍 받는분 검색</span>
               <input type="text" id="drv-search-recipient" class="search-field-input" placeholder="받는 분 성함">
             </div>
             <div class="search-field-item">
-              <span class="search-field-label">🔍 주소지 검색</span>
-              <input type="text" id="drv-search-address" class="search-field-input" placeholder="배송지 주소">
+              <span class="search-field-label">🔍 보낸문구 검색</span>
+              <input type="text" id="drv-search-ribbon" class="search-field-input" placeholder="리본 문구를 입력해주세요">
             </div>
           </div>
         </div>
@@ -122,13 +128,14 @@ const DriverView = {
         DriverView._loadDeliveries();
       });
     });
-    ['drv-search-recipient','drv-search-address'].forEach(id => {
+    ['drv-search-address','drv-search-recipient','drv-search-ribbon'].forEach(id => {
       let t;
       document.getElementById(id).addEventListener('input', e => {
         clearTimeout(t);
         t = setTimeout(() => {
-          if (id === 'drv-search-recipient') DriverView._filterState.searchRecipient = e.target.value.trim();
           if (id === 'drv-search-address')   DriverView._filterState.searchAddress   = e.target.value.trim();
+          if (id === 'drv-search-recipient') DriverView._filterState.searchRecipient = e.target.value.trim();
+          if (id === 'drv-search-ribbon')    DriverView._filterState.searchRibbon    = e.target.value.trim();
           DriverView._loadDeliveries();
         }, 280);
       });
@@ -148,6 +155,10 @@ const DriverView = {
     else if (quick === 'this-month') {
       from = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-01`;
       to   = fmt(today);
+    } else if (quick === 'future') {
+      const tomorrow = new Date(today); tomorrow.setDate(today.getDate()+1);
+      const farFuture = new Date(today); farFuture.setFullYear(today.getFullYear()+1);
+      from = fmt(tomorrow); to = fmt(farFuture);
     }
     if (from) { DriverView._filterState.dateFrom = from; const el = document.getElementById('drv-date-from'); if (el) el.value = from; }
     if (to)   { DriverView._filterState.dateTo   = to;   const el = document.getElementById('drv-date-to');   if (el) el.value = to; }
@@ -168,8 +179,9 @@ const DriverView = {
       if (fs.dateTo)   orders = orders.filter(o => o.deliveryDatetime <= fs.dateTo + 'T23:59:59');
 
       const lc = s => (s || '').toLowerCase();
-      if (fs.searchRecipient) orders = orders.filter(o => lc(o.recipientName).includes(lc(fs.searchRecipient)));
       if (fs.searchAddress)   orders = orders.filter(o => lc(o.deliveryAddress).includes(lc(fs.searchAddress)));
+      if (fs.searchRecipient) orders = orders.filter(o => lc(o.recipientName).includes(lc(fs.searchRecipient)));
+      if (fs.searchRibbon)    orders = orders.filter(o => lc(o.ribbonText).includes(lc(fs.searchRibbon)));
 
       const _cg = s => s === 3 ? 1 : s === 4 ? 2 : s >= 5 ? 3 : 0;
       orders.sort((a, b) => {
