@@ -96,7 +96,7 @@ const UI = {
     return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
   },
 
-  /* Returns e.g. "2시간 30분 남음" / "15분 지남" */
+  /* Returns e.g. "배송요청 시간까지 2시간 30분 남음" / "15분 지남" */
   timeRemaining(iso) {
     if (!iso) return '-';
     const diff = new Date(iso) - Date.now();
@@ -104,9 +104,9 @@ const UI = {
     const h    = Math.floor(abs / 3600000);
     const m    = Math.floor((abs % 3600000) / 60000);
     if (diff > 0) {
-      if (h > 0)  return `${h}시간 ${m}분 남음`;
-      if (m > 0)  return `${m}분 남음`;
-      return '곧 도착';
+      if (h > 0)  return `배송요청 시간까지 ${h}시간 ${m}분 남음`;
+      if (m > 0)  return `배송요청 시간까지 ${m}분 남음`;
+      return '배송요청 시간까지 곧 도착';
     } else {
       if (h > 0)  return `${h}시간 ${m}분 지남`;
       if (m > 0)  return `${m}분 지남`;
