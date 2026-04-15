@@ -163,10 +163,6 @@ function _seed() {
   localStorage.setItem(KEYS.seeded, '1');
 }
 
-  _set(KEYS.chat, []);
-  localStorage.setItem(KEYS.seeded, '1');
-}
-
 /* ── Store API ────────────────────────────────────────────── */
 const Store = {
   /* Users */
