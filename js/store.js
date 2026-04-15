@@ -8,7 +8,7 @@ const KEYS = {
   drivers:  'maydaegu.drivers',
   orders:   'maydaegu.orders',
   chat:     'maydaegu.chat',
-  seeded:   'maydaegu.seeded.v5',   /* bump version to re-seed */
+  seeded:   'maydaegu.seeded.v6',   /* bump version to re-seed */
 };
 
 /* Predefined product categories */
@@ -52,108 +52,104 @@ function _seed() {
     { id: 5, name: '꽃바구니',  category: '꽃바구니', isActive: true, createdAt: '2025-01-01T00:00:00' },
   ]);
 
-  /* ── 28명의 기사 — 각 뱃지 상태별 7명씩 예시 데이터 ───────────── */
-  const driverNames = [
-    /* delivering (배송중) 1-7 */
-    '이민준','박서연','정지훈','김도윤','최하준','한시우','윤주원',
-    /* assigned (배차완료) 8-14 */
-    '송지후','임건우','강선우','조예준','배민재','신우진','홍지안',
-    /* returning (복귀중) 15-21 */
-    '류태윤','오서진','권예성','남현우','문지환','서준영','황도현',
-    /* waiting/off (배송대기/휴무) 22-28 */
-    '표은찬','구지훈','노시온','고라온','백하람','석해찬','전  율',
-  ];
-  const drivers = driverNames.map((name, i) => ({
-    id: i + 1,
-    name: name.trim(),
-    phone: `010-${String(1111 * ((i % 9) + 1)).padStart(4,'0')}-${String(2222 * ((i % 9) + 1)).padStart(4,'0')}`,
-    isActive: true,
-    createdAt: '2025-01-01T00:00:00',
-  }));
-  _set(KEYS.drivers, drivers);
+  /* ── 기사 12명 — 뱃지별 (배송중 4명, 나머지 2명씩) ──────────── */
+  _set(KEYS.drivers, [
+    /* 배송중 (4명) — delivering + completed 수와 진행률이 각각 다름 */
+    { id:  1, name: '이민준', phone: '010-1111-2222', isActive: true, createdAt: '2025-01-01T00:00:00' }, // 2배송+2완료 = 50%
+    { id:  2, name: '박서연', phone: '010-3333-4444', isActive: true, createdAt: '2025-01-01T00:00:00' }, // 1배송+3완료 = 75%
+    { id:  3, name: '정지훈', phone: '010-5555-6666', isActive: true, createdAt: '2025-01-01T00:00:00' }, // 3배송+1완료 = 25%
+    { id:  4, name: '김도윤', phone: '010-7777-8888', isActive: true, createdAt: '2025-01-01T00:00:00' }, // 1배송+4완료 = 80%
+    /* 배차완료 (2명) */
+    { id:  5, name: '최하준', phone: '010-2222-3333', isActive: true, createdAt: '2025-01-01T00:00:00' }, // assigned 2건
+    { id:  6, name: '한시우', phone: '010-4444-5555', isActive: true, createdAt: '2025-01-01T00:00:00' }, // assigned 1건
+    /* 복귀중 (2명) */
+    { id:  7, name: '윤주원', phone: '010-6666-7777', isActive: true, createdAt: '2025-01-01T00:00:00' }, // completed 3건
+    { id:  8, name: '송지후', phone: '010-8888-9999', isActive: true, createdAt: '2025-01-01T00:00:00' }, // completed 2건
+    /* 배송대기 (2명) */
+    { id:  9, name: '임건우', phone: '010-1234-5678', isActive: true, createdAt: '2025-01-01T00:00:00' }, // 주문 없음
+    { id: 10, name: '강선우', phone: '010-9876-5432', isActive: true, createdAt: '2025-01-01T00:00:00' }, // 주문 없음
+    /* 휴무 (2명) — localStorage offduty=1 */
+    { id: 11, name: '조예준', phone: '010-1357-2468', isActive: true, createdAt: '2025-01-01T00:00:00' },
+    { id: 12, name: '배민재', phone: '010-2468-1357', isActive: true, createdAt: '2025-01-01T00:00:00' },
+  ]);
 
-  /* 기사 22-24: 배송대기(출근), 25-28: 휴무 로컬스토리지 플래그 */
-  for (let i = 25; i <= 28; i++) {
-    localStorage.setItem(`maydaegu.driver.offduty.${i}`, '1');
-  }
+  /* 휴무 기사 localStorage 플래그 */
+  localStorage.setItem('maydaegu.driver.offduty.11', '1');
+  localStorage.setItem('maydaegu.driver.offduty.12', '1');
 
-  /* ── 주문 시드 — 기사 상태별로 생성 ───────────────────────── */
-  const chains     = ['행복꽃집','봄꽃집','사랑꽃집','꽃향기','미소꽃집','꽃나라','새봄꽃집','꽃길','꽃피다','꽃마을'];
-  const recipients = ['김철수','이영희','박민수','최지원','정승현','홍길동','김민정','이상호','박지연','최건우','강수진','윤도영'];
-  const ribbons    = ['개업을 축하합니다','졸업을 축하합니다','취임을 축하드립니다','번창하세요','수고하셨습니다','항상 응원합니다','좋은 시작 되세요','축하드립니다','늘 건강하세요','감사합니다'];
-  const addresses  = [
-    '대구시 중구 동성로 123','대구시 수성구 범어동 456','대구시 달서구 상인동 789',
-    '대구시 북구 칠성동 321','대구시 동구 신천동 654','대구시 서구 내당동 987',
-    '대구시 남구 대명동 111','대구시 중구 서문로 222','대구시 수성구 지산동 333',
-    '대구시 달서구 진천동 444','대구시 북구 대현동 555','대구시 동구 효목동 666',
-  ];
-  const productsList = [
-    { id:1, name:'개업 화환' },
-    { id:2, name:'졸업 화환' },
-    { id:3, name:'축하 화환' },
-    { id:4, name:'근조 화환' },
-    { id:5, name:'꽃바구니' },
-  ];
-
-  const orders = [];
-  let oid = 1;
-  const mkOrder = (driver, status, deliveryHour, updatedHoursAgo) => {
-    const p = productsList[oid % productsList.length];
-    const o = {
-      id: oid++,
-      chainName:        chains[oid % chains.length],
-      productId:        p.id,
-      productName:      p.name,
-      deliveryDatetime: _addHours(now, deliveryHour),
-      isImmediate:      false,
-      deliveryAddress:  addresses[oid % addresses.length],
-      recipientName:    recipients[oid % recipients.length],
-      recipientPhone:   '010-1234-5678',
-      ribbonText:       ribbons[oid % ribbons.length],
-      occasionText:     '',
-      storePhotoUrl:    null,
-      status,
-      assignedDriverId:   driver ? driver.id   : null,
-      assignedDriverName: driver ? driver.name : null,
-      assignedAt:         driver ? _addHours(now, -4) : null,
-      deliveryPhotoUrl:   null,
-      createdByUserId:    1,
-      createdByName:      '2층 담당자',
-      createdAt:          _addHours(now, -6),
-      updatedAt:          _addHours(now, -updatedHoursAgo),
-    };
-    return o;
-  };
-
-  /* 배송중 (drivers 1-7): delivering 1건 + completed 1건씩 (진행률 50%) */
-  drivers.slice(0, 7).forEach((d, i) => {
-    orders.push(mkOrder(d, 3,  2 + (i % 3), 1));
-    orders.push(mkOrder(d, 4, -2 - (i % 3), 2));
+  /* ── 주문 시드 (명시적 — 진행률 의도대로) ────────────────────── */
+  const O = (id, chainName, productId, productName, deliveryHour, deliveryAddress,
+             recipientName, ribbonText, status, driverId, driverName, updatedHoursAgo) => ({
+    id, chainName, productId, productName,
+    deliveryDatetime: _addHours(now, deliveryHour),
+    isImmediate: false, deliveryAddress,
+    recipientName, recipientPhone: '010-1234-5678', ribbonText, occasionText: '',
+    storePhotoUrl: null, status,
+    assignedDriverId: driverId, assignedDriverName: driverName,
+    assignedAt: driverId ? _addHours(now, -4) : null,
+    deliveryPhotoUrl: null, createdByUserId: 1, createdByName: '2층 담당자',
+    createdAt: _addHours(now, -6), updatedAt: _addHours(now, -updatedHoursAgo),
   });
 
-  /* 배차완료 (drivers 8-14): assigned(1 or 2) 1건씩 */
-  drivers.slice(7, 14).forEach((d, i) => {
-    orders.push(mkOrder(d, (i % 2) + 1, 3 + (i % 4), 2));
-  });
+  _set(KEYS.orders, [
+    /* ── 이민준 (배송중 2건, 완료 2건 → 50%) ── */
+    O( 1,'행복꽃집',1,'개업 화환', 2,'대구시 중구 동성로 123',   '김철수','개업을 축하합니다',   3, 1,'이민준',1),
+    O( 2,'봄꽃집',  3,'축하 화환', 3,'대구시 수성구 범어동 456',  '이영희','취임을 축하드립니다', 3, 1,'이민준',1),
+    O( 3,'사랑꽃집',2,'졸업 화환',-2,'대구시 달서구 상인동 789',  '박민수','졸업을 축하합니다',   4, 1,'이민준',3),
+    O( 4,'꽃향기',  1,'개업 화환',-4,'대구시 북구 칠성동 321',   '최지원','번창하세요',          4, 1,'이민준',5),
 
-  /* 복귀중 (drivers 15-21): completed 2건씩 (delivering/assigned 없음) */
-  drivers.slice(14, 21).forEach((d, i) => {
-    orders.push(mkOrder(d, 4, -3 - (i % 3), 1));
-    orders.push(mkOrder(d, 4, -5 - (i % 3), 3));
-  });
+    /* ── 박서연 (배송중 1건, 완료 3건 → 75%) ── */
+    O( 5,'미소꽃집',3,'축하 화환', 1,'대구시 동구 신천동 654',   '정승현','수고하셨습니다',      3, 2,'박서연',1),
+    O( 6,'꽃나라',  2,'졸업 화환',-1,'대구시 서구 내당동 987',   '홍길동','항상 응원합니다',     4, 2,'박서연',2),
+    O( 7,'새봄꽃집',4,'근조 화환',-3,'대구시 남구 대명동 111',   '김민정','삼가 고인의 명복을 빕니다',4,2,'박서연',4),
+    O( 8,'꽃길',    1,'개업 화환',-5,'대구시 중구 서문로 222',   '이상호','좋은 시작 되세요',    4, 2,'박서연',6),
 
-  /* 배송대기 (drivers 22-24): 주문 없음 — 출근 상태 */
-  /* 휴무 (drivers 25-28): 주문 없음 + localStorage offduty=1 */
+    /* ── 정지훈 (배송중 3건, 완료 1건 → 25%) ── */
+    O( 9,'꽃피다',  3,'축하 화환', 2,'대구시 수성구 지산동 333', '박지연','축하드립니다',        3, 3,'정지훈',1),
+    O(10,'꽃마을',  5,'꽃바구니',  3,'대구시 달서구 진천동 444', '최건우','늘 건강하세요',        3, 3,'정지훈',1),
+    O(11,'행복꽃집',1,'개업 화환', 4,'대구시 북구 대현동 555',   '강수진','개업을 축하합니다',   3, 3,'정지훈',1),
+    O(12,'봄꽃집',  2,'졸업 화환',-2,'대구시 동구 효목동 666',   '윤도영','고생 많으셨습니다',   4, 3,'정지훈',4),
 
-  /* 미배차 대기 주문 몇 건 (floor1/admin 테스트용) */
-  orders.push(mkOrder(null, 0, 2, 1));
-  orders.push(mkOrder(null, 0, 4, 2));
-  orders.push(mkOrder(null, 1, 5, 2));
-  /* 취소 주문 */
-  orders.push(mkOrder(drivers[0], 5, 6, 6));
-  orders.push(mkOrder(drivers[2], 6, -6, 7));
+    /* ── 김도윤 (배송중 1건, 완료 4건 → 80%) ── */
+    O(13,'사랑꽃집',3,'축하 화환', 1,'대구시 수성구 황금동 77',  '한지수','항상 응원합니다',     3, 4,'김도윤',1),
+    O(14,'꽃향기',  1,'개업 화환',-1,'대구시 중구 남산동 22',    '오준혁','번창하세요',          4, 4,'김도윤',2),
+    O(15,'미소꽃집',2,'졸업 화환',-3,'대구시 달서구 용산동 11',  '서예은','졸업을 축하합니다',   4, 4,'김도윤',4),
+    O(16,'꽃나라',  5,'꽃바구니', -4,'대구시 북구 구암동 88',    '임지호','감사합니다',          4, 4,'김도윤',5),
+    O(17,'새봄꽃집',4,'근조 화환',-6,'대구시 동구 율하동 55',    '조수빈','삼가 고인의 명복을 빕니다',4,4,'김도윤',7),
 
-  _set(KEYS.orders, orders);
+    /* ── 최하준 (배차완료: assigned 2건) ── */
+    O(18,'꽃길',    1,'개업 화환', 3,'대구시 서구 비산동 44',    '윤재원','개업을 축하합니다',   1, 5,'최하준',2),
+    O(19,'꽃피다',  2,'졸업 화환', 5,'대구시 남구 봉덕동 99',    '강다인','졸업을 축하합니다',   2, 5,'최하준',2),
+
+    /* ── 한시우 (배차완료: assigned 1건) ── */
+    O(20,'꽃마을',  3,'축하 화환', 4,'대구시 수성구 만촌동 33',  '박은서','취임을 축하드립니다', 1, 6,'한시우',3),
+
+    /* ── 윤주원 (복귀중: completed 3건) ── */
+    O(21,'행복꽃집',1,'개업 화환',-2,'대구시 중구 삼덕동 16',    '최민준','개업을 축하합니다',   4, 7,'윤주원',1),
+    O(22,'봄꽃집',  5,'꽃바구니', -3,'대구시 달서구 죽전동 7',   '이채원','감사합니다',          4, 7,'윤주원',2),
+    O(23,'사랑꽃집',2,'졸업 화환',-5,'대구시 북구 침산동 82',    '김서준','졸업을 축하합니다',   4, 7,'윤주원',4),
+
+    /* ── 송지후 (복귀중: completed 2건) ── */
+    O(24,'꽃향기',  3,'축하 화환',-1,'대구시 동구 신암동 64',    '박하윤','축하드립니다',        4, 8,'송지후',2),
+    O(25,'미소꽃집',4,'근조 화환',-4,'대구시 서구 중리동 30',    '오지민','삼가 고인의 명복을 빕니다',4,8,'송지후',5),
+
+    /* ── 임건우, 강선우 (배송대기): 주문 없음 ── */
+
+    /* ── 조예준, 배민재 (휴무): 주문 없음 ── */
+
+    /* ── 미배차 대기 주문 (floor1 테스트용) ── */
+    O(26,'꽃나라',  1,'개업 화환', 2,'대구시 수성구 파동 15',    '장민호','개업을 축하합니다',   0, null,null,1),
+    O(27,'새봄꽃집',2,'졸업 화환', 4,'대구시 달서구 감삼동 27',  '류하은','졸업을 축하합니다',   0, null,null,2),
+    O(28,'꽃길',    3,'축하 화환', 6,'대구시 북구 복현동 50',    '정우성','취임을 축하드립니다', 1, null,null,3),
+
+    /* ── 취소 주문 ── */
+    O(29,'꽃피다',  1,'개업 화환', 8,'대구시 중구 공평동 4',     '윤소희','개업을 축하합니다',   5, null,null,6),
+    O(30,'꽃마을',  5,'꽃바구니', -6,'대구시 동구 방촌동 91',    '김태양','감사합니다',          6, null,null,8),
+  ]);
+
+  _set(KEYS.chat, []);
+  localStorage.setItem(KEYS.seeded, '1');
+}
 
   _set(KEYS.chat, []);
   localStorage.setItem(KEYS.seeded, '1');
