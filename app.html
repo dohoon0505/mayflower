@@ -238,10 +238,10 @@
 
         const cards = drivers.map(d => {
           const myOrders  = allOrders.filter(o => o.assignedDriverId === d.id);
-          const total      = myOrders.length;
           const delivering = myOrders.filter(o => o.status === 3);
           const completed  = myOrders.filter(o => o.status === 4);
           const remaining  = myOrders.filter(o => o.status < 3); /* 여분 */
+          const total      = delivering.length + completed.length; /* 배송중 + 배송완료 */
           const pct        = total > 0 ? Math.round((completed.length / total) * 100) : 0;
 
           const lastDone = completed
