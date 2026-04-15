@@ -247,6 +247,11 @@ const Floor2View = {
     const driverHtml = o.assignedDriverName
       ? `<span class="ocard-field-icon">🚚</span><span class="ocard-driver-tag">${UI.escHtml(o.assignedDriverName)}</span>${o.assignedAt ? `<span class="ocard-assign-time">(${UI.fmtDatetime(o.assignedAt)} 배차)</span>` : ''}`
       : `<span class="ocard-field-icon">🚚</span><span class="ocard-driver-none">배차 전</span>`;
+    const driverFieldCls = o.assignedDriverName ? 'ocard-field--assigned' : '';
+
+    const _tms = new Date(o.deliveryDatetime) - Date.now();
+    const _tmins = _tms / 60000;
+    const timeFieldCls = _tmins < 0 ? 'ocard-field--late' : _tmins < 60 ? 'ocard-field--soon' : _tmins < 180 ? 'ocard-field--warn' : 'ocard-field--ok';
 
     const storePhotoAction = o.storePhotoUrl ? 'view-store-photo' : 'store-photo';
     const storePhotoCls    = o.storePhotoUrl ? 'oa-success' : 'oa-muted';
@@ -278,10 +283,12 @@ const Floor2View = {
               ${occasionHtml}
             </div>
           </div>
-          <div class="ocard-footer">
-            <span class="ocard-footer-left">${driverHtml}</span>
-            <span class="ocard-timer ${new Date(o.deliveryDatetime) < new Date() ? 'ocard-timer-late' : ''}"
-              >⏱ ${UI.timeRemaining(o.deliveryDatetime)}</span>
+          <div class="ocard-2col">
+            <div class="ocard-field ${driverFieldCls}">${driverHtml}</div>
+            <div class="ocard-field ${timeFieldCls}">
+              <span class="ocard-field-icon">⏱</span>
+              <span>${UI.timeRemaining(o.deliveryDatetime)}</span>
+            </div>
           </div>
         </div>
         <div class="ocard-actions">

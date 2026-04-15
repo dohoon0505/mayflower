@@ -298,31 +298,20 @@
 .ocard-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
 @media (max-width: 680px) { .ocard-2col { grid-template-columns: 1fr; } }
 
-/* Footer field: driver | time remaining */
-.ocard-footer {
-  background: var(--bg-elevated); border: 1px solid var(--border);
-  border-radius: var(--radius-sm); padding: 0.35rem 0.625rem;
-  display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
-  font-size: 0.8rem; color: var(--text-secondary);
-}
-.ocard-footer-left { display: flex; align-items: center; gap: 0.35rem; min-width: 0; overflow: hidden; }
+/* Driver / time-remaining field modifiers */
 .ocard-driver-tag  { font-weight: 600; color: var(--primary); white-space: nowrap; }
 .ocard-driver-none { color: var(--text-muted); font-style: italic; }
 .ocard-assign-time { font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; }
-/* Time remaining badge */
-.ocard-timer {
-  flex-shrink: 0;
-  font-size: 0.78rem; font-weight: 600;
-  color: var(--primary);
-  background: #eff6ff; border: 1px solid #bfdbfe;
-  border-radius: var(--radius-sm);
-  padding: 0.1rem 0.5rem;
-  white-space: nowrap;
+
+/* Driver assigned — blue tint */
+.ocard-field--assigned {
+  background: #eff6ff; border-color: #bfdbfe; color: var(--text-primary);
 }
-.ocard-timer.ocard-timer-late {
-  color: var(--error);
-  background: #fef2f2; border-color: #fecaca;
-}
+/* Time urgency — green / amber / orange / red */
+.ocard-field--ok   { background: #f0fdf4; border-color: #bbf7d0; color: #15803d; }
+.ocard-field--warn { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+.ocard-field--soon { background: #fff7ed; border-color: #fed7aa; color: #c2410c; }
+.ocard-field--late { background: #fef2f2; border-color: #fecaca; color: var(--error); font-weight: 600; }
 
 /* ── Actions column (right) ──────────────────────────────── */
 .ocard-actions {

@@ -283,10 +283,16 @@ const Floor1View = {
       ? `<span class="ocard-field-icon">📝</span><span>${UI.escHtml(o.occasionText)}</span>`
       : `<span class="ocard-field-icon">📝</span><span style="color:var(--text-muted);font-style:italic">경조사어 없음</span>`;
 
-    /* Driver footer */
+    /* Driver field */
     const driverHtml = o.assignedDriverName
       ? `<span class="ocard-field-icon">🚚</span><span class="ocard-driver-tag">${UI.escHtml(o.assignedDriverName)}</span>${o.assignedAt ? `<span class="ocard-assign-time">(${UI.fmtDatetime(o.assignedAt)} 배차)</span>` : ''}`
       : `<span class="ocard-field-icon">🚚</span><span class="ocard-driver-none">배차 전</span>`;
+    const driverFieldCls = o.assignedDriverName ? 'ocard-field--assigned' : '';
+
+    /* Time urgency field */
+    const _tms = new Date(o.deliveryDatetime) - Date.now();
+    const _tmins = _tms / 60000;
+    const timeFieldCls = _tmins < 0 ? 'ocard-field--late' : _tmins < 60 ? 'ocard-field--soon' : _tmins < 180 ? 'ocard-field--warn' : 'ocard-field--ok';
 
     /* Store photo slot label */
     const storePhotoLabel = o.storePhotoUrl ? '🏪<br><span style="font-size:0.7rem">매장사진 보기</span>' : '🏪<br><span style="font-size:0.7rem">매장사진 없음</span>';
@@ -323,11 +329,13 @@ const Floor1View = {
               ${occasionHtml}
             </div>
           </div>
-          <!-- Footer: Driver | Time remaining -->
-          <div class="ocard-footer">
-            <span class="ocard-footer-left">${driverHtml}</span>
-            <span class="ocard-timer ${new Date(o.deliveryDatetime) < new Date() ? 'ocard-timer-late' : ''}"
-              >⏱ ${UI.timeRemaining(o.deliveryDatetime)}</span>
+          <!-- Row 3: Driver | Time remaining -->
+          <div class="ocard-2col">
+            <div class="ocard-field ${driverFieldCls}">${driverHtml}</div>
+            <div class="ocard-field ${timeFieldCls}">
+              <span class="ocard-field-icon">⏱</span>
+              <span>${UI.timeRemaining(o.deliveryDatetime)}</span>
+            </div>
           </div>
         </div>
         <div class="ocard-actions">
