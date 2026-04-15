@@ -5,7 +5,7 @@
 /* ── Shell ───────────────────────────────────────────────── */
 .shell {
   display: grid;
-  grid-template-columns: var(--sidebar-w) 1fr 280px 500px;
+  grid-template-columns: var(--sidebar-w) 1fr 360px 500px;
   grid-template-rows: 100vh;
   height: 100vh;
   overflow: hidden;
@@ -64,7 +64,7 @@
 
 /* Collapsed sidebar */
 .shell.sidebar-collapsed {
-  grid-template-columns: 52px 1fr 280px 500px;
+  grid-template-columns: 52px 1fr 360px 500px;
 }
 .shell.sidebar-collapsed .sidebar-logo {
   padding: 0;
