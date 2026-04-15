@@ -252,11 +252,11 @@
   border-left-color: var(--primary);
   background: #f0f7ff;
 }
-.dp-driver-card.dp-card-off {
-  border-color: #fca5a5;
-  border-left-color: #ef4444;
-  background: #fff5f5;
-  opacity: 0.78;
+.dp-driver-card.dp-card-returning {
+  border-color: #fed7aa;
+  border-left-color: #f97316;
+  background: #fff7ed;
+  opacity: 0.85;
 }
 
 /* Row 1: Name + status badge */
@@ -290,7 +290,7 @@
 }
 .dp-badge-delivering { background: #dbeafe; color: #1d4ed8; }
 .dp-badge-waiting    { background: #f1f5f9; color: var(--text-secondary); }
-.dp-badge-off        { background: #fee2e2; color: #b91c1c; }
+.dp-badge-returning  { background: #ffedd5; color: #c2410c; }
 
 /* Stats chips */
 .dp-card-stats {

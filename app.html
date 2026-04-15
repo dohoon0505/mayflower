@@ -249,19 +249,19 @@
           return;
         }
 
-        /* Build + sort: 배송중(0) → 배송대기(1) → 휴무(2) */
+        /* Build + sort: 배송중(0) → 배송대기(1) → 복귀중(2) */
         const data = drivers.map(d => {
-          const myOrders   = allOrders.filter(o => o.assignedDriverId === d.id);
-          const delivering = myOrders.filter(o => o.status === 3);
-          const completed  = myOrders.filter(o => o.status === 4);
-          const isOff      = DeliveryPanel._getStatus(d.id) === 'off';
-          const total      = delivering.length + completed.length;
-          const pct        = total > 0 ? Math.round((completed.length / total) * 100) : 0;
-          const priority   = isOff ? 2 : delivering.length > 0 ? 0 : 1;
-          return { d, delivering, completed, isOff, total, pct, priority };
+          const myOrders    = allOrders.filter(o => o.assignedDriverId === d.id);
+          const delivering  = myOrders.filter(o => o.status === 3);
+          const completed   = myOrders.filter(o => o.status === 4);
+          const isReturning = DeliveryPanel._getStatus(d.id) === 'returning';
+          const total       = delivering.length + completed.length;
+          const pct         = total > 0 ? Math.round((completed.length / total) * 100) : 0;
+          const priority    = isReturning ? 2 : delivering.length > 0 ? 0 : 1;
+          return { d, delivering, completed, isReturning, total, pct, priority };
         }).sort((a, b) => a.priority - b.priority);
 
-        const cards = data.map(({ d, delivering, completed, isOff, total, pct }) => {
+        const cards = data.map(({ d, delivering, completed, isReturning, total, pct }) => {
           const lastDone = completed
             .filter(o => o.updatedAt)
             .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0];
@@ -269,8 +269,8 @@
             ? UI.escHtml((lastDone.deliveryAddress || '').substring(0, 26))
             : '없음';
 
-          const [statusBadge, cardCls] = isOff
-            ? [`<span class="dp-badge dp-badge-off">휴무</span>`,       'dp-card-off']
+          const [statusBadge, cardCls] = isReturning
+            ? [`<span class="dp-badge dp-badge-returning">복귀중</span>`, 'dp-card-returning']
             : delivering.length > 0
               ? [`<span class="dp-badge dp-badge-delivering">배송중</span>`, 'dp-card-active']
               : [`<span class="dp-badge dp-badge-waiting">배송대기</span>`, ''];
@@ -306,7 +306,7 @@
         const d = drivers.find(x => String(x.id) === String(driverId));
         if (!d) return;
 
-        const isOff   = DeliveryPanel._getStatus(driverId) === 'off';
+        const curStatus = DeliveryPanel._getStatus(driverId);
         const completed = allOrders
           .filter(o => o.assignedDriverId === d.id && o.status === 4 && o.updatedAt)
           .sort((a, b) => new Date(a.updatedAt) - new Date(b.updatedAt));
@@ -331,22 +331,22 @@
         });
         overlay.querySelector('.modal-cancel').style.display = 'none';
 
-        /* 휴무 / 출근 버튼 */
+        /* 상태 변경 버튼: 배송중 · 배송대기 · 복귀중 */
         const footer = overlay.querySelector('.modal-footer');
         const wrap = document.createElement('div');
         wrap.style.cssText = 'display:flex;gap:0.5rem;margin-right:auto';
         wrap.innerHTML = `
-          <button class="btn btn-sm ${isOff ? 'btn-secondary' : 'btn-danger'}"   id="dp-btn-off">🔴 휴무</button>
-          <button class="btn btn-sm ${isOff ? 'btn-success'   : 'btn-secondary'}" id="dp-btn-on" >🟢 출근</button>`;
+          <button class="btn btn-sm ${curStatus !== 'returning' && curStatus === 'on' ? 'btn-primary' : 'btn-secondary'}"   id="dp-btn-on">🚚 출근</button>
+          <button class="btn btn-sm ${curStatus === 'returning' ? 'btn-warning' : 'btn-secondary'}" id="dp-btn-returning">🔄 복귀중</button>`;
         footer.insertBefore(wrap, footer.firstChild);
 
         const close = () => { overlay.classList.remove('show'); setTimeout(() => overlay.remove(), 300); };
-        wrap.querySelector('#dp-btn-off').addEventListener('click', () => {
-          DeliveryPanel._setStatus(driverId, 'off');
-          close(); DeliveryPanel.render();
-        });
         wrap.querySelector('#dp-btn-on').addEventListener('click', () => {
           DeliveryPanel._setStatus(driverId, 'on');
+          close(); DeliveryPanel.render();
+        });
+        wrap.querySelector('#dp-btn-returning').addEventListener('click', () => {
+          DeliveryPanel._setStatus(driverId, 'returning');
           close(); DeliveryPanel.render();
         });
       },
