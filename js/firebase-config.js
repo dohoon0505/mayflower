@@ -7,12 +7,8 @@
 const firebaseConfig = {
   apiKey: "AIzaSyBC4y-bbzIUdDxYo-K5kIF8_ms-XwNpBNs",
   authDomain: "mayflower-5c9dd.firebaseapp.com",
-  /* ⚠️ databaseURL — Firebase Console에서 Realtime Database 생성 후 실제 URL로 교체
-     기본 형식 예시:
-       https://mayflower-5c9dd-default-rtdb.firebaseio.com                      (us-central1)
-       https://mayflower-5c9dd-default-rtdb.asia-southeast1.firebasedatabase.app (싱가포르)
-       https://mayflower-5c9dd-default-rtdb.europe-west1.firebasedatabase.app   (유럽)
-  */
+  /* databaseURL — Realtime Database 리전: asia-southeast1 (싱가포르)
+     Firebase Console에서 확인됨 (2026-04-15) */
   databaseURL: "https://mayflower-5c9dd-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "mayflower-5c9dd",
   storageBucket: "mayflower-5c9dd.firebasestorage.app",
