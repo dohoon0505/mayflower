@@ -283,7 +283,6 @@
                 </button>
                 ${statusBadge}
               </div>
-              ${d.phone ? `<div class="dp-driver-meta"><span class="dp-meta-icon">📞</span>${UI.escHtml(d.phone)}</div>` : ''}
               <div class="dp-card-stats">
                 <span class="dp-stat dp-stat-delivering"><span class="dp-stat-num">${delivering.length}</span> 배송중</span>
                 <span class="dp-stat dp-stat-done"><span class="dp-stat-num">${completed.length}</span> 완료</span>
@@ -294,7 +293,7 @@
                 </div>
                 <span class="dp-progress-pct">${pct}%</span>
               </div>
-              <div class="dp-last-addr"><span class="dp-meta-icon">📍</span>${lastAddr}</div>
+              <div class="dp-last-addr"><span class="dp-meta-icon">📍</span>최종배송지: ${lastAddr}</div>
             </div>`;
         }).join('');
 
