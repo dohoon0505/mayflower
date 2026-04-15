@@ -265,13 +265,8 @@
   flex-shrink: 0;
   font-size: 0.825rem;
 }
-/* Chain: bold, primary text — most prominent */
-.ocard-chain {
-  font-weight: 700;
-  color: var(--text-primary);
-  font-size: 0.875rem;
-}
-/* Product: secondary text */
+/* Chain + Product: same secondary style */
+.ocard-chain,
 .ocard-product {
   color: var(--text-secondary);
 }
@@ -280,6 +275,19 @@
   color: var(--text-secondary);
 }
 .order-immediate { font-size: 0.72rem; color: var(--warning); background: #fffbeb; padding: 0.15rem 0.55rem; border-radius: var(--radius-sm); border: 1px solid #fde68a; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+
+/* Day-type badges */
+.ocard-day-badge {
+  display: inline-flex; align-items: center;
+  padding: 0.15rem 0.55rem; border-radius: var(--radius-sm);
+  font-size: 0.78rem; font-weight: 700;
+  white-space: nowrap; flex-shrink: 0;
+}
+.ocard-day-today  { background: #dbeafe; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.ocard-day-future { background: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff; }
+
+/* Completed order elapsed-time field */
+.ocard-field--done { background: #f0fdf4; border-color: #bbf7d0; color: #166534; }
 
 /* Info field box (gray rounded) */
 .ocard-field {

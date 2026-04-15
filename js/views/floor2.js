@@ -249,9 +249,26 @@ const Floor2View = {
       : `<span class="ocard-field-icon">🚚</span><span class="ocard-driver-none">배차 전</span>`;
     const driverFieldCls = o.assignedDriverName ? 'ocard-field--assigned' : '';
 
-    const _tms = new Date(o.deliveryDatetime) - Date.now();
-    const _tmins = _tms / 60000;
-    const timeFieldCls = _tmins < 0 ? 'ocard-field--late' : _tmins < 60 ? 'ocard-field--soon' : _tmins < 180 ? 'ocard-field--warn' : 'ocard-field--ok';
+    const _today = new Date().toISOString().slice(0, 10);
+    const _delivDay = (o.deliveryDatetime || '').slice(0, 10);
+    const dayBadge = _delivDay === _today
+      ? '<span class="ocard-day-badge ocard-day-today">당일건</span>'
+      : _delivDay > _today
+        ? '<span class="ocard-day-badge ocard-day-future">예약건</span>'
+        : '';
+
+    let timeFieldCls, timeText;
+    if (o.status === 4 && o.createdAt && o.updatedAt) {
+      const _el = new Date(o.updatedAt) - new Date(o.createdAt);
+      const _eh = Math.floor(_el / 3600000), _em = Math.floor((_el % 3600000) / 60000);
+      timeText = (_eh > 0 ? `${_eh}시간 ` : '') + `${_em}분 경과 후 배송완료`;
+      timeFieldCls = 'ocard-field--done';
+    } else {
+      const _tms = new Date(o.deliveryDatetime) - Date.now();
+      const _tmins = _tms / 60000;
+      timeFieldCls = _tmins < 0 ? 'ocard-field--late' : _tmins < 60 ? 'ocard-field--soon' : _tmins < 180 ? 'ocard-field--warn' : 'ocard-field--ok';
+      timeText = UI.timeRemaining(o.deliveryDatetime);
+    }
 
     const storePhotoAction = o.storePhotoUrl ? 'view-store-photo' : 'store-photo';
     const storePhotoCls    = o.storePhotoUrl ? 'oa-success' : 'oa-muted';
@@ -264,6 +281,7 @@ const Floor2View = {
             <span class="ocard-chain">${UI.escHtml(o.chainName || '-')}</span>
             <span class="ocard-product">${UI.escHtml(o.productName)}</span>
             <span class="ocard-datetime">🕐 ${dt}</span>
+            ${dayBadge}
           </div>
           <div class="ocard-2col">
             <div class="ocard-field">
@@ -287,7 +305,7 @@ const Floor2View = {
             <div class="ocard-field ${driverFieldCls}">${driverHtml}</div>
             <div class="ocard-field ${timeFieldCls}">
               <span class="ocard-field-icon">⏱</span>
-              <span>${UI.timeRemaining(o.deliveryDatetime)}</span>
+              <span>${timeText}</span>
             </div>
           </div>
         </div>
