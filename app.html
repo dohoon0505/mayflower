@@ -249,19 +249,20 @@
           return;
         }
 
-        /* Build + sort: 배송중(0) → 배송대기(1) → 복귀중(2) */
+        /* Build + sort: 배송중(0) → 배차완료(1) → 배송대기(2) → 복귀중(3) */
         const data = drivers.map(d => {
           const myOrders    = allOrders.filter(o => o.assignedDriverId === d.id);
+          const assigned    = myOrders.filter(o => o.status >= 0 && o.status <= 2); // 배차됐지만 미출발
           const delivering  = myOrders.filter(o => o.status === 3);
           const completed   = myOrders.filter(o => o.status === 4);
           const isReturning = DeliveryPanel._getStatus(d.id) === 'returning';
           const total       = delivering.length + completed.length;
           const pct         = total > 0 ? Math.round((completed.length / total) * 100) : 0;
-          const priority    = isReturning ? 2 : delivering.length > 0 ? 0 : 1;
-          return { d, delivering, completed, isReturning, total, pct, priority };
+          const priority    = isReturning ? 3 : delivering.length > 0 ? 0 : assigned.length > 0 ? 1 : 2;
+          return { d, assigned, delivering, completed, isReturning, total, pct, priority };
         }).sort((a, b) => a.priority - b.priority);
 
-        const cards = data.map(({ d, delivering, completed, isReturning, total, pct }) => {
+        const cards = data.map(({ d, assigned, delivering, completed, isReturning, total, pct }) => {
           const lastDone = completed
             .filter(o => o.updatedAt)
             .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0];
@@ -270,10 +271,12 @@
             : '없음';
 
           const [statusBadge, cardCls] = isReturning
-            ? [`<span class="dp-badge dp-badge-returning">복귀중</span>`, 'dp-card-returning']
+            ? [`<span class="dp-badge dp-badge-returning">복귀중</span>`,   'dp-card-returning']
             : delivering.length > 0
-              ? [`<span class="dp-badge dp-badge-delivering">배송중</span>`, 'dp-card-active']
-              : [`<span class="dp-badge dp-badge-waiting">배송대기</span>`, ''];
+              ? [`<span class="dp-badge dp-badge-delivering">배송중</span>`,  'dp-card-active']
+              : assigned.length > 0
+                ? [`<span class="dp-badge dp-badge-assigned">배차완료</span>`, 'dp-card-assigned']
+                : [`<span class="dp-badge dp-badge-waiting">배송대기</span>`,  ''];
 
           return `
             <div class="dp-driver-card ${cardCls}">
