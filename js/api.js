@@ -63,8 +63,19 @@ const Api = {
     await _delay();
     const s = Auth.getSession();
     if (!s) throw { status: 401, message: '인증이 필요합니다.' };
-    if (!Auth.can('updateStatus', s.role)) throw { status: 403, message: '권한이 없습니다.' };
-    if (!Store.updateOrder(id, data)) throw { status: 404, message: '주문을 찾을 수 없습니다.' };
+    const o = Store.getOrderById(id);
+    if (!o) throw { status: 404, message: '주문을 찾을 수 없습니다.' };
+
+    if (s.role === 'floor2') {
+      /* floor2 can only edit their own orders; strip privileged fields */
+      if (o.createdByUserId !== s.userId) throw { status: 403, message: '권한이 없습니다.' };
+      const { assignedDriverId, ...safeData } = data;
+      if (!Store.updateOrder(id, safeData)) throw { status: 404, message: '주문을 찾을 수 없습니다.' };
+    } else if (!Auth.can('updateStatus', s.role)) {
+      throw { status: 403, message: '권한이 없습니다.' };
+    } else {
+      if (!Store.updateOrder(id, data)) throw { status: 404, message: '주문을 찾을 수 없습니다.' };
+    }
     return true;
   },
 
@@ -166,12 +177,14 @@ const Api = {
     const map = {};
     orders.forEach(o => {
       if (!o.assignedDriverName) return;
-      const key = `${o.assignedDriverName}||${o.productName}`;
+      const product  = Store.getProductById(o.productId);
+      const category = product?.category || '기타';
+      const key = `${o.assignedDriverName}||${category}`;
       map[key] = (map[key] || 0) + 1;
     });
     return Object.entries(map).map(([k, count]) => {
-      const [driverName, productName] = k.split('||');
-      return { driverName, productName, count };
+      const [driverName, category] = k.split('||');
+      return { driverName, category, count };
     }).sort((a, b) => a.driverName.localeCompare(b.driverName, 'ko'));
   },
 
@@ -185,14 +198,15 @@ const Api = {
     });
     const map = {};
     orders.forEach(o => {
-      const d = new Date(o.deliveryDatetime);
-      const date = UI.fmtDate(o.deliveryDatetime);
-      const key = `${date}||${o.productName}`;
+      const date     = UI.fmtDate(o.deliveryDatetime);
+      const product  = Store.getProductById(o.productId);
+      const category = product?.category || '기타';
+      const key = `${date}||${category}`;
       map[key] = (map[key] || 0) + 1;
     });
     return Object.entries(map).map(([k, count]) => {
-      const [date, productName] = k.split('||');
-      return { date, productName, count };
+      const [date, category] = k.split('||');
+      return { date, category, count };
     }).sort((a, b) => a.date.localeCompare(b.date));
   },
 
@@ -205,14 +219,16 @@ const Api = {
     );
     const map = {};
     orders.forEach(o => {
-      const d = new Date(o.deliveryDatetime);
-      const month = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-      const key = `${month}||${o.productName}`;
+      const d        = new Date(o.deliveryDatetime);
+      const month    = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+      const product  = Store.getProductById(o.productId);
+      const category = product?.category || '기타';
+      const key = `${month}||${category}`;
       map[key] = (map[key] || 0) + 1;
     });
     return Object.entries(map).map(([k, count]) => {
-      const [month, productName] = k.split('||');
-      return { month, productName, count };
+      const [month, category] = k.split('||');
+      return { month, category, count };
     }).sort((a, b) => a.month.localeCompare(b.month));
   },
 };

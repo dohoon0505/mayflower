@@ -8,7 +8,7 @@ const KEYS = {
   drivers:  'maydaegu.drivers',
   orders:   'maydaegu.orders',
   chat:     'maydaegu.chat',
-  seeded:   'maydaegu.seeded.v3',   /* bump version to re-seed */
+  seeded:   'maydaegu.seeded.v4',   /* bump version to re-seed */
 };
 
 /* Predefined product categories */
@@ -59,16 +59,16 @@ function _seed() {
   ]);
 
   _set(KEYS.orders, [
-    { id:1,  chainName:'행복꽃집', productId:1, productName:'개업 화환', deliveryDatetime:_addHours(now,2),   isImmediate:false, deliveryAddress:'대구시 중구 동성로 123',    recipientName:'김철수', recipientPhone:'010-1234-5678', ribbonText:'개업을 축하합니다',       occasionText:'', storePhotoUrl:null, status:0, assignedDriverId:null, assignedDriverName:null, deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-1),  updatedAt:_addHours(now,-1) },
-    { id:2,  chainName:'봄꽃집',   productId:2, productName:'졸업 화환', deliveryDatetime:_addHours(now,3),   isImmediate:false, deliveryAddress:'대구시 수성구 범어동 456',   recipientName:'이영희', recipientPhone:'010-2345-6789', ribbonText:'졸업을 축하합니다',       occasionText:'', storePhotoUrl:null, status:0, assignedDriverId:null, assignedDriverName:null, deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-2),  updatedAt:_addHours(now,-2) },
-    { id:3,  chainName:'사랑꽃집', productId:3, productName:'축하 화환', deliveryDatetime:_addHours(now,4),   isImmediate:false, deliveryAddress:'대구시 달서구 상인동 789',   recipientName:'박민수', recipientPhone:'010-3456-7890', ribbonText:'취임을 축하드립니다',     occasionText:'', storePhotoUrl:null, status:1, assignedDriverId:null, assignedDriverName:null, deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-3),  updatedAt:_addHours(now,-1) },
-    { id:4,  chainName:'꽃향기',   productId:1, productName:'개업 화환', deliveryDatetime:_addHours(now,5),   isImmediate:false, deliveryAddress:'대구시 북구 칠성동 321',    recipientName:'최지원', recipientPhone:'010-4567-8901', ribbonText:'번창하세요',              occasionText:'', storePhotoUrl:null, status:2, assignedDriverId:null, assignedDriverName:null, deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-4),  updatedAt:_addHours(now,-2) },
-    { id:5,  chainName:'미소꽃집', productId:2, productName:'졸업 화환', deliveryDatetime:_addHours(now,1),   isImmediate:true,  deliveryAddress:'대구시 동구 신천동 654',    recipientName:'정승현', recipientPhone:'010-5678-9012', ribbonText:'수고하셨습니다',          occasionText:'', storePhotoUrl:null, status:3, assignedDriverId:1,    assignedDriverName:'이민준', deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-5),  updatedAt:_addHours(now,-1) },
-    { id:6,  chainName:'꽃나라',   productId:3, productName:'축하 화환', deliveryDatetime:_addHours(now,2),   isImmediate:false, deliveryAddress:'대구시 서구 내당동 987',    recipientName:'홍길동', recipientPhone:'010-6789-0123', ribbonText:'항상 응원합니다',         occasionText:'', storePhotoUrl:null, status:3, assignedDriverId:2,    assignedDriverName:'박서연', deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-6),  updatedAt:_addHours(now,-2) },
-    { id:7,  chainName:'새봄꽃집', productId:1, productName:'개업 화환', deliveryDatetime:_addHours(now,-2),  isImmediate:false, deliveryAddress:'대구시 남구 대명동 111',    recipientName:'김민정', recipientPhone:'010-7890-1234', ribbonText:'좋은 시작 되세요',        occasionText:'', storePhotoUrl:null, status:4, assignedDriverId:1,    assignedDriverName:'이민준', deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-8),  updatedAt:_addHours(now,-3) },
-    { id:8,  chainName:'꽃길',     productId:4, productName:'근조 화환', deliveryDatetime:_addHours(now,-4),  isImmediate:false, deliveryAddress:'대구시 중구 서문로 222',    recipientName:'이상호', recipientPhone:'010-8901-2345', ribbonText:'삼가 고인의 명복을 빕니다', occasionText:'삼가 고인의 명복을 빕니다', storePhotoUrl:null, status:4, assignedDriverId:2, assignedDriverName:'박서연', deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-10), updatedAt:_addHours(now,-5) },
-    { id:9,  chainName:'꽃피다',   productId:2, productName:'졸업 화환', deliveryDatetime:_addHours(now,6),   isImmediate:false, deliveryAddress:'대구시 수성구 지산동 333',  recipientName:'박지연', recipientPhone:'010-9012-3456', ribbonText:'고생 많으셨습니다',       occasionText:'', storePhotoUrl:null, status:5, assignedDriverId:null, assignedDriverName:null, deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-12), updatedAt:_addHours(now,-6) },
-    { id:10, chainName:'꽃마을',   productId:3, productName:'축하 화환', deliveryDatetime:_addHours(now,-6),  isImmediate:false, deliveryAddress:'대구시 달서구 진천동 444',  recipientName:'최건우', recipientPhone:'010-0123-4567', ribbonText:'축하드립니다',            occasionText:'', storePhotoUrl:null, status:6, assignedDriverId:3,    assignedDriverName:'정지훈', deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-14), updatedAt:_addHours(now,-7) },
+    { id:1,  chainName:'행복꽃집', productId:1, productName:'개업 화환', deliveryDatetime:_addHours(now,2),   isImmediate:false, deliveryAddress:'대구시 중구 동성로 123',    recipientName:'김철수', recipientPhone:'010-1234-5678', ribbonText:'개업을 축하합니다',       occasionText:'', storePhotoUrl:null, status:0, assignedDriverId:null, assignedDriverName:null, assignedAt:null, deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-1),  updatedAt:_addHours(now,-1) },
+    { id:2,  chainName:'봄꽃집',   productId:2, productName:'졸업 화환', deliveryDatetime:_addHours(now,3),   isImmediate:false, deliveryAddress:'대구시 수성구 범어동 456',   recipientName:'이영희', recipientPhone:'010-2345-6789', ribbonText:'졸업을 축하합니다',       occasionText:'', storePhotoUrl:null, status:0, assignedDriverId:null, assignedDriverName:null, assignedAt:null, deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-2),  updatedAt:_addHours(now,-2) },
+    { id:3,  chainName:'사랑꽃집', productId:3, productName:'축하 화환', deliveryDatetime:_addHours(now,4),   isImmediate:false, deliveryAddress:'대구시 달서구 상인동 789',   recipientName:'박민수', recipientPhone:'010-3456-7890', ribbonText:'취임을 축하드립니다',     occasionText:'', storePhotoUrl:null, status:1, assignedDriverId:null, assignedDriverName:null, assignedAt:null, deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-3),  updatedAt:_addHours(now,-1) },
+    { id:4,  chainName:'꽃향기',   productId:1, productName:'개업 화환', deliveryDatetime:_addHours(now,5),   isImmediate:false, deliveryAddress:'대구시 북구 칠성동 321',    recipientName:'최지원', recipientPhone:'010-4567-8901', ribbonText:'번창하세요',              occasionText:'', storePhotoUrl:null, status:2, assignedDriverId:null, assignedDriverName:null, assignedAt:null, deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-4),  updatedAt:_addHours(now,-2) },
+    { id:5,  chainName:'미소꽃집', productId:2, productName:'졸업 화환', deliveryDatetime:_addHours(now,1),   isImmediate:true,  deliveryAddress:'대구시 동구 신천동 654',    recipientName:'정승현', recipientPhone:'010-5678-9012', ribbonText:'수고하셨습니다',          occasionText:'', storePhotoUrl:null, status:3, assignedDriverId:1,    assignedDriverName:'이민준', assignedAt:_addHours(now,-1),  deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-5),  updatedAt:_addHours(now,-1) },
+    { id:6,  chainName:'꽃나라',   productId:3, productName:'축하 화환', deliveryDatetime:_addHours(now,2),   isImmediate:false, deliveryAddress:'대구시 서구 내당동 987',    recipientName:'홍길동', recipientPhone:'010-6789-0123', ribbonText:'항상 응원합니다',         occasionText:'', storePhotoUrl:null, status:3, assignedDriverId:2,    assignedDriverName:'박서연', assignedAt:_addHours(now,-2),  deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-6),  updatedAt:_addHours(now,-2) },
+    { id:7,  chainName:'새봄꽃집', productId:1, productName:'개업 화환', deliveryDatetime:_addHours(now,-2),  isImmediate:false, deliveryAddress:'대구시 남구 대명동 111',    recipientName:'김민정', recipientPhone:'010-7890-1234', ribbonText:'좋은 시작 되세요',        occasionText:'', storePhotoUrl:null, status:4, assignedDriverId:1,    assignedDriverName:'이민준', assignedAt:_addHours(now,-3),  deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-8),  updatedAt:_addHours(now,-3) },
+    { id:8,  chainName:'꽃길',     productId:4, productName:'근조 화환', deliveryDatetime:_addHours(now,-4),  isImmediate:false, deliveryAddress:'대구시 중구 서문로 222',    recipientName:'이상호', recipientPhone:'010-8901-2345', ribbonText:'삼가 고인의 명복을 빕니다', occasionText:'삼가 고인의 명복을 빕니다', storePhotoUrl:null, status:4, assignedDriverId:2, assignedDriverName:'박서연', assignedAt:_addHours(now,-5), deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-10), updatedAt:_addHours(now,-5) },
+    { id:9,  chainName:'꽃피다',   productId:2, productName:'졸업 화환', deliveryDatetime:_addHours(now,6),   isImmediate:false, deliveryAddress:'대구시 수성구 지산동 333',  recipientName:'박지연', recipientPhone:'010-9012-3456', ribbonText:'고생 많으셨습니다',       occasionText:'', storePhotoUrl:null, status:5, assignedDriverId:null, assignedDriverName:null, assignedAt:null, deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-12), updatedAt:_addHours(now,-6) },
+    { id:10, chainName:'꽃마을',   productId:3, productName:'축하 화환', deliveryDatetime:_addHours(now,-6),  isImmediate:false, deliveryAddress:'대구시 달서구 진천동 444',  recipientName:'최건우', recipientPhone:'010-0123-4567', ribbonText:'축하드립니다',            occasionText:'', storePhotoUrl:null, status:6, assignedDriverId:3,    assignedDriverName:'정지훈', assignedAt:_addHours(now,-7),  deliveryPhotoUrl:null, createdByUserId:1, createdByName:'2층 담당자', createdAt:_addHours(now,-14), updatedAt:_addHours(now,-7) },
   ]);
 
   _set(KEYS.chat, []);
@@ -175,7 +175,7 @@ const Store = {
       ribbonText:       data.ribbonText || '',
       occasionText:     data.occasionText || '',
       status:           0,
-      assignedDriverId: null, assignedDriverName: null,
+      assignedDriverId: null, assignedDriverName: null, assignedAt: null,
       storePhotoUrl:    null,
       deliveryPhotoUrl: null,
       createdByUserId:  session.userId,
@@ -211,12 +211,17 @@ const Store = {
     }
     if ('assignedDriverId' in data) {
       if (!data.assignedDriverId || data.assignedDriverId === '0') {
-        updates.assignedDriverId = null;
+        updates.assignedDriverId   = null;
         updates.assignedDriverName = null;
+        updates.assignedAt         = null;
       } else {
-        updates.assignedDriverId = +data.assignedDriverId;
+        updates.assignedDriverId   = +data.assignedDriverId;
         const driver = Store.getDriverById(+data.assignedDriverId);
         updates.assignedDriverName = driver ? driver.name : cur.assignedDriverName;
+        /* Only update assignedAt if driver actually changed */
+        if (+data.assignedDriverId !== cur.assignedDriverId) {
+          updates.assignedAt = new Date().toISOString();
+        }
       }
     }
 
@@ -236,9 +241,11 @@ const Store = {
     const idx = list.findIndex(o => o.id === id);
     if (idx < 0) return false;
     const driver = Store.getDriverById(driverId);
+    const now = new Date().toISOString();
     list[idx].assignedDriverId = driverId;
     list[idx].assignedDriverName = driver ? driver.name : '';
-    list[idx].updatedAt = new Date().toISOString();
+    list[idx].assignedAt = now;
+    list[idx].updatedAt = now;
     _set(KEYS.orders, list); return true;
   },
   completeOrder(id, photoUrl) {

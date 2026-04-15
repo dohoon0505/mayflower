@@ -271,69 +271,34 @@ const Floor1View = {
       Floor1View._removeBulkBar();
       return;
     }
-    const role = Floor1View._session?.role;
-    const showActions = role === 'floor1' || role === 'admin';
-    UI.setMain(`<div class="order-list">${orders.map(o => Floor1View._orderCard(o, showActions)).join('')}</div>`);
+    UI.setMain(`<div class="order-list">${orders.map(o => Floor1View._orderCard(o, true)).join('')}</div>`);
     Floor1View._updateBulkBar();
   },
 
-  /* ── Order card (wireframe design) ──────────────────────── */
+  /* ── Order card (3 fixed action buttons) ────────────────── */
   _orderCard(o, showActions) {
-    const dt      = UI.fmtDatetime(o.deliveryDatetime);
-    const created = UI.fmtDatetime(o.createdAt);
+    const dt        = UI.fmtDatetime(o.deliveryDatetime);
     const immediate = o.isImmediate ? '<span class="order-immediate">즉시</span>' : '';
 
-    /* Text field: occasion > ribbon > empty */
-    const textContent = o.occasionText || o.ribbonText || '';
-    const textHtml = textContent
-      ? (o.ribbonText
-          ? `<span class="ocard-field-icon">🎀</span><span data-ribbon="${UI.escHtml(o.ribbonText)}" class="ocard-field-ribbon" title="클릭 시 클립보드 복사">${UI.escHtml(textContent)}</span>`
-          : `<span class="ocard-field-icon">📝</span><span>${UI.escHtml(textContent)}</span>`)
+    /* Ribbon field */
+    const ribbonHtml = o.ribbonText
+      ? `<span class="ocard-field-icon">🎀</span><span data-ribbon="${UI.escHtml(o.ribbonText)}" class="ocard-field-ribbon" title="클릭 시 클립보드 복사">${UI.escHtml(o.ribbonText)}</span>`
       : `<span class="ocard-field-icon">🎀</span><span style="color:var(--text-muted);font-style:italic">문구 없음</span>`;
 
-    /* Driver row */
+    /* Occasion field */
+    const occasionHtml = o.occasionText
+      ? `<span class="ocard-field-icon">📝</span><span>${UI.escHtml(o.occasionText)}</span>`
+      : `<span class="ocard-field-icon">📝</span><span style="color:var(--text-muted);font-style:italic">경조사어 없음</span>`;
+
+    /* Driver footer */
     const driverHtml = o.assignedDriverName
-      ? `<span class="ocard-field-icon">🚚</span><span class="ocard-driver-tag">${UI.escHtml(o.assignedDriverName)}</span>`
-      : `<span class="ocard-field-icon">🚚</span><span class="ocard-driver-none">배송기사 배차 전</span>`;
+      ? `<span class="ocard-field-icon">🚚</span><span class="ocard-driver-tag">${UI.escHtml(o.assignedDriverName)}</span>${o.assignedAt ? `<span class="ocard-assign-time">(${UI.fmtDatetime(o.assignedAt)} 배차)</span>` : ''}`
+      : `<span class="ocard-field-icon">🚚</span><span class="ocard-driver-none">배차 전</span>`;
 
-    /* ── Action slots ───────────────────────────────────── */
-    let actionSlots = '';
-    if (showActions) {
-      /* Slot 1: Edit */
-      actionSlots += `<button class="ocard-action oa-primary f1-action" data-id="${o.id}" data-action="edit">✏️<br>주문서 수정</button>`;
-
-      /* Slot 2: Store photo */
-      if (o.storePhotoUrl) {
-        actionSlots += `<button class="ocard-action oa-success f1-action" data-id="${o.id}" data-action="view-store-photo">
-          <img src="${o.storePhotoUrl}" alt="매장사진"><span style="font-size:0.7rem">매장사진 보기</span>
-        </button>`;
-      } else {
-        actionSlots += `<button class="ocard-action oa-muted f1-action" data-id="${o.id}" data-action="store-photo">🏪<br>매장사진 없음</button>`;
-      }
-
-      /* Slot 3+: Status-based actions */
-      const s = o.status;
-      if (s === 0) {
-        actionSlots += `<button class="ocard-action oa-success f1-action" data-id="${o.id}" data-action="ribbon">리본출력<br>완료</button>`;
-        actionSlots += `<button class="ocard-action oa-primary f1-action" data-id="${o.id}" data-action="assign">기사 배정</button>`;
-        actionSlots += `<button class="ocard-action oa-danger f1-action" data-id="${o.id}" data-action="cancel">취소</button>`;
-      } else if (s === 1) {
-        actionSlots += `<button class="ocard-action oa-success f1-action" data-id="${o.id}" data-action="prod">제작 완료</button>`;
-        actionSlots += `<button class="ocard-action oa-primary f1-action" data-id="${o.id}" data-action="assign">기사 배정</button>`;
-        actionSlots += `<button class="ocard-action oa-danger f1-action" data-id="${o.id}" data-action="cancel">취소</button>`;
-      } else if (s === 2) {
-        actionSlots += `<button class="ocard-action oa-warning f1-action" data-id="${o.id}" data-action="deliv">배송 출발</button>`;
-        actionSlots += `<button class="ocard-action oa-primary f1-action" data-id="${o.id}" data-action="assign">기사 배정</button>`;
-        actionSlots += `<button class="ocard-action oa-danger f1-action" data-id="${o.id}" data-action="cancel">취소</button>`;
-      } else if (s === 3) {
-        actionSlots += `<button class="ocard-action oa-primary f1-action" data-id="${o.id}" data-action="assign">기사 배정</button>`;
-        actionSlots += `<button class="ocard-action oa-danger f1-action" data-id="${o.id}" data-action="return">반품</button>`;
-      } else if (s === 4 && o.deliveryPhotoUrl) {
-        actionSlots += `<button class="ocard-action oa-success f1-action" data-id="${o.id}" data-action="view-deliv-photo">
-          <img src="${o.deliveryPhotoUrl}" alt="현장사진"><span style="font-size:0.7rem">현장사진 보기</span>
-        </button>`;
-      }
-    }
+    /* Store photo slot label */
+    const storePhotoLabel = o.storePhotoUrl ? '🏪<br><span style="font-size:0.7rem">매장사진 보기</span>' : '🏪<br><span style="font-size:0.7rem">매장사진 없음</span>';
+    const storePhotoAction = o.storePhotoUrl ? 'view-store-photo' : 'store-photo';
+    const storePhotoCls    = o.storePhotoUrl ? 'oa-success' : 'oa-muted';
 
     return `
       <div class="order-card" data-id="${o.id}" data-status="${o.status}">
@@ -348,28 +313,37 @@ const Floor1View = {
             <span class="ocard-chain">${UI.escHtml(o.chainName || '-')}</span>
             <span class="ocard-id">#${o.id}</span>
           </div>
-          <!-- Address field -->
-          <div class="ocard-field">
-            <span class="ocard-field-icon">📍</span>
-            <span>${UI.escHtml(o.deliveryAddress)}</span>
-          </div>
-          <!-- Recipient | Text field (2-col) -->
+          <!-- Row 1: Address | Recipient (2-col) -->
           <div class="ocard-2col">
+            <div class="ocard-field">
+              <span class="ocard-field-icon">📍</span>
+              <span>${UI.escHtml(o.deliveryAddress)}</span>
+            </div>
             <div class="ocard-field">
               <span class="ocard-field-icon">👤</span>
               <span>${UI.escHtml(o.recipientName)}${o.recipientPhone ? ' / ' + UI.escHtml(o.recipientPhone) : ''}</span>
             </div>
-            <div class="ocard-field ${!textContent ? 'ocard-empty' : ''}">
-              ${textHtml}
+          </div>
+          <!-- Row 2: Ribbon | Occasion (2-col) -->
+          <div class="ocard-2col">
+            <div class="ocard-field ${!o.ribbonText ? 'ocard-empty' : ''}">
+              ${ribbonHtml}
+            </div>
+            <div class="ocard-field ${!o.occasionText ? 'ocard-empty' : ''}">
+              ${occasionHtml}
             </div>
           </div>
-          <!-- Driver + created footer -->
+          <!-- Footer: Driver + assignedAt + createdBy -->
           <div class="ocard-footer">
             ${driverHtml}
             <span class="ocard-created">접수: ${UI.escHtml(o.createdByName)}</span>
           </div>
         </div>
-        ${showActions ? `<div class="ocard-actions">${actionSlots}</div>` : ''}
+        <div class="ocard-actions">
+          <button class="ocard-action oa-primary f1-action" data-id="${o.id}" data-action="edit">✏️<br>주문서 수정</button>
+          <button class="ocard-action ${storePhotoCls} f1-action" data-id="${o.id}" data-action="${storePhotoAction}">${storePhotoLabel}</button>
+          <button class="ocard-action oa-warning f1-action" data-id="${o.id}" data-action="receipt">🧾<br>인수증 출력</button>
+        </div>
       </div>`;
   },
 
@@ -396,36 +370,82 @@ const Floor1View = {
     }
   },
 
+  /* ── Receipt / Print Modal ──────────────────────────────── */
+  _openReceiptModal(orderId) {
+    const session = Auth.getSession();
+    const o = Store.getOrderById(orderId);
+    if (!o) { UI.toast('주문 정보를 찾을 수 없습니다.', 'error'); return; }
+
+    /* Driver role: open completion modal instead */
+    if (session?.role === 'driver' && o.status < 4) {
+      DriverView._openCompleteModal(orderId);
+      return;
+    }
+
+    const statusLabels = ['접수대기','리본출력완료','제작완료','배송중','배송완료','취소','반품'];
+    const statusLabel  = statusLabels[o.status] || '-';
+    const dt = UI.fmtDatetime(o.deliveryDatetime);
+    const printDate = new Date().toLocaleString('ko-KR');
+
+    const printWin = window.open('', '_blank', 'width=620,height=780');
+    if (!printWin) { UI.toast('팝업 창 허용 후 다시 시도해 주세요.', 'warning'); return; }
+    printWin.document.write(`<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>배송 인수증 #${o.id}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; padding: 40px; color: #1e293b; font-size: 14px; }
+    h1  { font-size: 1.4rem; text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 0.75rem; margin-bottom: 1.25rem; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 700; background: #eff6ff; color: #2563eb; }
+    table { width: 100%; border-collapse: collapse; margin-top: 0.75rem; }
+    th { background: #f1f5f9; text-align: left; padding: 9px 14px; width: 110px; font-size: 13px; border: 1px solid #e2e8f0; color: #475569; }
+    td { padding: 9px 14px; border: 1px solid #e2e8f0; font-size: 14px; line-height: 1.5; }
+    .footer { text-align: center; margin-top: 2rem; font-size: 11px; color: #94a3b8; border-top: 1px dashed #e2e8f0; padding-top: 1rem; }
+    .sign-area { margin-top: 2rem; display: flex; justify-content: flex-end; gap: 3rem; font-size: 13px; }
+    .sign-box  { text-align: center; }
+    .sign-line { border-bottom: 1px solid #1e293b; width: 120px; margin-top: 2rem; }
+    @media print { body { padding: 20px; } button { display:none; } }
+  </style>
+</head>
+<body>
+  <h1>🌸 배송 인수증</h1>
+  <table>
+    <tr><th>주문번호</th><td>#${o.id} &nbsp; <span class="badge">${statusLabel}</span></td></tr>
+    <tr><th>체인명</th><td>${o.chainName || '-'}</td></tr>
+    <tr><th>상품</th><td>${o.productName}</td></tr>
+    <tr><th>배송 일시</th><td>${dt}</td></tr>
+    <tr><th>배송지</th><td>${o.deliveryAddress}</td></tr>
+    <tr><th>받는 분</th><td>${o.recipientName}${o.recipientPhone ? ' / ' + o.recipientPhone : ''}</td></tr>
+    <tr><th>보내는분 문구</th><td>${o.ribbonText || '-'}</td></tr>
+    <tr><th>경조사어</th><td>${o.occasionText || '-'}</td></tr>
+    <tr><th>배송기사</th><td>${o.assignedDriverName || '-'}</td></tr>
+    <tr><th>접수자</th><td>${o.createdByName}</td></tr>
+  </table>
+  <div class="sign-area">
+    <div class="sign-box"><div class="sign-line"></div><div style="margin-top:6px">배송기사 서명</div></div>
+    <div class="sign-box"><div class="sign-line"></div><div style="margin-top:6px">수령인 서명</div></div>
+  </div>
+  <div class="footer">메이대구 &nbsp;|&nbsp; ${printDate}</div>
+  <script>window.onload = () => { window.print(); }<\/script>
+</body>
+</html>`);
+    printWin.document.close();
+  },
+
   /* ── Action handler ──────────────────────────────────────── */
   async _handleAction(id, action, btn) {
-    if (action === 'assign') { await Floor1View._openAssignModal([id]); return; }
-    if (action === 'edit')   { await Floor1View._openEditModal(id);     return; }
-    if (action === 'store-photo') { await Floor1View._openStorePhotoModal(id); return; }
+    if (action === 'edit')             { await Floor1View._openEditModal(id);       return; }
+    if (action === 'store-photo')      { await Floor1View._openStorePhotoModal(id); return; }
     if (action === 'view-store-photo') {
       const o = Store.getOrderById(id);
       if (o?.storePhotoUrl) window.open(o.storePhotoUrl);
       return;
     }
-    if (action === 'view-deliv-photo') {
-      const o = Store.getOrderById(id);
-      if (o?.deliveryPhotoUrl) window.open(o.deliveryPhotoUrl);
-      return;
-    }
-
-    const statusMap = { ribbon: 1, prod: 2, deliv: 3, cancel: 5, return: 6 };
-    const labelMap  = { ribbon: '리본출력완료', prod: '제작완료', deliv: '배송출발', cancel: '취소', return: '반품' };
-    const status = statusMap[action];
-    const ok = await UI.confirm(`주문 #${id}을 [${labelMap[action]}] 상태로 변경할까요?`);
-    if (!ok) return;
-    btn.disabled = true;
-    try {
-      await Api.updateOrderStatus(id, status);
-      UI.toast(`[${labelMap[action]}] 처리되었습니다.`, 'success');
-      Floor1View._loadOrders();
-    } catch(e) {
-      UI.toast(e.message || '상태 변경 실패', 'error');
-      btn.disabled = false;
-    }
+    if (action === 'receipt')          { Floor1View._openReceiptModal(id);          return; }
+    /* Legacy bulk-assign from bulk bar still supported */
+    if (action === 'assign')           { await Floor1View._openAssignModal([id]);   return; }
   },
 
   /* ── Store Photo Upload Modal ────────────────────────────── */
@@ -482,7 +502,8 @@ const Floor1View = {
         UI.toast('매장사진이 등록되었습니다.', 'success');
         overlay.classList.remove('show');
         setTimeout(() => { overlay.remove(); if (objectUrl) URL.revokeObjectURL(objectUrl); }, 300);
-        Floor1View._loadOrders();
+        if (typeof Floor1View !== 'undefined' && Floor1View._loadOrders) Floor1View._loadOrders();
+        if (typeof Floor2View !== 'undefined' && Floor2View._loadMyOrders) Floor2View._loadMyOrders();
       } catch(e) {
         UI.toast(e.message || '저장 실패', 'error');
         confirmBtn.disabled = false; confirmBtn.textContent = '저장';
@@ -490,10 +511,16 @@ const Floor1View = {
     };
   },
 
-  /* ── Order Edit Modal ────────────────────────────────────── */
+  /* ── Order Edit Modal (role-aware) ──────────────────────── */
   async _openEditModal(orderId) {
     const o = Store.getOrderById(orderId);
     if (!o) { UI.toast('주문 정보를 찾을 수 없습니다.', 'error'); return; }
+
+    const session = Auth.getSession();
+    const role    = session?.role || '';
+    const isFloor1Admin = role === 'floor1' || role === 'admin';
+    const isDriver      = role === 'driver';
+    const rdonly = s => isDriver ? `readonly style="opacity:0.6;background:var(--bg-elevated)" title="${s}"` : '';
 
     let products = [], drivers = [];
     try { [products, drivers] = await Promise.all([Api.getProducts(), Api.getDrivers()]); }
@@ -507,7 +534,11 @@ const Floor1View = {
         `<option value="${d.id}" ${d.id === o.assignedDriverId ? 'selected' : ''}>${UI.escHtml(d.name)}</option>`
       ).join('');
 
-    /* Convert ISO datetime to datetime-local value */
+    const statusLabels = ['접수대기','리본출력완료','제작완료','배송중','배송완료','취소','반품'];
+    const statusOpts   = statusLabels.map((l, i) =>
+      `<option value="${i}" ${o.status===i?'selected':''}>${l}</option>`
+    ).join('');
+
     const toLocalDT = iso => {
       if (!iso) return '';
       const d = new Date(iso);
@@ -519,55 +550,29 @@ const Floor1View = {
     let storeObjectUrl = o.storePhotoUrl || null;
     let delivObjectUrl = o.deliveryPhotoUrl || null;
 
-    const content = `
-      <div class="form-row" style="margin-bottom:0.75rem">
-        <div class="form-group">
-          <label class="form-label">주문접수자</label>
-          <input type="text" class="form-control" value="${UI.escHtml(o.createdByName)}" readonly style="opacity:0.6">
-        </div>
-        <div class="form-group">
-          <label class="form-label">상품명 <span class="form-required">*</span></label>
-          <select id="eo-product" class="form-control">${productOpts}</select>
-        </div>
-      </div>
-      <div class="form-row" style="margin-bottom:0.75rem">
-        <div class="form-group">
-          <label class="form-label">체인명 (꽃집 상호) <span class="form-required">*</span></label>
-          <input type="text" id="eo-chain" class="form-control" value="${UI.escHtml(o.chainName || '')}">
-        </div>
-        <div class="form-group">
-          <label class="form-label">배송 예정 일시 <span class="form-required">*</span></label>
-          <input type="datetime-local" id="eo-datetime" class="form-control" value="${toLocalDT(o.deliveryDatetime)}" step="600">
-        </div>
-      </div>
-      <div class="form-group" style="margin-bottom:0.75rem">
-        <label class="form-label">배송지 주소 <span class="form-required">*</span></label>
-        <input type="text" id="eo-address" class="form-control" value="${UI.escHtml(o.deliveryAddress || '')}">
-      </div>
-      <div class="form-row" style="margin-bottom:0.75rem">
-        <div class="form-group">
-          <label class="form-label">받는 분 성함 <span class="form-required">*</span></label>
-          <input type="text" id="eo-name" class="form-control" value="${UI.escHtml(o.recipientName || '')}">
-        </div>
-        <div class="form-group">
-          <label class="form-label">받는 분 연락처</label>
-          <input type="tel" id="eo-phone" class="form-control" value="${UI.escHtml(o.recipientPhone || '')}">
-        </div>
-      </div>
-      <div class="form-row" style="margin-bottom:0.75rem">
-        <div class="form-group">
-          <label class="form-label">보내는분 문구 (리본)</label>
-          <input type="text" id="eo-ribbon" class="form-control" value="${UI.escHtml(o.ribbonText || '')}">
-        </div>
-        <div class="form-group">
-          <label class="form-label">경조사어 문구</label>
-          <input type="text" id="eo-occasion" class="form-control" value="${UI.escHtml(o.occasionText || '')}" placeholder="예: 삼가 고인의 명복을 빕니다">
-        </div>
-      </div>
-      <div class="form-group" style="margin-bottom:0.75rem">
-        <label class="form-label">배송기사 배차</label>
-        <select id="eo-driver" class="form-control">${driverOpts}</select>
-      </div>
+    /* ── Status & driver row ── */
+    const statusRow = isFloor1Admin
+      ? `<div class="form-group">
+          <label class="form-label">현재 상태</label>
+          <select id="eo-status" class="form-control">${statusOpts}</select>
+        </div>`
+      : `<div class="form-group">
+          <label class="form-label">현재 상태</label>
+          <div style="padding:0.5rem 0">${UI.statusBadge(o.status)}</div>
+        </div>`;
+
+    const driverRow = (isFloor1Admin)
+      ? `<div class="form-group" style="margin-bottom:0.75rem">
+          <label class="form-label">배송기사 배차</label>
+          <select id="eo-driver" class="form-control">${driverOpts}</select>
+        </div>`
+      : `<div class="form-group" style="margin-bottom:0.75rem">
+          <label class="form-label">배송기사</label>
+          <input type="text" class="form-control" value="${UI.escHtml(o.assignedDriverName || '미배정')}" readonly style="opacity:0.6">
+        </div>`;
+
+    /* ── Photo section ── */
+    const photoSection = !isDriver ? `
       <div class="form-group" style="margin-bottom:0.5rem">
         <label class="form-label">사진 첨부</label>
         <div class="edit-photo-row">
@@ -582,18 +587,153 @@ const Floor1View = {
             <span class="edit-photo-label">${delivObjectUrl ? '📷 현장사진 변경' : '📷 현장사진 업로드'}</span>
           </div>
         </div>
+      </div>` : `
+      <div class="form-group" style="margin-bottom:0.5rem">
+        <label class="form-label">사진</label>
+        <div style="display:flex;gap:0.75rem">
+          ${storeObjectUrl ? `<button class="btn btn-ghost btn-sm" onclick="window.open('${storeObjectUrl}')">🏪 매장사진 보기</button>` : '<span style="color:var(--text-muted);font-size:0.875rem">매장사진 없음</span>'}
+          ${delivObjectUrl ? `<button class="btn btn-ghost btn-sm" onclick="window.open('${delivObjectUrl}')">📷 현장사진 보기</button>` : ''}
+        </div>
       </div>`;
 
+    /* ── Driver completion section ── */
+    const completionSection = isDriver ? `
+      <div style="border-top:2px solid var(--primary);padding-top:0.875rem;margin-top:0.5rem">
+        <div class="form-label" style="font-weight:700;color:var(--primary);margin-bottom:0.5rem">📷 배송 완료 처리</div>
+        <label class="photo-drop-zone" id="drv-drop-zone" for="drv-complete-input">
+          <input type="file" id="drv-complete-input" accept="image/jpeg,image/png">
+          <div id="drv-drop-msg">
+            <div style="font-size:2rem;margin-bottom:0.5rem">📷</div>
+            <div style="font-size:0.9rem">클릭 또는 이미지를 드래그하여 업로드</div>
+            <div style="font-size:0.8rem;color:var(--text-muted);margin-top:0.25rem">jpg, png / 최대 5MB</div>
+          </div>
+          <img id="drv-complete-preview" class="photo-preview" style="display:none" alt="미리보기">
+        </label>
+        <div id="drv-complete-info" style="font-size:0.8rem;color:var(--text-muted);margin-top:0.35rem"></div>
+      </div>` : '';
+
+    const content = `
+      <div class="form-row" style="margin-bottom:0.75rem">
+        ${statusRow}
+        <div class="form-group">
+          <label class="form-label">접수자</label>
+          <input type="text" class="form-control" value="${UI.escHtml(o.createdByName)}" readonly style="opacity:0.6">
+        </div>
+      </div>
+      <div class="form-row" style="margin-bottom:0.75rem">
+        <div class="form-group">
+          <label class="form-label">체인명 <span class="form-required">*</span></label>
+          <input type="text" id="eo-chain" class="form-control" value="${UI.escHtml(o.chainName || '')}" ${rdonly('조회 전용')}>
+        </div>
+        <div class="form-group">
+          <label class="form-label">상품명 <span class="form-required">*</span></label>
+          <select id="eo-product" class="form-control" ${isDriver?'disabled style="opacity:0.6"':''}>
+            ${productOpts}
+          </select>
+        </div>
+      </div>
+      <div class="form-row" style="margin-bottom:0.75rem">
+        <div class="form-group">
+          <label class="form-label">배송 일시 <span class="form-required">*</span></label>
+          <input type="datetime-local" id="eo-datetime" class="form-control" value="${toLocalDT(o.deliveryDatetime)}" step="600" ${rdonly('조회 전용')}>
+        </div>
+        <div class="form-group">
+          <label class="form-label">배송지 주소 <span class="form-required">*</span></label>
+          <input type="text" id="eo-address" class="form-control" value="${UI.escHtml(o.deliveryAddress || '')}" ${rdonly('조회 전용')}>
+        </div>
+      </div>
+      <div class="form-row" style="margin-bottom:0.75rem">
+        <div class="form-group">
+          <label class="form-label">받는 분 성함 <span class="form-required">*</span></label>
+          <input type="text" id="eo-name" class="form-control" value="${UI.escHtml(o.recipientName || '')}" ${rdonly('조회 전용')}>
+        </div>
+        <div class="form-group">
+          <label class="form-label">받는 분 연락처</label>
+          <input type="tel" id="eo-phone" class="form-control" value="${UI.escHtml(o.recipientPhone || '')}" ${rdonly('조회 전용')}>
+        </div>
+      </div>
+      <div class="form-row" style="margin-bottom:0.75rem">
+        <div class="form-group">
+          <label class="form-label">보내는분 문구 (리본)</label>
+          <input type="text" id="eo-ribbon" class="form-control" value="${UI.escHtml(o.ribbonText || '')}" ${rdonly('조회 전용')}>
+        </div>
+        <div class="form-group">
+          <label class="form-label">경조사어 문구</label>
+          <input type="text" id="eo-occasion" class="form-control" value="${UI.escHtml(o.occasionText || '')}" ${rdonly('조회 전용')} placeholder="예: 삼가 고인의 명복을 빕니다">
+        </div>
+      </div>
+      ${driverRow}
+      ${photoSection}
+      ${completionSection}`;
+
     const overlay = UI.modal({
-      title: `주문서 수정 — #${orderId}`,
+      title: `주문서 ${isDriver ? '조회' : '수정'} — #${orderId}`,
       content,
-      confirmText: '저장',
-      cancelText: '취소',
+      confirmText: isDriver ? '닫기' : '저장',
+      cancelText: isDriver ? '' : '취소',
       size: 'modal-lg',
     });
 
-    /* Photo file handlers */
-    const handlePhotoFile = (file, previewId, labelId, which) => {
+    if (isDriver) {
+      /* For driver: confirm btn = close; set up photo upload for completion */
+      const confirmBtn = overlay.querySelector('.modal-confirm');
+      if (overlay.querySelector('.modal-cancel')) overlay.querySelector('.modal-cancel').style.display = 'none';
+      confirmBtn.onclick = () => {
+        overlay.classList.remove('show');
+        setTimeout(() => overlay.remove(), 300);
+      };
+
+      /* Completion photo handler */
+      let drvFile = null, drvObjUrl = null;
+      const handleDrvFile = file => {
+        if (!file) return;
+        if (file.size > 5*1024*1024) { UI.toast('파일 크기는 5MB 이하여야 합니다.', 'error'); return; }
+        if (!['image/jpeg','image/jpg','image/png'].includes(file.type)) { UI.toast('jpg, png 파일만 허용됩니다.', 'error'); return; }
+        if (drvObjUrl) URL.revokeObjectURL(drvObjUrl);
+        drvObjUrl = URL.createObjectURL(file);
+        drvFile = file;
+        const preview = overlay.querySelector('#drv-complete-preview');
+        overlay.querySelector('#drv-drop-msg').style.display = 'none';
+        preview.src = drvObjUrl; preview.style.display = 'block';
+        overlay.querySelector('#drv-complete-info').textContent = `${file.name} (${(file.size/1024).toFixed(0)} KB)`;
+      };
+
+      const input = overlay.querySelector('#drv-complete-input');
+      if (input) {
+        input.addEventListener('change', e => handleDrvFile(e.target.files[0]));
+        const dz = overlay.querySelector('#drv-drop-zone');
+        dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('drag-over'); });
+        dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+        dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag-over'); handleDrvFile(e.dataTransfer.files[0]); });
+      }
+
+      /* Add a separate "완료 처리" button inside the modal footer */
+      const footer = overlay.querySelector('.modal-footer');
+      const doneBtn = document.createElement('button');
+      doneBtn.className = 'btn btn-success btn-sm';
+      doneBtn.textContent = '📷 배송 완료 처리';
+      doneBtn.style.marginRight = 'auto';
+      footer.insertBefore(doneBtn, footer.firstChild);
+      doneBtn.addEventListener('click', async () => {
+        if (!drvFile) { UI.toast('배송 완료 사진을 첨부해 주세요.', 'warning'); return; }
+        doneBtn.disabled = true; doneBtn.textContent = '처리 중...';
+        try {
+          const { url } = await Api.uploadDeliveryPhoto(drvFile);
+          await Api.completeOrder(orderId, url);
+          UI.toast('배송이 완료 처리되었습니다! 🎉', 'success');
+          overlay.classList.remove('show');
+          setTimeout(() => { overlay.remove(); if (drvObjUrl) URL.revokeObjectURL(drvObjUrl); }, 300);
+          if (typeof DriverView !== 'undefined') DriverView._loadDeliveries?.();
+        } catch(e) {
+          UI.toast(e.message || '완료 처리 실패', 'error');
+          doneBtn.disabled = false; doneBtn.textContent = '📷 배송 완료 처리';
+        }
+      });
+      return;
+    }
+
+    /* ── Non-driver: photo file handlers ── */
+    const handlePhotoFile = (file, previewId, which) => {
       if (!file) return;
       if (file.size > 5 * 1024 * 1024) { UI.toast('5MB 이하 파일만 허용됩니다.', 'error'); return; }
       if (!['image/jpeg','image/jpg','image/png'].includes(file.type)) { UI.toast('jpg, png 파일만 허용됩니다.', 'error'); return; }
@@ -604,8 +744,8 @@ const Floor1View = {
       else                   { delivFile = file; delivObjectUrl = url; }
     };
 
-    overlay.querySelector('#eo-store-file').addEventListener('change', e => handlePhotoFile(e.target.files[0], 'eo-store-preview', 'eo-store-box', 'store'));
-    overlay.querySelector('#eo-deliv-file').addEventListener('change', e => handlePhotoFile(e.target.files[0], 'eo-deliv-preview', 'eo-deliv-box', 'deliv'));
+    overlay.querySelector('#eo-store-file').addEventListener('change', e => handlePhotoFile(e.target.files[0], 'eo-store-preview', 'store'));
+    overlay.querySelector('#eo-deliv-file').addEventListener('change', e => handlePhotoFile(e.target.files[0], 'eo-deliv-preview', 'deliv'));
 
     const confirmBtn = overlay.querySelector('.modal-confirm');
     confirmBtn.onclick = async () => {
@@ -617,7 +757,8 @@ const Floor1View = {
       const recipientPhone = overlay.querySelector('#eo-phone').value.trim();
       const ribbonText     = overlay.querySelector('#eo-ribbon').value.trim();
       const occasionText   = overlay.querySelector('#eo-occasion').value.trim();
-      const driverIdRaw    = overlay.querySelector('#eo-driver').value;
+      const driverIdRaw    = overlay.querySelector('#eo-driver')?.value || String(o.assignedDriverId || '0');
+      const newStatus      = overlay.querySelector('#eo-status') ? +overlay.querySelector('#eo-status').value : o.status;
 
       if (!chainName)       { UI.toast('체인명을 입력해 주세요.', 'warning'); return; }
       if (!productId)       { UI.toast('상품을 선택해 주세요.', 'warning'); return; }
@@ -631,10 +772,9 @@ const Floor1View = {
 
       confirmBtn.disabled = true; confirmBtn.textContent = '저장 중...';
       try {
-        /* Upload photos if new files selected */
         let newStoreUrl = o.storePhotoUrl;
         let newDelivUrl = o.deliveryPhotoUrl;
-        if (storeFile) { const r = await Api.uploadStorePhoto(storeFile); newStoreUrl = r.url; }
+        if (storeFile) { const r = await Api.uploadStorePhoto(storeFile);   newStoreUrl = r.url; }
         if (delivFile) { const r = await Api.uploadDeliveryPhoto(delivFile); newDelivUrl = r.url; }
 
         await Api.updateOrder(orderId, {
@@ -645,10 +785,18 @@ const Floor1View = {
           storePhotoUrl:    newStoreUrl,
           deliveryPhotoUrl: newDelivUrl,
         });
+
+        /* Status change (floor1/admin only) */
+        if (isFloor1Admin && newStatus !== o.status) {
+          await Api.updateOrderStatus(orderId, newStatus);
+        }
+
         UI.toast('주문서가 수정되었습니다.', 'success');
         overlay.classList.remove('show');
         setTimeout(() => overlay.remove(), 300);
-        Floor1View._loadOrders();
+        /* Reload the appropriate view */
+        if (typeof Floor1View !== 'undefined' && Floor1View._loadOrders) Floor1View._loadOrders();
+        if (typeof Floor2View !== 'undefined' && Floor2View._loadMyOrders) Floor2View._loadMyOrders();
       } catch(e) {
         UI.toast(e.message || '수정 실패', 'error');
         confirmBtn.disabled = false; confirmBtn.textContent = '저장';

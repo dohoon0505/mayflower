@@ -36,9 +36,18 @@ const DriverView = {
     document.addEventListener('visibilitychange', DriverView._visHandler);
 
     /* Delegated click — set up once */
-    document.getElementById('main-content').addEventListener('click', e => {
-      const btn = e.target.closest('.drv-complete');
-      if (btn) DriverView._openCompleteModal(+btn.dataset.id);
+    document.getElementById('main-content').addEventListener('click', async e => {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      const id     = +btn.dataset.id;
+      const action = btn.dataset.action;
+      if (action === 'edit')             { await Floor1View._openEditModal(id); }
+      else if (action === 'store-photo') { await Floor1View._openStorePhotoModal(id); }
+      else if (action === 'view-store-photo') {
+        const o = Store.getOrderById(id);
+        if (o?.storePhotoUrl) window.open(o.storePhotoUrl);
+      }
+      else if (action === 'receipt')     { Floor1View._openReceiptModal(id); }
     });
   },
 
@@ -179,19 +188,24 @@ const DriverView = {
   },
 
   _orderCard(o) {
-    const dt = UI.fmtDatetime(o.deliveryDatetime);
+    const dt        = UI.fmtDatetime(o.deliveryDatetime);
     const immediate = o.isImmediate ? '<span class="order-immediate">즉시</span>' : '';
 
-    const textContent = o.occasionText || o.ribbonText || '';
-    const textHtml = textContent
-      ? `<span class="ocard-field-icon">${o.occasionText ? '📝' : '🎀'}</span><span>${UI.escHtml(textContent)}</span>`
+    const ribbonHtml = o.ribbonText
+      ? `<span class="ocard-field-icon">🎀</span><span>${UI.escHtml(o.ribbonText)}</span>`
       : `<span class="ocard-field-icon">🎀</span><span style="color:var(--text-muted);font-style:italic">문구 없음</span>`;
 
-    const storePhotoSlot = o.storePhotoUrl
-      ? `<button class="ocard-action oa-muted" onclick="window.open('${o.storePhotoUrl}')">
-           <img src="${o.storePhotoUrl}" alt="매장사진"><span style="font-size:0.7rem">매장사진 보기</span>
-         </button>`
-      : `<div class="ocard-action oa-muted" style="cursor:default">🏪<br><span style="font-size:0.7rem">매장사진 없음</span></div>`;
+    const occasionHtml = o.occasionText
+      ? `<span class="ocard-field-icon">📝</span><span>${UI.escHtml(o.occasionText)}</span>`
+      : `<span class="ocard-field-icon">📝</span><span style="color:var(--text-muted);font-style:italic">경조사어 없음</span>`;
+
+    const driverHtml = o.assignedDriverName
+      ? `<span class="ocard-field-icon">🚚</span><span class="ocard-driver-tag">${UI.escHtml(o.assignedDriverName)}</span>${o.assignedAt ? `<span class="ocard-assign-time">(${UI.fmtDatetime(o.assignedAt)} 배차)</span>` : ''}`
+      : `<span class="ocard-field-icon">🚚</span><span class="ocard-driver-none">배차 전</span>`;
+
+    const storePhotoAction = o.storePhotoUrl ? 'view-store-photo' : 'store-photo';
+    const storePhotoCls    = o.storePhotoUrl ? 'oa-success' : 'oa-muted';
+    const storePhotoLabel  = o.storePhotoUrl ? '🏪<br><span style="font-size:0.7rem">매장사진 보기</span>' : '🏪<br><span style="font-size:0.7rem">매장사진 없음</span>';
 
     return `
       <div class="order-card" data-id="${o.id}" data-status="${o.status}">
@@ -204,23 +218,33 @@ const DriverView = {
             <span class="ocard-chain">${UI.escHtml(o.chainName || '-')}</span>
             <span class="ocard-id">#${o.id}</span>
           </div>
-          <div class="ocard-field">
-            <span class="ocard-field-icon">📍</span>
-            <span>${UI.escHtml(o.deliveryAddress)}</span>
-          </div>
           <div class="ocard-2col">
+            <div class="ocard-field">
+              <span class="ocard-field-icon">📍</span>
+              <span>${UI.escHtml(o.deliveryAddress)}</span>
+            </div>
             <div class="ocard-field">
               <span class="ocard-field-icon">👤</span>
               <span>${UI.escHtml(o.recipientName)}${o.recipientPhone ? ' / ' + UI.escHtml(o.recipientPhone) : ''}</span>
             </div>
-            <div class="ocard-field ${!textContent ? 'ocard-empty' : ''}">
-              ${textHtml}
+          </div>
+          <div class="ocard-2col">
+            <div class="ocard-field ${!o.ribbonText ? 'ocard-empty' : ''}">
+              ${ribbonHtml}
             </div>
+            <div class="ocard-field ${!o.occasionText ? 'ocard-empty' : ''}">
+              ${occasionHtml}
+            </div>
+          </div>
+          <div class="ocard-footer">
+            ${driverHtml}
+            <span class="ocard-created">접수: ${UI.escHtml(o.createdByName)}</span>
           </div>
         </div>
         <div class="ocard-actions">
-          ${storePhotoSlot}
-          <button class="ocard-action oa-success drv-complete" data-id="${o.id}">📷<br>완료 처리</button>
+          <button class="ocard-action oa-primary" data-id="${o.id}" data-action="edit">✏️<br>주문서 수정</button>
+          <button class="ocard-action ${storePhotoCls}" data-id="${o.id}" data-action="${storePhotoAction}">${storePhotoLabel}</button>
+          <button class="ocard-action oa-success" data-id="${o.id}" data-action="receipt">🧾<br>인수증 출력</button>
         </div>
       </div>`;
   },

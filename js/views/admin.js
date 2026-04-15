@@ -345,7 +345,7 @@ const AdminView = {
         from ? new Date(from).toISOString() : '',
         to   ? new Date(to + 'T23:59:59').toISOString() : ''
       );
-      AdminView._renderStatsTable(data, ['기사명','상품','건수'], r => [r.driverName, r.productName, r.count]);
+      AdminView._renderStatsTable(data, ['기사명','카테고리','건수'], r => [r.driverName, r.category, r.count]);
     } catch(e) { UI.toast(e.message || '통계 조회 실패', 'error'); }
   },
 
@@ -354,7 +354,7 @@ const AdminView = {
     const month = +document.getElementById('st-month')?.value;
     try {
       const data = await Api.getDailyStats(year, month);
-      AdminView._renderStatsTable(data, ['날짜','상품','건수'], r => [r.date, r.productName, r.count]);
+      AdminView._renderStatsTable(data, ['날짜','카테고리','건수'], r => [r.date, r.category, r.count]);
     } catch(e) { UI.toast(e.message || '통계 조회 실패', 'error'); }
   },
 
@@ -362,7 +362,7 @@ const AdminView = {
     const year = +document.getElementById('st-year')?.value;
     try {
       const data = await Api.getMonthlyStats(year);
-      AdminView._renderStatsTable(data, ['월','상품','건수'], r => [r.month, r.productName, r.count]);
+      AdminView._renderStatsTable(data, ['월','카테고리','건수'], r => [r.month, r.category, r.count]);
     } catch(e) { UI.toast(e.message || '통계 조회 실패', 'error'); }
   },
 

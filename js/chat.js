@@ -44,8 +44,11 @@ const Chat = {
     Chat._renderProfile();
     Chat._renderNotice();
     Chat._renderMessages();
+    Chat._renderDriverStatus();
     Chat._bindInput();
     Chat._bindChatActions();
+    /* Auto-refresh driver status every 30 s */
+    setInterval(() => Chat._renderDriverStatus(), 30000);
   },
 
   _ensureSeed(role) {
@@ -176,6 +179,55 @@ const Chat = {
 
     btn.addEventListener('click', send);
     input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
+  },
+
+  /* ── Driver status section ───────────────────────────────── */
+  _renderDriverStatus() {
+    const el = document.getElementById('chat-driver-status');
+    if (!el) return;
+
+    const completed = Store.getOrders({ status: 4 });
+    /* Group by driver, keep most recent (by updatedAt) */
+    const map = {};
+    completed.forEach(o => {
+      if (!o.assignedDriverName) return;
+      const cur = map[o.assignedDriverName];
+      if (!cur || new Date(o.updatedAt) > new Date(cur.updatedAt)) {
+        map[o.assignedDriverName] = o;
+      }
+    });
+
+    const items = Object.values(map).sort(
+      (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
+    );
+
+    if (!items.length) {
+      el.innerHTML = '<div class="driver-status-empty">배송 완료 기록 없음</div>';
+      return;
+    }
+
+    const rows = items.map(o => {
+      const addr = (o.deliveryAddress || '').substring(0, 18);
+      return `
+        <div class="driver-status-item">
+          <span class="ds-name">${UI.escHtml(o.assignedDriverName)}</span>
+          <span class="ds-time">${Chat._timeAgo(o.updatedAt)}</span>
+          <span class="ds-addr">${UI.escHtml(addr)}…</span>
+          <span class="ds-done">완료</span>
+        </div>`;
+    }).join('');
+
+    el.innerHTML = `<div class="driver-status-header">🚚 배송기사 현황</div>${rows}`;
+  },
+
+  _timeAgo(iso) {
+    const diff = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1)  return '방금 전';
+    if (mins < 60) return `${mins}분 전`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24)  return `${hrs}시간 전`;
+    return `${Math.floor(hrs / 24)}일 전`;
   },
 
   _bindChatActions() {

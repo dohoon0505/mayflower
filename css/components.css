@@ -290,8 +290,9 @@
   display: flex; align-items: center; gap: 0.5rem;
   font-size: 0.8rem; color: var(--text-secondary); flex-wrap: wrap;
 }
-.ocard-driver-tag { font-weight: 600; color: var(--primary); white-space: nowrap; }
+.ocard-driver-tag  { font-weight: 600; color: var(--primary); white-space: nowrap; }
 .ocard-driver-none { color: var(--text-muted); font-style: italic; }
+.ocard-assign-time { font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; }
 .ocard-created { margin-left: auto; font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; }
 
 /* ── Actions column (right) ──────────────────────────────── */
@@ -503,7 +504,7 @@ tr:hover td { background: var(--bg-elevated); }
 .chat-avatar-role-me     { background: #eff6ff; color: var(--primary); }
 
 .chat-sender-name {
-  font-weight: 700; font-size: 0.875rem; color: var(--text-primary); line-height: 1;
+  font-weight: 700; font-size: 1rem; color: var(--text-primary); line-height: 1;
 }
 .chat-sender-badge {
   display: inline-flex; align-items: center;
