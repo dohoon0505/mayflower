@@ -60,11 +60,11 @@
 
     <!-- ── Delivery Panel ───────────────────────────────── -->
     <aside class="delivery-panel" id="delivery-panel">
-      <div class="dp-header">🚚 배송기사 현황</div>
-      <div class="dp-body" id="dp-body"></div>
-      <div class="dp-footer">
-        <button class="btn btn-secondary btn-sm" onclick="DeliveryPanel.render()">↻ 새로고침</button>
+      <div class="dp-header">
+        <span>🚚 배송기사 현황</span>
+        <button class="dp-refresh-btn" onclick="DeliveryPanel.render()" title="새로고침">↻</button>
       </div>
+      <div class="dp-body" id="dp-body"></div>
     </aside>
 
     <!-- ── Chat Panel ────────────────────────────────────── -->

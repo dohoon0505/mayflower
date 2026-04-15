@@ -271,8 +271,7 @@ const Floor1View = {
 
   /* ── Order card (3 fixed action buttons) ────────────────── */
   _orderCard(o, showActions) {
-    const dt        = UI.fmtDatetime(o.deliveryDatetime);
-    const immediate = o.isImmediate ? '<span class="order-immediate">즉시</span>' : '';
+    const dt = UI.fmtDatetime(o.deliveryDatetime);
 
     /* Ribbon field */
     const ribbonHtml = o.ribbonText
@@ -297,12 +296,11 @@ const Floor1View = {
     return `
       <div class="order-card" data-id="${o.id}" data-status="${o.status}">
         <div class="ocard-body">
-          <!-- Header: checkbox · chain · product · immediate · datetime -->
+          <!-- Header: checkbox · chain · product · datetime -->
           <div class="ocard-header">
             <input type="checkbox" class="ocard-checkbox order-checkbox" data-id="${o.id}" title="선택">
             <span class="ocard-chain">${UI.escHtml(o.chainName || '-')}</span>
             <span class="ocard-product">${UI.escHtml(o.productName)}</span>
-            ${immediate}
             <span class="ocard-datetime">🕐 ${dt}</span>
           </div>
           <!-- Row 1: Address | Recipient (2-col) -->
@@ -325,10 +323,11 @@ const Floor1View = {
               ${occasionHtml}
             </div>
           </div>
-          <!-- Footer: Driver + assignedAt + createdBy -->
+          <!-- Footer: Driver | Time remaining -->
           <div class="ocard-footer">
-            ${driverHtml}
-            <span class="ocard-created">접수: ${UI.escHtml(o.createdByName)}</span>
+            <span class="ocard-footer-left">${driverHtml}</span>
+            <span class="ocard-timer ${new Date(o.deliveryDatetime) < new Date() ? 'ocard-timer-late' : ''}"
+              >⏱ ${UI.timeRemaining(o.deliveryDatetime)}</span>
           </div>
         </div>
         <div class="ocard-actions">
@@ -449,19 +448,19 @@ const Floor1View = {
     let objectUrl = null;
 
     const content = `
-      <p style="color:var(--text-secondary);margin-bottom:0.5rem">
+      <p style="color:var(--text-secondary);margin-bottom:0.75rem">
         <strong>#${orderId}</strong> — ${UI.escHtml(o.chainName || '-')}
       </p>
-      <label class="photo-drop-zone" id="sp-drop-zone" for="sp-input">
+      <label class="photo-drop-zone-portrait" id="sp-drop-zone" for="sp-input">
         <input type="file" id="sp-input" accept="image/jpeg,image/png">
-        <div id="sp-msg">
-          <div style="font-size:2rem;margin-bottom:0.5rem">🏪</div>
-          <div style="font-size:0.95rem">매장사진을 클릭 또는 드래그하여 업로드</div>
-          <div style="font-size:0.825rem;color:var(--text-muted);margin-top:0.25rem">jpg, png / 최대 5MB</div>
+        <div class="sp-msg-inner" id="sp-msg">
+          <div style="font-size:2rem">🏪</div>
+          <div style="font-size:0.9rem">클릭 또는 드래그</div>
+          <div style="font-size:0.78rem;color:var(--text-muted)">jpg, png / 최대 5MB</div>
         </div>
-        <img id="sp-preview" class="photo-preview" style="display:none" alt="미리보기">
+        <img id="sp-preview" style="display:none" alt="미리보기">
       </label>
-      <div id="sp-info" style="font-size:0.825rem;color:var(--text-muted);margin-top:0.35rem"></div>`;
+      <div id="sp-info" style="font-size:0.825rem;color:var(--text-muted);margin-top:0.5rem;text-align:center"></div>`;
 
     const overlay = UI.modal({ title: `매장사진 등록 — #${orderId}`, content, confirmText: '저장', cancelText: '취소' });
 
@@ -663,7 +662,7 @@ const Floor1View = {
       content,
       confirmText: isDriver ? '닫기' : '저장',
       cancelText: isDriver ? '' : '취소',
-      size: 'modal-lg',
+      size: 'modal-edit',
     });
 
     if (isDriver) {

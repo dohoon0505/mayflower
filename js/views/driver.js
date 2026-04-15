@@ -180,8 +180,7 @@ const DriverView = {
   },
 
   _orderCard(o) {
-    const dt        = UI.fmtDatetime(o.deliveryDatetime);
-    const immediate = o.isImmediate ? '<span class="order-immediate">즉시</span>' : '';
+    const dt = UI.fmtDatetime(o.deliveryDatetime);
 
     const ribbonHtml = o.ribbonText
       ? `<span class="ocard-field-icon">🎀</span><span>${UI.escHtml(o.ribbonText)}</span>`
@@ -205,7 +204,6 @@ const DriverView = {
           <div class="ocard-header">
             <span class="ocard-chain">${UI.escHtml(o.chainName || '-')}</span>
             <span class="ocard-product">${UI.escHtml(o.productName)}</span>
-            ${immediate}
             <span class="ocard-datetime">🕐 ${dt}</span>
           </div>
           <div class="ocard-2col">
@@ -227,8 +225,9 @@ const DriverView = {
             </div>
           </div>
           <div class="ocard-footer">
-            ${driverHtml}
-            <span class="ocard-created">접수: ${UI.escHtml(o.createdByName)}</span>
+            <span class="ocard-footer-left">${driverHtml}</span>
+            <span class="ocard-timer ${new Date(o.deliveryDatetime) < new Date() ? 'ocard-timer-late' : ''}"
+              >⏱ ${UI.timeRemaining(o.deliveryDatetime)}</span>
           </div>
         </div>
         <div class="ocard-actions">

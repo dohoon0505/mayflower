@@ -298,17 +298,31 @@
 .ocard-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
 @media (max-width: 680px) { .ocard-2col { grid-template-columns: 1fr; } }
 
-/* Footer field: driver + created */
+/* Footer field: driver | time remaining */
 .ocard-footer {
   background: var(--bg-elevated); border: 1px solid var(--border);
   border-radius: var(--radius-sm); padding: 0.35rem 0.625rem;
-  display: flex; align-items: center; gap: 0.5rem;
-  font-size: 0.8rem; color: var(--text-secondary); flex-wrap: wrap;
+  display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+  font-size: 0.8rem; color: var(--text-secondary);
 }
+.ocard-footer-left { display: flex; align-items: center; gap: 0.35rem; min-width: 0; overflow: hidden; }
 .ocard-driver-tag  { font-weight: 600; color: var(--primary); white-space: nowrap; }
 .ocard-driver-none { color: var(--text-muted); font-style: italic; }
 .ocard-assign-time { font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; }
-.ocard-created { margin-left: auto; font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; }
+/* Time remaining badge */
+.ocard-timer {
+  flex-shrink: 0;
+  font-size: 0.78rem; font-weight: 600;
+  color: var(--primary);
+  background: #eff6ff; border: 1px solid #bfdbfe;
+  border-radius: var(--radius-sm);
+  padding: 0.1rem 0.5rem;
+  white-space: nowrap;
+}
+.ocard-timer.ocard-timer-late {
+  color: var(--error);
+  background: #fef2f2; border-color: #fecaca;
+}
 
 /* ── Actions column (right) ──────────────────────────────── */
 .ocard-actions {
@@ -409,6 +423,7 @@ tr:hover td { background: var(--bg-elevated); }
 .modal-footer { display: flex; justify-content: flex-end; gap: 0.5rem; padding: 0.875rem 1.25rem; border-top: 1px solid var(--border); background: var(--bg-elevated); }
 .modal-lg { max-width: 620px; }
 .modal-sm { max-width: 360px; }
+.modal-edit { max-width: 960px; }
 
 /* ── Toast ───────────────────────────────────────────────── */
 #toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; z-index: 1000; }
@@ -576,17 +591,48 @@ tr:hover td { background: var(--bg-elevated); }
 }
 .edit-photo-box {
   border: 1.5px dashed var(--border-strong); border-radius: var(--radius-sm);
-  padding: 0.75rem; display: flex; flex-direction: column; gap: 0.4rem; align-items: center; cursor: pointer;
+  padding: 0.5rem; display: flex; flex-direction: column; gap: 0.4rem; align-items: center; cursor: pointer;
   transition: border-color var(--tr);
   position: relative; overflow: hidden;
 }
 .edit-photo-box:hover { border-color: var(--primary); }
 .edit-photo-box input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
-.edit-photo-box img { width: 100%; height: 80px; object-fit: cover; border-radius: var(--radius-sm); }
+/* 9:16 portrait ratio for edit modal photos */
+.edit-photo-box img {
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  display: block;
+}
 .edit-photo-label { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); }
 
 /* ── Modal large form ─────────────────────────────────────── */
 .modal-xl { max-width: 720px; }
+
+/* Photo drop zone — portrait 9:16 */
+.photo-drop-zone-portrait {
+  max-width: 200px;
+  margin: 0 auto;
+  aspect-ratio: 9 / 16;
+  border: 2px dashed var(--border-strong); border-radius: var(--radius);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--text-muted);
+  transition: border-color var(--tr), background var(--tr);
+  position: relative; overflow: hidden;
+}
+.photo-drop-zone-portrait:hover,
+.photo-drop-zone-portrait.drag-over { border-color: var(--primary); background: var(--primary-dim); }
+.photo-drop-zone-portrait input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.photo-drop-zone-portrait img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover; border-radius: calc(var(--radius) - 2px);
+}
+.photo-drop-zone-portrait .sp-msg-inner {
+  display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
+  padding: 1rem; text-align: center; pointer-events: none;
+}
 
 /* Animations */
 @keyframes spin { to { transform: rotate(360deg); } }

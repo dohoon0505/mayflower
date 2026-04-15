@@ -96,6 +96,24 @@ const UI = {
     return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
   },
 
+  /* Returns e.g. "2시간 30분 남음" / "15분 지남" */
+  timeRemaining(iso) {
+    if (!iso) return '-';
+    const diff = new Date(iso) - Date.now();
+    const abs  = Math.abs(diff);
+    const h    = Math.floor(abs / 3600000);
+    const m    = Math.floor((abs % 3600000) / 60000);
+    if (diff > 0) {
+      if (h > 0)  return `${h}시간 ${m}분 남음`;
+      if (m > 0)  return `${m}분 남음`;
+      return '곧 도착';
+    } else {
+      if (h > 0)  return `${h}시간 ${m}분 지남`;
+      if (m > 0)  return `${m}분 지남`;
+      return '방금 지남';
+    }
+  },
+
   STATUS_LABELS: ['접수됨', '리본출력완료', '제작완료', '배송중', '배송완료', '취소', '반품'],
   STATUS_CLS:    ['status-pending','status-ribbon','status-done','status-delivery','status-complete','status-cancel','status-return'],
 
