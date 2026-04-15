@@ -268,7 +268,7 @@
   padding: 0.18rem 0.55rem; border-radius: 999px;
   white-space: nowrap; flex-shrink: 0;
 }
-.dp-badge-remain { background: #fef3c7; color: #92400e; }
+.dp-badge-remain { background: #f1f5f9; color: var(--text-secondary); }
 
 /* Row 2: 배송중 n개 | 배송완료 n개 */
 .dp-card-row2 {

@@ -617,7 +617,7 @@ tr:hover td { background: var(--bg-elevated); }
 }
 .dp-tl-modal-body .dp-tl-time { color: var(--text-muted); white-space: nowrap; }
 .dp-tl-modal-body .dp-tl-addr { color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dp-tl-modal-body .dp-tl-done { color: #15803d; font-weight: 700; white-space: nowrap; }
+.dp-tl-modal-body .dp-tl-done { color: var(--text-primary); font-weight: 700; white-space: nowrap; }
 .dp-tl-modal-body .dp-tl-empty { color: var(--text-muted); font-style: italic; text-align: center; padding: 1.5rem 0; }
 
 /* Photo drop zone — portrait 4:5 */
