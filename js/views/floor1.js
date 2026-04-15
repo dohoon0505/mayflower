@@ -29,9 +29,9 @@ const Floor1View = {
     photoNo: true,
     dateFrom: '',
     dateTo: '',
-    searchProfile: '',
-    searchRecipient: '',
     searchAddress: '',
+    searchRecipient: '',
+    searchRibbon: '',
   },
 
   /* ── Show: all orders ────────────────────────────────────── */
@@ -100,16 +100,16 @@ const Floor1View = {
         <div class="filter-row" style="padding-top:0.6rem;padding-bottom:0.6rem">
           <div class="search-fields-group">
             <div class="search-field-item">
-              <span class="search-field-label">🔍 프로필 검색</span>
-              <input type="text" id="f1-search-profile" class="search-field-input" placeholder="이름·문구를 입력해주세요">
+              <span class="search-field-label">🔍 주소지 검색</span>
+              <input type="text" id="f1-search-address" class="search-field-input" placeholder="주소지를 입력해주세요">
             </div>
             <div class="search-field-item">
               <span class="search-field-label">🔍 받는분 검색</span>
               <input type="text" id="f1-search-recipient" class="search-field-input" placeholder="받는 분 성함을 입력해주세요">
             </div>
             <div class="search-field-item">
-              <span class="search-field-label">🔍 주소지 검색</span>
-              <input type="text" id="f1-search-address" class="search-field-input" placeholder="주소지를 입력해주세요">
+              <span class="search-field-label">🔍 보낸문구 검색</span>
+              <input type="text" id="f1-search-ribbon" class="search-field-input" placeholder="리본 문구를 입력해주세요">
             </div>
           </div>
         </div>
@@ -162,14 +162,14 @@ const Floor1View = {
       });
     });
 
-    ['f1-search-profile','f1-search-recipient','f1-search-address'].forEach(id => {
+    ['f1-search-address','f1-search-recipient','f1-search-ribbon'].forEach(id => {
       let t;
       document.getElementById(id).addEventListener('input', e => {
         clearTimeout(t);
         t = setTimeout(() => {
-          if (id === 'f1-search-profile')   Floor1View._filterState.searchProfile   = e.target.value.trim();
-          if (id === 'f1-search-recipient') Floor1View._filterState.searchRecipient = e.target.value.trim();
           if (id === 'f1-search-address')   Floor1View._filterState.searchAddress   = e.target.value.trim();
+          if (id === 'f1-search-recipient') Floor1View._filterState.searchRecipient = e.target.value.trim();
+          if (id === 'f1-search-ribbon')    Floor1View._filterState.searchRibbon    = e.target.value.trim();
           Floor1View._loadOrders();
         }, 280);
       });
@@ -245,9 +245,9 @@ const Floor1View = {
       if (fs.dateTo)   orders = orders.filter(o => o.deliveryDatetime <= fs.dateTo + 'T23:59:59');
 
       const lc = s => (s || '').toLowerCase();
-      if (fs.searchProfile)   orders = orders.filter(o => lc(o.chainName).includes(lc(fs.searchProfile)) || lc(o.ribbonText).includes(lc(fs.searchProfile)));
-      if (fs.searchRecipient) orders = orders.filter(o => lc(o.recipientName).includes(lc(fs.searchRecipient)));
       if (fs.searchAddress)   orders = orders.filter(o => lc(o.deliveryAddress).includes(lc(fs.searchAddress)));
+      if (fs.searchRecipient) orders = orders.filter(o => lc(o.recipientName).includes(lc(fs.searchRecipient)));
+      if (fs.searchRibbon)    orders = orders.filter(o => lc(o.ribbonText).includes(lc(fs.searchRibbon)));
 
       /* Sort: black(배차전 0-2) → blue(배송중 3) → green(배송완료 4) → red(취소/반품 5-6) */
       const _cg = s => s === 3 ? 1 : s === 4 ? 2 : s >= 5 ? 3 : 0;
