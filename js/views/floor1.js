@@ -560,15 +560,6 @@ const Floor1View = {
           <div style="padding:0.5rem 0">${UI.statusBadge(o.status)}</div>
         </div>`;
 
-    const driverRow = (isFloor1Admin)
-      ? `<div class="form-group" style="margin-bottom:0.75rem">
-          <label class="form-label">배송기사 배차</label>
-          <select id="eo-driver" class="form-control">${driverOpts}</select>
-        </div>`
-      : `<div class="form-group" style="margin-bottom:0.75rem">
-          <label class="form-label">배송기사</label>
-          <input type="text" class="form-control" value="${UI.escHtml(o.assignedDriverName || '미배정')}" readonly style="opacity:0.6">
-        </div>`;
 
     /* ── Right panel: photo columns ── */
     const rightPanel = isDriver ? `
@@ -670,7 +661,6 @@ const Floor1View = {
               <input type="text" id="eo-occasion" class="form-control" value="${UI.escHtml(o.occasionText || '')}" ${rdonly('조회 전용')} placeholder="예: 삼가 고인의 명복을 빕니다">
             </div>
           </div>
-          ${driverRow}
           ${driverPhotoLinks}
         </div>
         <div class="eo-right">
