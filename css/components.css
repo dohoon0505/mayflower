@@ -599,11 +599,11 @@ tr:hover td { background: var(--bg-elevated); }
 /* ── Modal large form ─────────────────────────────────────── */
 .modal-xl { max-width: 720px; }
 
-/* Photo drop zone — portrait 9:16 */
+/* Photo drop zone — portrait 4:5 */
 .photo-drop-zone-portrait {
-  max-width: 200px;
+  max-width: 280px;
   margin: 0 auto;
-  aspect-ratio: 9 / 16;
+  aspect-ratio: 4 / 5;
   border: 2px dashed var(--border-strong); border-radius: var(--radius);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   cursor: pointer; color: var(--text-muted);
@@ -654,7 +654,7 @@ tr:hover td { background: var(--bg-elevated); }
   display: block;
   position: relative;
   width: 100%;
-  aspect-ratio: 9 / 16;
+  aspect-ratio: 4 / 5;
   border: 2px dashed var(--border-strong);
   border-radius: var(--radius);
   overflow: hidden;
