@@ -298,6 +298,10 @@ const Floor1View = {
         ? '<span class="ocard-day-badge ocard-day-future">예약건</span>'
         : '';
 
+    /* Chain code (deterministic per order id) */
+    const _chainCodes = ['ㄲㅌ','ㅂㅎㄷ','ㄷㅍㄹㅇ','ㄷㄹ','ㅇㅎ','ㅄㅌ'];
+    const chainCode = _chainCodes[o.id % _chainCodes.length];
+
     /* Time field */
     let timeFieldCls, timeText;
     if (o.status === 4 && o.createdAt && o.updatedAt) {
@@ -323,10 +327,10 @@ const Floor1View = {
           <!-- Header: checkbox · chain · product · datetime -->
           <div class="ocard-header">
             <input type="checkbox" class="ocard-checkbox order-checkbox" data-id="${o.id}" title="선택">
-            <span class="ocard-chain">${UI.escHtml(o.chainName || '-')}</span>
-            <span class="ocard-product">${UI.escHtml(o.productName)}</span>
-            <span class="ocard-datetime">🕐 ${dt}</span>
             ${dayBadge}
+            <span class="ocard-datetime">🕐 ${dt}</span>
+            <span class="ocard-product">${UI.escHtml(o.productName)}</span>
+            <span class="ocard-chain">${chainCode}</span>
           </div>
           <!-- Row 1: Address | Recipient (2-col) -->
           <div class="ocard-2col">

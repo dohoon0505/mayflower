@@ -203,6 +203,9 @@ const DriverView = {
         ? '<span class="ocard-day-badge ocard-day-future">예약건</span>'
         : '';
 
+    const _chainCodes = ['ㄲㅌ','ㅂㅎㄷ','ㄷㅍㄹㅇ','ㄷㄹ','ㅇㅎ','ㅄㅌ'];
+    const chainCode = _chainCodes[o.id % _chainCodes.length];
+
     let timeFieldCls, timeText;
     if (o.status === 4 && o.createdAt && o.updatedAt) {
       const _el = new Date(o.updatedAt) - new Date(o.createdAt);
@@ -224,10 +227,10 @@ const DriverView = {
       <div class="order-card" data-id="${o.id}" data-status="${o.status}">
         <div class="ocard-body">
           <div class="ocard-header">
-            <span class="ocard-chain">${UI.escHtml(o.chainName || '-')}</span>
-            <span class="ocard-product">${UI.escHtml(o.productName)}</span>
-            <span class="ocard-datetime">🕐 ${dt}</span>
             ${dayBadge}
+            <span class="ocard-datetime">🕐 ${dt}</span>
+            <span class="ocard-product">${UI.escHtml(o.productName)}</span>
+            <span class="ocard-chain">${chainCode}</span>
           </div>
           <div class="ocard-2col">
             <div class="ocard-field">
