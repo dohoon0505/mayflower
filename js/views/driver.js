@@ -163,7 +163,11 @@ const DriverView = {
       if (fs.searchRecipient) orders = orders.filter(o => lc(o.recipientName).includes(lc(fs.searchRecipient)));
       if (fs.searchAddress)   orders = orders.filter(o => lc(o.deliveryAddress).includes(lc(fs.searchAddress)));
 
-      orders.sort((a, b) => new Date(a.deliveryDatetime) - new Date(b.deliveryDatetime));
+      const _cg = s => s === 3 ? 1 : s === 4 ? 2 : s >= 5 ? 3 : 0;
+      orders.sort((a, b) => {
+        const g = _cg(a.status) - _cg(b.status);
+        return g !== 0 ? g : new Date(a.deliveryDatetime) - new Date(b.deliveryDatetime);
+      });
 
       if (!orders.length) {
         UI.setMain(`<div class="empty-state"><div class="empty-icon">🚚</div><div class="empty-text">조건에 맞는 배송이 없습니다.</div></div>`);
@@ -199,11 +203,10 @@ const DriverView = {
       <div class="order-card" data-id="${o.id}" data-status="${o.status}">
         <div class="ocard-body">
           <div class="ocard-header">
-            <span class="order-product">${UI.escHtml(o.productName)}</span>
+            <span class="ocard-chain">${UI.escHtml(o.chainName || '-')}</span>
+            <span class="ocard-product">${UI.escHtml(o.productName)}</span>
             ${immediate}
             <span class="ocard-datetime">🕐 ${dt}</span>
-            <span class="ocard-chain">${UI.escHtml(o.chainName || '-')}</span>
-            <span class="ocard-id">#${o.id}</span>
           </div>
           <div class="ocard-2col">
             <div class="ocard-field">

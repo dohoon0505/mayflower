@@ -44,7 +44,6 @@ const Chat = {
     Chat._renderProfile();
     Chat._renderNotice();
     Chat._renderMessages();
-    Chat._renderDriverStatus();
     Chat._bindInput();
     Chat._bindChatActions();
   },

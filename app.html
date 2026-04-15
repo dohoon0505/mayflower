@@ -23,7 +23,10 @@
       <div class="sidebar-top">
         <div class="sidebar-logo">
           <img src="assets/logo.svg" alt="메이대구">
-          <span>메이대구</span>
+          <span class="sidebar-logo-text">메이대구</span>
+          <button class="sidebar-toggle-btn" id="sidebar-toggle" title="메뉴 접기/펼치기">
+            <span class="toggle-arrow">‹</span>
+          </button>
         </div>
         <nav class="sidebar-nav" id="sidebar-nav">
           <!-- filled by AppShell.buildNav() -->
@@ -69,7 +72,6 @@
       <div class="chat-profile" id="chat-profile"></div>
       <div class="chat-notice" id="chat-notice"></div>
       <div class="chat-messages" id="chat-messages"></div>
-      <div class="chat-driver-status" id="chat-driver-status"></div>
       <div class="chat-input-area">
         <input type="text" id="chat-input" class="chat-input" placeholder="메시지 입력...">
         <button id="chat-send" class="btn btn-primary btn-sm">전송</button>
@@ -106,6 +108,7 @@
         AppShell.bindLogout();
         AppShell.bindSidebar();
         AppShell.bindChatToggle();
+        AppShell.bindSidebarCollapse(session);
 
         /* initialise views by role
            NOTE: Floor1View.init must run BEFORE AdminView.init
@@ -182,6 +185,27 @@
       closeSidebar() {
         document.getElementById('sidebar').classList.remove('open');
         document.getElementById('sidebar-overlay').classList.remove('show');
+      },
+
+      bindSidebarCollapse(session) {
+        const STORAGE_KEY = `maydaegu.sidebar.${session.userId}`;
+        const shell  = document.querySelector('.shell');
+        const btn    = document.getElementById('sidebar-toggle');
+        const arrow  = btn.querySelector('.toggle-arrow');
+
+        const applyState = (collapsed) => {
+          shell.classList.toggle('sidebar-collapsed', collapsed);
+          arrow.textContent = collapsed ? '›' : '‹';
+        };
+
+        /* Restore persisted state */
+        applyState(localStorage.getItem(STORAGE_KEY) === '1');
+
+        btn.addEventListener('click', () => {
+          const collapsed = !shell.classList.contains('sidebar-collapsed');
+          applyState(collapsed);
+          localStorage.setItem(STORAGE_KEY, collapsed ? '1' : '0');
+        });
       },
 
       bindChatToggle() {

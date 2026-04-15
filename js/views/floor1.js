@@ -243,7 +243,12 @@ const Floor1View = {
       if (fs.searchRecipient) orders = orders.filter(o => lc(o.recipientName).includes(lc(fs.searchRecipient)));
       if (fs.searchAddress)   orders = orders.filter(o => lc(o.deliveryAddress).includes(lc(fs.searchAddress)));
 
-      orders.sort((a, b) => new Date(a.deliveryDatetime) - new Date(b.deliveryDatetime));
+      /* Sort: black(배차전 0-2) → blue(배송중 3) → green(배송완료 4) → red(취소/반품 5-6) */
+      const _cg = s => s === 3 ? 1 : s === 4 ? 2 : s >= 5 ? 3 : 0;
+      orders.sort((a, b) => {
+        const g = _cg(a.status) - _cg(b.status);
+        return g !== 0 ? g : new Date(a.deliveryDatetime) - new Date(b.deliveryDatetime);
+      });
 
       Floor1View._renderOrders(orders);
       if (typeof DeliveryPanel !== 'undefined') DeliveryPanel.render();
@@ -292,14 +297,13 @@ const Floor1View = {
     return `
       <div class="order-card" data-id="${o.id}" data-status="${o.status}">
         <div class="ocard-body">
-          <!-- Header: checkbox · status · product · immediate · time · chain -->
+          <!-- Header: checkbox · chain · product · immediate · datetime -->
           <div class="ocard-header">
             <input type="checkbox" class="ocard-checkbox order-checkbox" data-id="${o.id}" title="선택">
-            <span class="order-product">${UI.escHtml(o.productName)}</span>
+            <span class="ocard-chain">${UI.escHtml(o.chainName || '-')}</span>
+            <span class="ocard-product">${UI.escHtml(o.productName)}</span>
             ${immediate}
             <span class="ocard-datetime">🕐 ${dt}</span>
-            <span class="ocard-chain">${UI.escHtml(o.chainName || '-')}</span>
-            <span class="ocard-id">#${o.id}</span>
           </div>
           <!-- Row 1: Address | Recipient (2-col) -->
           <div class="ocard-2col">

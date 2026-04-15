@@ -213,7 +213,11 @@ const Floor2View = {
       if (fs.searchRecipient) orders = orders.filter(o => lc(o.recipientName).includes(lc(fs.searchRecipient)));
       if (fs.searchAddress)   orders = orders.filter(o => lc(o.deliveryAddress).includes(lc(fs.searchAddress)));
 
-      orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      const _cg = s => s === 3 ? 1 : s === 4 ? 2 : s >= 5 ? 3 : 0;
+      orders.sort((a, b) => {
+        const g = _cg(a.status) - _cg(b.status);
+        return g !== 0 ? g : new Date(a.deliveryDatetime) - new Date(b.deliveryDatetime);
+      });
       UI.setMain(Floor2View._renderOrderList(orders));
     } catch(e) {
       UI.toast(e.message || '주문 조회 실패', 'error');
@@ -253,11 +257,10 @@ const Floor2View = {
       <div class="order-card" data-id="${o.id}" data-status="${o.status}">
         <div class="ocard-body">
           <div class="ocard-header">
-            <span class="order-product">${UI.escHtml(o.productName)}</span>
+            <span class="ocard-chain">${UI.escHtml(o.chainName || '-')}</span>
+            <span class="ocard-product">${UI.escHtml(o.productName)}</span>
             ${immediate}
             <span class="ocard-datetime">🕐 ${dt}</span>
-            <span class="ocard-chain">${UI.escHtml(o.chainName || '-')}</span>
-            <span class="ocard-id">#${o.id}</span>
           </div>
           <div class="ocard-2col">
             <div class="ocard-field">

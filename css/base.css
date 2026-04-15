@@ -44,14 +44,14 @@
   --s5-bg: #fef2f2; --s5-fg: #dc2626;
   --s6-bg: #fff7ed; --s6-fg: #ea580c;
 
-  /* Left border accent per status */
-  --s0-border: #94a3b8;
-  --s1-border: #3b82f6;
-  --s2-border: #8b5cf6;
-  --s3-border: #f59e0b;
-  --s4-border: #22c55e;
-  --s5-border: #ef4444;
-  --s6-border: #f97316;
+  /* Left border accent per status — 4 colors only */
+  --s0-border: #374151;  /* 배차 전 — black */
+  --s1-border: #374151;  /* 배차 전 — black */
+  --s2-border: #374151;  /* 배차 전 — black */
+  --s3-border: #2563eb;  /* 배송중  — blue  */
+  --s4-border: #22c55e;  /* 배송완료 — green */
+  --s5-border: #ef4444;  /* 취소    — red   */
+  --s6-border: #ef4444;  /* 반품    — red   */
 
   /* Sizing */
   --sidebar-w:   240px;
