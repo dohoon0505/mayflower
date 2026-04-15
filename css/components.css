@@ -634,6 +634,68 @@ tr:hover td { background: var(--bg-elevated); }
   padding: 1rem; text-align: center; pointer-events: none;
 }
 
+/* ── Edit modal 2-panel split ─────────────────────────────── */
+.eo-split {
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-start;
+  min-height: 0;
+}
+.eo-left {
+  flex: 0 0 440px;
+  min-width: 0;
+}
+.eo-right {
+  flex: 1;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  justify-content: center;
+  min-width: 0;
+}
+.eo-photo-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+  max-width: 220px;
+}
+.eo-photo-area {
+  display: block;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  border: 2px dashed var(--border-strong);
+  border-radius: var(--radius);
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color var(--tr), background var(--tr);
+}
+.eo-photo-area:hover,
+.eo-photo-area.drag-over { border-color: var(--primary); background: var(--primary-dim); }
+.eo-photo-area input[type="file"] {
+  position: absolute; inset: 0;
+  opacity: 0; cursor: pointer;
+  width: 100%; height: 100%;
+}
+.eo-photo-area img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  border-radius: calc(var(--radius) - 2px);
+}
+.eo-photo-placeholder {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 0.4rem;
+  color: var(--text-muted);
+  font-size: 0.85rem; text-align: center;
+  padding: 1rem;
+  pointer-events: none;
+}
+
 /* Animations */
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }

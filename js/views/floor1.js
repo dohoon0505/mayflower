@@ -562,100 +562,113 @@ const Floor1View = {
           <input type="text" class="form-control" value="${UI.escHtml(o.assignedDriverName || '미배정')}" readonly style="opacity:0.6">
         </div>`;
 
-    /* ── Photo section ── */
-    const photoSection = !isDriver ? `
-      <div class="form-group" style="margin-bottom:0.5rem">
-        <label class="form-label">사진 첨부</label>
-        <div class="edit-photo-row">
-          <div class="edit-photo-box" id="eo-store-box">
-            <input type="file" id="eo-store-file" accept="image/jpeg,image/png">
-            ${storeObjectUrl ? `<img id="eo-store-preview" src="${storeObjectUrl}" alt="매장사진">` : `<img id="eo-store-preview" style="display:none">`}
-            <span class="edit-photo-label">${storeObjectUrl ? '🏪 매장사진 변경' : '🏪 매장사진 업로드'}</span>
+    /* ── Right panel: photo columns ── */
+    const rightPanel = isDriver ? `
+      <div class="eo-photo-col" style="max-width:220px;margin:0 auto;flex:none">
+        <label class="form-label" style="font-weight:700;color:var(--primary)">📷 배송완료 사진</label>
+        <label class="eo-photo-area" id="drv-drop-zone" for="drv-complete-input">
+          <input type="file" id="drv-complete-input" accept="image/jpeg,image/png">
+          <div class="eo-photo-placeholder" id="drv-drop-msg">
+            <div style="font-size:2rem">📷</div>
+            <div>클릭 또는<br>드래그</div>
+            <div style="font-size:0.75rem">jpg, png / 최대 5MB</div>
           </div>
-          <div class="edit-photo-box" id="eo-deliv-box">
-            <input type="file" id="eo-deliv-file" accept="image/jpeg,image/png">
-            ${delivObjectUrl ? `<img id="eo-deliv-preview" src="${delivObjectUrl}" alt="현장사진">` : `<img id="eo-deliv-preview" style="display:none">`}
-            <span class="edit-photo-label">${delivObjectUrl ? '📷 현장사진 변경' : '📷 현장사진 업로드'}</span>
-          </div>
-        </div>
+          <img id="drv-complete-preview" style="display:none" alt="미리보기">
+        </label>
+        <div id="drv-complete-info" style="font-size:0.78rem;color:var(--text-muted);margin-top:0.35rem;text-align:center"></div>
       </div>` : `
-      <div class="form-group" style="margin-bottom:0.5rem">
-        <label class="form-label">사진</label>
-        <div style="display:flex;gap:0.75rem">
-          ${storeObjectUrl ? `<button class="btn btn-ghost btn-sm" onclick="window.open('${storeObjectUrl}')">🏪 매장사진 보기</button>` : '<span style="color:var(--text-muted);font-size:0.875rem">매장사진 없음</span>'}
-          ${delivObjectUrl ? `<button class="btn btn-ghost btn-sm" onclick="window.open('${delivObjectUrl}')">📷 현장사진 보기</button>` : ''}
-        </div>
+      <div class="eo-photo-col">
+        <label class="form-label">🏪 매장사진</label>
+        <label class="eo-photo-area" id="eo-store-box" for="eo-store-file">
+          <input type="file" id="eo-store-file" accept="image/jpeg,image/png">
+          <div class="eo-photo-placeholder" id="eo-store-ph" ${storeObjectUrl ? 'style="display:none"' : ''}>
+            <div style="font-size:1.75rem">🏪</div>
+            <div>클릭 또는<br>드래그</div>
+          </div>
+          <img id="eo-store-preview" ${storeObjectUrl ? `src="${storeObjectUrl}"` : 'style="display:none"'} alt="매장사진">
+        </label>
+      </div>
+      <div class="eo-photo-col">
+        <label class="form-label">📷 현장사진</label>
+        <label class="eo-photo-area" id="eo-deliv-box" for="eo-deliv-file">
+          <input type="file" id="eo-deliv-file" accept="image/jpeg,image/png">
+          <div class="eo-photo-placeholder" id="eo-deliv-ph" ${delivObjectUrl ? 'style="display:none"' : ''}>
+            <div style="font-size:1.75rem">📷</div>
+            <div>클릭 또는<br>드래그</div>
+          </div>
+          <img id="eo-deliv-preview" ${delivObjectUrl ? `src="${delivObjectUrl}"` : 'style="display:none"'} alt="현장사진">
+        </label>
       </div>`;
 
-    /* ── Driver completion section ── */
-    const completionSection = isDriver ? `
-      <div style="border-top:2px solid var(--primary);padding-top:0.875rem;margin-top:0.5rem">
-        <div class="form-label" style="font-weight:700;color:var(--primary);margin-bottom:0.5rem">📷 배송 완료 처리</div>
-        <label class="photo-drop-zone" id="drv-drop-zone" for="drv-complete-input">
-          <input type="file" id="drv-complete-input" accept="image/jpeg,image/png">
-          <div id="drv-drop-msg">
-            <div style="font-size:2rem;margin-bottom:0.5rem">📷</div>
-            <div style="font-size:0.9rem">클릭 또는 이미지를 드래그하여 업로드</div>
-            <div style="font-size:0.8rem;color:var(--text-muted);margin-top:0.25rem">jpg, png / 최대 5MB</div>
-          </div>
-          <img id="drv-complete-preview" class="photo-preview" style="display:none" alt="미리보기">
-        </label>
-        <div id="drv-complete-info" style="font-size:0.8rem;color:var(--text-muted);margin-top:0.35rem"></div>
+    /* ── Driver view photo link buttons (read-only) ── */
+    const driverPhotoLinks = isDriver ? `
+      <div class="form-group" style="margin-bottom:0.5rem">
+        <label class="form-label">기존 사진</label>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+          ${storeObjectUrl ? `<button class="btn btn-ghost btn-sm" onclick="window.open('${storeObjectUrl}')">🏪 매장사진 보기</button>` : '<span style="color:var(--text-muted);font-size:0.85rem">매장사진 없음</span>'}
+          ${delivObjectUrl ? `<button class="btn btn-ghost btn-sm" onclick="window.open('${delivObjectUrl}')">📷 현장사진 보기</button>` : ''}
+        </div>
       </div>` : '';
 
     const content = `
-      <div class="form-row" style="margin-bottom:0.75rem">
-        ${statusRow}
-        <div class="form-group">
-          <label class="form-label">접수자</label>
-          <input type="text" class="form-control" value="${UI.escHtml(o.createdByName)}" readonly style="opacity:0.6">
+      <div class="eo-split">
+        <div class="eo-left">
+          <div class="form-row" style="margin-bottom:0.75rem">
+            ${statusRow}
+            <div class="form-group">
+              <label class="form-label">접수자</label>
+              <input type="text" class="form-control" value="${UI.escHtml(o.createdByName)}" readonly style="opacity:0.6">
+            </div>
+          </div>
+          <div class="form-row" style="margin-bottom:0.75rem">
+            <div class="form-group">
+              <label class="form-label">체인명 <span class="form-required">*</span></label>
+              <input type="text" id="eo-chain" class="form-control" value="${UI.escHtml(o.chainName || '')}" ${rdonly('조회 전용')}>
+            </div>
+            <div class="form-group">
+              <label class="form-label">상품명 <span class="form-required">*</span></label>
+              <select id="eo-product" class="form-control" ${isDriver?'disabled style="opacity:0.6"':''}>
+                ${productOpts}
+              </select>
+            </div>
+          </div>
+          <div class="form-row" style="margin-bottom:0.75rem">
+            <div class="form-group">
+              <label class="form-label">배송 일시 <span class="form-required">*</span></label>
+              <input type="datetime-local" id="eo-datetime" class="form-control" value="${toLocalDT(o.deliveryDatetime)}" step="600" ${rdonly('조회 전용')}>
+            </div>
+            <div class="form-group">
+              <label class="form-label">배송지 주소 <span class="form-required">*</span></label>
+              <input type="text" id="eo-address" class="form-control" value="${UI.escHtml(o.deliveryAddress || '')}" ${rdonly('조회 전용')}>
+            </div>
+          </div>
+          <div class="form-row" style="margin-bottom:0.75rem">
+            <div class="form-group">
+              <label class="form-label">받는 분 성함 <span class="form-required">*</span></label>
+              <input type="text" id="eo-name" class="form-control" value="${UI.escHtml(o.recipientName || '')}" ${rdonly('조회 전용')}>
+            </div>
+            <div class="form-group">
+              <label class="form-label">받는 분 연락처</label>
+              <input type="tel" id="eo-phone" class="form-control" value="${UI.escHtml(o.recipientPhone || '')}" ${rdonly('조회 전용')}>
+            </div>
+          </div>
+          <div class="form-row" style="margin-bottom:0.75rem">
+            <div class="form-group">
+              <label class="form-label">보내는분 문구 (리본)</label>
+              <input type="text" id="eo-ribbon" class="form-control" value="${UI.escHtml(o.ribbonText || '')}" ${rdonly('조회 전용')}>
+            </div>
+            <div class="form-group">
+              <label class="form-label">경조사어 문구</label>
+              <input type="text" id="eo-occasion" class="form-control" value="${UI.escHtml(o.occasionText || '')}" ${rdonly('조회 전용')} placeholder="예: 삼가 고인의 명복을 빕니다">
+            </div>
+          </div>
+          ${driverRow}
+          ${driverPhotoLinks}
         </div>
-      </div>
-      <div class="form-row" style="margin-bottom:0.75rem">
-        <div class="form-group">
-          <label class="form-label">체인명 <span class="form-required">*</span></label>
-          <input type="text" id="eo-chain" class="form-control" value="${UI.escHtml(o.chainName || '')}" ${rdonly('조회 전용')}>
+        <div class="eo-right">
+          ${rightPanel}
         </div>
-        <div class="form-group">
-          <label class="form-label">상품명 <span class="form-required">*</span></label>
-          <select id="eo-product" class="form-control" ${isDriver?'disabled style="opacity:0.6"':''}>
-            ${productOpts}
-          </select>
-        </div>
-      </div>
-      <div class="form-row" style="margin-bottom:0.75rem">
-        <div class="form-group">
-          <label class="form-label">배송 일시 <span class="form-required">*</span></label>
-          <input type="datetime-local" id="eo-datetime" class="form-control" value="${toLocalDT(o.deliveryDatetime)}" step="600" ${rdonly('조회 전용')}>
-        </div>
-        <div class="form-group">
-          <label class="form-label">배송지 주소 <span class="form-required">*</span></label>
-          <input type="text" id="eo-address" class="form-control" value="${UI.escHtml(o.deliveryAddress || '')}" ${rdonly('조회 전용')}>
-        </div>
-      </div>
-      <div class="form-row" style="margin-bottom:0.75rem">
-        <div class="form-group">
-          <label class="form-label">받는 분 성함 <span class="form-required">*</span></label>
-          <input type="text" id="eo-name" class="form-control" value="${UI.escHtml(o.recipientName || '')}" ${rdonly('조회 전용')}>
-        </div>
-        <div class="form-group">
-          <label class="form-label">받는 분 연락처</label>
-          <input type="tel" id="eo-phone" class="form-control" value="${UI.escHtml(o.recipientPhone || '')}" ${rdonly('조회 전용')}>
-        </div>
-      </div>
-      <div class="form-row" style="margin-bottom:0.75rem">
-        <div class="form-group">
-          <label class="form-label">보내는분 문구 (리본)</label>
-          <input type="text" id="eo-ribbon" class="form-control" value="${UI.escHtml(o.ribbonText || '')}" ${rdonly('조회 전용')}>
-        </div>
-        <div class="form-group">
-          <label class="form-label">경조사어 문구</label>
-          <input type="text" id="eo-occasion" class="form-control" value="${UI.escHtml(o.occasionText || '')}" ${rdonly('조회 전용')} placeholder="예: 삼가 고인의 명복을 빕니다">
-        </div>
-      </div>
-      ${driverRow}
-      ${photoSection}
-      ${completionSection}`;
+      </div>`;
 
     const overlay = UI.modal({
       title: `주문서 ${isDriver ? '조회' : '수정'} — #${orderId}`,
@@ -724,19 +737,30 @@ const Floor1View = {
     }
 
     /* ── Non-driver: photo file handlers ── */
-    const handlePhotoFile = (file, previewId, which) => {
+    const handlePhotoFile = (file, previewId, placeholderId, which) => {
       if (!file) return;
       if (file.size > 5 * 1024 * 1024) { UI.toast('5MB 이하 파일만 허용됩니다.', 'error'); return; }
       if (!['image/jpeg','image/jpg','image/png'].includes(file.type)) { UI.toast('jpg, png 파일만 허용됩니다.', 'error'); return; }
       const url = URL.createObjectURL(file);
       const preview = overlay.querySelector(`#${previewId}`);
+      const ph = overlay.querySelector(`#${placeholderId}`);
+      if (ph) ph.style.display = 'none';
       preview.src = url; preview.style.display = 'block';
       if (which === 'store') { storeFile = file; storeObjectUrl = url; }
       else                   { delivFile = file; delivObjectUrl = url; }
     };
 
-    overlay.querySelector('#eo-store-file').addEventListener('change', e => handlePhotoFile(e.target.files[0], 'eo-store-preview', 'store'));
-    overlay.querySelector('#eo-deliv-file').addEventListener('change', e => handlePhotoFile(e.target.files[0], 'eo-deliv-preview', 'deliv'));
+    overlay.querySelector('#eo-store-file').addEventListener('change', e => handlePhotoFile(e.target.files[0], 'eo-store-preview', 'eo-store-ph', 'store'));
+    overlay.querySelector('#eo-deliv-file').addEventListener('change', e => handlePhotoFile(e.target.files[0], 'eo-deliv-preview', 'eo-deliv-ph', 'deliv'));
+
+    /* Drag-drop for .eo-photo-area boxes */
+    [['eo-store-box','eo-store-preview','eo-store-ph','store'],['eo-deliv-box','eo-deliv-preview','eo-deliv-ph','deliv']].forEach(([boxId, prevId, phId, which]) => {
+      const box = overlay.querySelector(`#${boxId}`);
+      if (!box) return;
+      box.addEventListener('dragover',  e => { e.preventDefault(); box.classList.add('drag-over'); });
+      box.addEventListener('dragleave', () => box.classList.remove('drag-over'));
+      box.addEventListener('drop', e => { e.preventDefault(); box.classList.remove('drag-over'); handlePhotoFile(e.dataTransfer.files[0], prevId, phId, which); });
+    });
 
     const confirmBtn = overlay.querySelector('.modal-confirm');
     confirmBtn.onclick = async () => {
