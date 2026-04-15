@@ -283,17 +283,18 @@
                 </button>
                 ${statusBadge}
               </div>
-              <span class="dp-driver-meta">${UI.escHtml(d.phone || '')}</span>
-              <div class="dp-card-row2">
-                <span class="dp-row2-item dp-row2-delivering">배송중 ${delivering.length}개</span>
-                <span class="dp-row2-sep">|</span>
-                <span class="dp-row2-item dp-row2-done">배송완료 ${completed.length}개</span>
+              ${d.phone ? `<div class="dp-driver-meta"><span class="dp-meta-icon">📞</span>${UI.escHtml(d.phone)}</div>` : ''}
+              <div class="dp-card-stats">
+                <span class="dp-stat dp-stat-delivering"><span class="dp-stat-num">${delivering.length}</span> 배송중</span>
+                <span class="dp-stat dp-stat-done"><span class="dp-stat-num">${completed.length}</span> 완료</span>
               </div>
-              <div class="dp-last-addr">최종 배송지: ${lastAddr}</div>
-              <div class="dp-progress-wrap">
-                <div class="dp-progress-bar" style="width:${pct}%"></div>
+              <div class="dp-progress-row">
+                <div class="dp-progress-wrap">
+                  <div class="dp-progress-bar" style="width:${pct}%"></div>
+                </div>
+                <span class="dp-progress-pct">${pct}%</span>
               </div>
-              <div class="dp-progress-label">${completed.length} / ${total}건 완료</div>
+              <div class="dp-last-addr"><span class="dp-meta-icon">📍</span>${lastAddr}</div>
             </div>`;
         }).join('');
 

@@ -239,58 +239,79 @@
 .dp-driver-card {
   background: var(--bg-surface);
   border: 1px solid var(--border);
+  border-left: 3px solid transparent;
   border-radius: var(--radius);
-  padding: 0.45rem 0.65rem;
+  padding: 0.55rem 0.7rem;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  transition: border-color var(--tr);
+  gap: 0.3rem;
+  transition: border-color var(--tr), background var(--tr);
 }
-.dp-driver-card.dp-card-active { border-color: var(--primary-light); background: #f0f7ff; }
-.dp-driver-card.dp-card-off    { border-color: #fca5a5; background: #fff5f5; opacity: 0.75; }
+.dp-driver-card.dp-card-active {
+  border-color: var(--primary-light);
+  border-left-color: var(--primary);
+  background: #f0f7ff;
+}
+.dp-driver-card.dp-card-off {
+  border-color: #fca5a5;
+  border-left-color: #ef4444;
+  background: #fff5f5;
+  opacity: 0.78;
+}
 
-/* Row 1: Name (clickable) + 여분 badge */
+/* Row 1: Name + status badge */
 .dp-card-name-row {
   display: flex; align-items: center;
   justify-content: space-between; gap: 0.4rem;
 }
 .dp-driver-name-btn {
   background: none; border: none; padding: 0; margin: 0;
-  font-size: 0.95rem; font-weight: 700;
-  color: var(--primary); cursor: pointer; text-align: left;
-  text-decoration: underline dotted;
+  font-size: 0.92rem; font-weight: 700;
+  color: var(--text-primary); cursor: pointer; text-align: left;
+  display: flex; align-items: center; gap: 0.3rem;
+  transition: color var(--tr);
 }
-.dp-driver-name-btn:hover { color: var(--primary-hover); }
-.dp-driver-meta { font-size: 0.78rem; color: var(--text-muted); }
+.dp-driver-name-btn::after { content: '›'; font-size: 1rem; opacity: 0; transition: opacity var(--tr); }
+.dp-driver-name-btn:hover { color: var(--primary); }
+.dp-driver-name-btn:hover::after { opacity: 1; }
 
-/* 여분 badge */
+/* Meta row (phone / address) */
+.dp-driver-meta {
+  font-size: 0.76rem; color: var(--text-muted);
+  display: flex; align-items: center; gap: 0.25rem;
+}
+.dp-meta-icon { font-size: 0.72rem; flex-shrink: 0; }
+
+/* Status badge */
 .dp-badge {
-  font-size: 0.74rem; font-weight: 700;
-  padding: 0.18rem 0.55rem; border-radius: 999px;
-  white-space: nowrap; flex-shrink: 0;
+  font-size: 0.7rem; font-weight: 700;
+  padding: 0.15rem 0.5rem; border-radius: 999px;
+  white-space: nowrap; flex-shrink: 0; letter-spacing: 0.01em;
 }
 .dp-badge-delivering { background: #dbeafe; color: #1d4ed8; }
 .dp-badge-waiting    { background: #f1f5f9; color: var(--text-secondary); }
 .dp-badge-off        { background: #fee2e2; color: #b91c1c; }
 
-/* Row 2: 배송중 n개 | 배송완료 n개 */
-.dp-card-row2 {
+/* Stats chips */
+.dp-card-stats {
+  display: flex; gap: 0.35rem; align-items: center;
+}
+.dp-stat {
+  display: inline-flex; align-items: center; gap: 0.2rem;
+  font-size: 0.75rem; font-weight: 600;
+  padding: 0.12rem 0.5rem; border-radius: 999px;
+}
+.dp-stat-num { font-size: 0.88rem; font-weight: 800; }
+.dp-stat-delivering { background: #dbeafe; color: #1d4ed8; }
+.dp-stat-done       { background: #d1fae5; color: #15803d; }
+
+/* Progress row */
+.dp-progress-row {
   display: flex; align-items: center; gap: 0.4rem;
-  font-size: 0.82rem;
 }
-.dp-row2-sep { color: var(--border-strong); }
-.dp-row2-delivering { color: #1d4ed8; font-weight: 600; }
-.dp-row2-done       { color: #15803d; font-weight: 600; }
-
-/* 최종 배송지 */
-.dp-last-addr {
-  font-size: 0.78rem; color: var(--text-muted);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-
-/* Progress bar */
 .dp-progress-wrap {
-  height: 7px;
+  flex: 1;
+  height: 8px;
   background: var(--bg-elevated);
   border-radius: 999px;
   overflow: hidden;
@@ -300,11 +321,19 @@
   height: 100%;
   background: linear-gradient(90deg, #22c55e, #16a34a);
   border-radius: 999px;
-  transition: width 0.4s ease;
+  transition: width 0.5s ease;
   min-width: 0;
 }
-.dp-progress-label {
-  font-size: 0.72rem; color: var(--text-muted); text-align: right;
+.dp-progress-pct {
+  font-size: 0.72rem; font-weight: 700;
+  color: #15803d; flex-shrink: 0; min-width: 2.2rem; text-align: right;
+}
+
+/* 최종 배송지 */
+.dp-last-addr {
+  font-size: 0.75rem; color: var(--text-muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  display: flex; align-items: center; gap: 0.25rem;
 }
 
 /* Timeline */
