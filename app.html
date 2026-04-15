@@ -262,6 +262,33 @@
         return new Date(order.updatedAt) >= new Date(resetTs);
       },
 
+      /* 휴무(off-duty) 상태: 배송대기일 때만 수동 토글 가능 */
+      _getOffDuty(driverId) {
+        return localStorage.getItem(`maydaegu.driver.offduty.${driverId}`) === '1';
+      },
+      _setOffDuty(driverId, off) {
+        if (off) localStorage.setItem(`maydaegu.driver.offduty.${driverId}`, '1');
+        else     localStorage.removeItem(`maydaegu.driver.offduty.${driverId}`);
+      },
+
+      /* 공통 뱃지 판정 — render()와 openTimeline()이 공유 */
+      _computeBadge(d, allOrders) {
+        const resetTs    = DeliveryPanel._getResetTs(d.id);
+        const myOrders   = allOrders.filter(o => o.assignedDriverId === d.id);
+        const assigned   = myOrders.filter(o => o.status >= 0 && o.status <= 2);
+        const delivering = myOrders.filter(o => o.status === 3);
+        const completed  = myOrders.filter(o => o.status === 4 && DeliveryPanel._afterReset(o, resetTs));
+        const isOff      = DeliveryPanel._getOffDuty(d.id);
+
+        let badge;
+        if (delivering.length > 0)     badge = 'delivering';
+        else if (assigned.length > 0)  badge = 'assigned';
+        else if (completed.length > 0) badge = 'returning';
+        else if (isOff)                badge = 'off';       /* 배송대기 상태에서만 휴무 허용 */
+        else                           badge = 'waiting';
+        return { badge, assigned, delivering, completed };
+      },
+
       render() {
         const el = document.getElementById('dp-body');
         if (!el) return;
@@ -274,26 +301,15 @@
           return;
         }
 
-        /* Build + sort: 배송중(0) → 배차완료(1) → 복귀중(2) → 배송대기(3) */
+        /* Build + sort: 배송중(0) → 배차완료(1) → 복귀중(2) → 배송대기(3) → 휴무(4) */
         const data = drivers.map(d => {
-          const resetTs     = DeliveryPanel._getResetTs(d.id);
-          const myOrders    = allOrders.filter(o => o.assignedDriverId === d.id);
-          const assigned    = myOrders.filter(o => o.status >= 0 && o.status <= 2);
-          const delivering  = myOrders.filter(o => o.status === 3);
-          const completed   = myOrders.filter(o => o.status === 4 && DeliveryPanel._afterReset(o, resetTs));
-
-          /* 자동 뱃지 판정 — 수동 토글 없음 */
-          let badge;
-          if (delivering.length > 0)      badge = 'delivering';
-          else if (assigned.length > 0)   badge = 'assigned';
-          else if (completed.length > 0)  badge = 'returning';  /* [2] APP 사진업로드 대체 */
-          else                            badge = 'waiting';
-
+          const { badge, assigned, delivering, completed } = DeliveryPanel._computeBadge(d, allOrders);
           const total    = delivering.length + completed.length;
           const pct      = total > 0 ? Math.round((completed.length / total) * 100) : 0;
           const priority = badge === 'delivering' ? 0
                          : badge === 'assigned'   ? 1
-                         : badge === 'returning'  ? 2 : 3;
+                         : badge === 'returning'  ? 2
+                         : badge === 'waiting'    ? 3 : 4;
           return { d, assigned, delivering, completed, badge, total, pct, priority };
         }).sort((a, b) => a.priority - b.priority);
 
@@ -309,6 +325,7 @@
             badge === 'delivering' ? [`<span class="dp-badge dp-badge-delivering">배송중</span>`,  'dp-card-active']    :
             badge === 'assigned'   ? [`<span class="dp-badge dp-badge-assigned">배차완료</span>`, 'dp-card-assigned']  :
             badge === 'returning'  ? [`<span class="dp-badge dp-badge-returning">복귀중</span>`,   'dp-card-returning'] :
+            badge === 'off'        ? [`<span class="dp-badge dp-badge-off">휴무</span>`,          'dp-card-off']       :
                                      [`<span class="dp-badge dp-badge-waiting">배송대기</span>`,  ''];
 
           return `
@@ -368,22 +385,44 @@
         });
         overlay.querySelector('.modal-cancel').style.display = 'none';
 
-        /* ⚠️ [3] APP 연동 전 임시: GPS 기반 자동 "배송대기" 전환이 구현되기 전까지
-               admin이 수동으로 배송대기 상태로 리셋 (타임라인 초기화) */
+        /* 현재 뱃지 상태에 따라 버튼 구성 분기 */
+        const { badge: curBadge } = DeliveryPanel._computeBadge(d, allOrders);
         const footer = overlay.querySelector('.modal-footer');
         const wrap = document.createElement('div');
         wrap.style.cssText = 'display:flex;gap:0.5rem;margin-right:auto';
-        wrap.innerHTML = `
-          <button class="btn btn-sm btn-warning" id="dp-btn-reset" title="타임라인을 초기화하고 배송대기 상태로 전환 (APP GPS 연동 전 임시 버튼)">🔄 배송대기로 리셋</button>`;
-        footer.insertBefore(wrap, footer.firstChild);
 
         const close = () => { overlay.classList.remove('show'); setTimeout(() => overlay.remove(), 300); };
-        wrap.querySelector('#dp-btn-reset').addEventListener('click', async () => {
-          const ok = await UI.confirm(`${d.name} 기사의 배송 타임라인을 초기화하고 배송대기 상태로 전환합니다.`, '배송대기로 리셋');
-          if (!ok) return;
-          DeliveryPanel._setResetTs(driverId, new Date().toISOString());
-          close(); DeliveryPanel.render();
-        });
+
+        if (curBadge === 'waiting' || curBadge === 'off') {
+          /* 배송대기 / 휴무 상태: 출근 ↔ 휴무 토글 */
+          const isOff = curBadge === 'off';
+          wrap.innerHTML = `
+            <button class="btn btn-sm ${!isOff ? 'btn-primary' : 'btn-secondary'}" id="dp-btn-on">🚚 출근</button>
+            <button class="btn btn-sm ${isOff ? 'btn-warning' : 'btn-secondary'}"  id="dp-btn-off">🏠 휴무</button>`;
+          footer.insertBefore(wrap, footer.firstChild);
+
+          wrap.querySelector('#dp-btn-on').addEventListener('click', () => {
+            DeliveryPanel._setOffDuty(driverId, false);
+            close(); DeliveryPanel.render();
+          });
+          wrap.querySelector('#dp-btn-off').addEventListener('click', () => {
+            DeliveryPanel._setOffDuty(driverId, true);
+            close(); DeliveryPanel.render();
+          });
+        } else {
+          /* 배송중 / 배차완료 / 복귀중: 타임라인 초기화 (배송대기로 리셋) */
+          /* ⚠️ [3] APP 연동 전 임시: GPS 기반 자동 "배송대기" 전환 대체 */
+          wrap.innerHTML = `
+            <button class="btn btn-sm btn-warning" id="dp-btn-reset" title="타임라인을 초기화하고 배송대기 상태로 전환 (APP GPS 연동 전 임시 버튼)">🔄 배송대기로 리셋</button>`;
+          footer.insertBefore(wrap, footer.firstChild);
+
+          wrap.querySelector('#dp-btn-reset').addEventListener('click', async () => {
+            const ok = await UI.confirm(`${d.name} 기사의 배송 타임라인을 초기화하고 배송대기 상태로 전환합니다.`, '배송대기로 리셋');
+            if (!ok) return;
+            DeliveryPanel._setResetTs(driverId, new Date().toISOString());
+            close(); DeliveryPanel.render();
+          });
+        }
       },
     };
 

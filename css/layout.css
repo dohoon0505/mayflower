@@ -263,6 +263,12 @@
   background: #fff7ed;
   opacity: 0.85;
 }
+.dp-driver-card.dp-card-off {
+  border-color: #e5e7eb;
+  border-left-color: #9ca3af;
+  background: #f9fafb;
+  opacity: 0.65;
+}
 
 /* Row 1: Name + status badge */
 .dp-card-name-row {
@@ -297,6 +303,7 @@
 .dp-badge-assigned   { background: #ede9fe; color: #6d28d9; }
 .dp-badge-waiting    { background: #f1f5f9; color: var(--text-secondary); }
 .dp-badge-returning  { background: #ffedd5; color: #c2410c; }
+.dp-badge-off        { background: #e5e7eb; color: #4b5563; }
 
 /* Stats chips */
 .dp-card-stats {
