@@ -16,30 +16,65 @@
 | **ShellRoute** | 없음 | 공통 레이아웃(사이드바 등) 감싸기 내장 |
 | **코드량** | 매우 많음 | 최소화 |
 
-메이대구는 **Flutter Web + Android + iOS** 통합 코드베이스이므로, 웹 URL 직접 접근과 모바일 deep link를 모두 지원하는 GoRouter가 필수입니다.
+메이대구는 **Flutter Web + Android + iOS** 통합 코드베이스이지만, 플랫폼별 접근 가능한 역할이 엄격히 분리됩니다:
+
+| 플랫폼 | 접근 허용 역할 | 비고 |
+|--------|--------------|------|
+| **Flutter Web** | floor2, floor1, admin | 기사(`driver`) 계정으로 Web 로그인 시 차단 |
+| **Flutter Android/iOS** | driver (기사) 전용 | 기사 외 역할 로그인 시 즉시 로그아웃 + 오류 표시 |
+
+GoRouter는 URL 기반 라우팅과 `redirect` 콜백을 활용하여 이 분리를 구현합니다.
 
 ---
 
 ## 2. 라우트 구조
 
-### 2.1 전체 라우트 트리
+### 2.1 플랫폼별 라우트 분리 원칙
+
+```
+플랫폼 분기
+ │
+ ├── kIsWeb == true  (Flutter Web — 사무직 전용)
+ │   │
+ │   ├── /login
+ │   ├── /floor2/my-orders
+ │   ├── /floor2/new-order
+ │   ├── /floor1/all-orders
+ │   ├── /admin/all-orders
+ │   ├── /admin/products
+ │   ├── /admin/categories
+ │   ├── /admin/drivers
+ │   └── /admin/statistics
+ │       → driver 계정 로그인 시 차단 (로그아웃 처리)
+ │
+ └── kIsWeb == false  (Android / iOS — 기사 전용)
+     │
+     ├── /login
+     ├── /driver/my-deliveries      ← 홈 화면
+     ├── /driver/order/:orderId     ← 주문 상세
+     └── /driver/chat               ← 채팅 (선택)
+         → driver 이외 역할 로그인 시 즉시 로그아웃 + 안내 표시
+```
+
+### 2.2 전체 라우트 트리
 
 ```
 /login                          → LoginScreen
-/                               → ShellScreen (역할별 자동 리디렉션)
+/                               → 역할 + 플랫폼 기반 자동 리디렉션
 │
-├── /floor2/
+├── /floor2/  (Web 전용 — kIsWeb 아닌 경우 차단)
 │   ├── my-orders               → MyOrdersScreen
 │   └── new-order               → NewOrderScreen
 │
-├── /floor1/
+├── /floor1/  (Web 전용)
 │   └── all-orders              → AllOrdersScreen
 │
-├── /driver/
+├── /driver/  (Android/iOS 전용 — kIsWeb인 경우 차단)
 │   ├── my-deliveries           → MyDeliveriesScreen
-│   └── order/:orderId          → OrderDetailScreen
+│   ├── order/:orderId          → OrderDetailScreen
+│   └── chat                   → DriverChatScreen
 │
-└── /admin/
+└── /admin/   (Web 전용)
     ├── all-orders              → AdminAllOrdersScreen
     ├── products                → ManageProductsScreen
     ├── categories              → ManageCategoriesScreen
@@ -101,24 +136,39 @@ final routerProvider = Provider<GoRouter>((ref) {
       // 로그인 상태에서 로그인 페이지 접근 → 홈으로
       if (isLoggedIn && isLoginPage) return '/';
 
-      // 루트 경로 → 역할별 기본 화면으로
-      if (isLoggedIn && state.matchedLocation == '/') {
-        switch (session.role) {
-          case 'floor2': return '/floor2/my-orders';
-          case 'floor1': return '/floor1/all-orders';
-          case 'driver': return '/driver/my-deliveries';
-          case 'admin':  return '/admin/all-orders';
-        }
-      }
-
-      // 역할과 맞지 않는 경로 접근 차단
       if (isLoggedIn) {
-        final loc = state.matchedLocation;
         final role = session.role;
-        if (loc.startsWith('/floor2') && role != 'floor2') return '/$role';
-        if (loc.startsWith('/floor1') && role != 'floor1') return '/$role';
-        if (loc.startsWith('/driver') && role != 'driver') return '/$role';
-        if (loc.startsWith('/admin')  && role != 'admin')  return '/$role';
+
+        // ── 플랫폼별 역할 차단 (핵심 보안) ──────────────────────
+        // Android / iOS: driver 전용 — 다른 역할 로그인 차단
+        if (!kIsWeb && role != 'driver') {
+          // driver가 아닌 계정이 모바일 앱으로 로그인 시도 → 로그아웃 후 오류
+          ref.read(authProvider.notifier).logout();
+          return '/login?error=mobile_driver_only';
+        }
+        // Flutter Web: driver 계정 Web 접속 차단
+        if (kIsWeb && role == 'driver') {
+          ref.read(authProvider.notifier).logout();
+          return '/login?error=driver_use_app';
+        }
+        // ────────────────────────────────────────────────────────
+
+        // 루트 경로 → 역할별 기본 화면으로
+        if (state.matchedLocation == '/') {
+          switch (role) {
+            case 'floor2': return '/floor2/my-orders';
+            case 'floor1': return '/floor1/all-orders';
+            case 'driver': return '/driver/my-deliveries';
+            case 'admin':  return '/admin/all-orders';
+          }
+        }
+
+        // 역할과 맞지 않는 경로 접근 차단
+        final loc = state.matchedLocation;
+        if (loc.startsWith('/floor2') && role != 'floor2' && role != 'admin') return '/';
+        if (loc.startsWith('/floor1') && role != 'floor1' && role != 'admin') return '/';
+        if (loc.startsWith('/driver') && role != 'driver') return '/';
+        if (loc.startsWith('/admin')  && role != 'admin')  return '/';
       }
 
       return null; // 리디렉션 없음
@@ -128,16 +178,22 @@ final routerProvider = Provider<GoRouter>((ref) {
       // ── 로그인 (Shell 바깥) ──
       GoRoute(
         path: '/login',
-        builder: (context, state) => const LoginScreen(),
+        builder: (context, state) {
+          // ?error= 파라미터로 플랫폼 차단 안내 메시지 전달
+          final error = state.uri.queryParameters['error'];
+          return LoginScreen(errorCode: error);
+        },
       ),
 
-      // ── 메인 Shell ──
+      // ── 메인 Shell (Web 사무직: floor2/floor1/admin) ──
+      // Android/iOS(kIsWeb=false)에서는 ShellScreen이 로드되지 않음
+      // — redirect에서 /driver/* 로 이미 분기됨
       ShellRoute(
         builder: (context, state, child) {
           return ShellScreen(child: child);
         },
         routes: [
-          // floor2 라우트
+          // floor2 라우트 (Web 전용)
           GoRoute(
             path: '/floor2/my-orders',
             builder: (ctx, state) => const MyOrdersScreen(),
@@ -147,7 +203,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (ctx, state) => const NewOrderScreen(),
           ),
 
-          // floor1 라우트
+          // floor1 라우트 (Web 전용)
           GoRoute(
             path: '/floor1/all-orders',
             builder: (ctx, state) => const AllOrdersScreen(),
@@ -165,8 +221,12 @@ final routerProvider = Provider<GoRouter>((ref) {
               return OrderDetailScreen(orderId: orderId);
             },
           ),
+          GoRoute(
+            path: '/driver/chat',
+            builder: (ctx, state) => const DriverChatScreen(),
+          ),
 
-          // admin 라우트
+          // admin 라우트 (Web 전용)
           GoRoute(
             path: '/admin/all-orders',
             builder: (ctx, state) => const AdminAllOrdersScreen(),
@@ -215,6 +275,52 @@ class MaydaeguApp extends ConsumerWidget {
       theme: AppTheme.light,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
+    );
+  }
+}
+```
+
+### 3.3 LoginScreen — 플랫폼 차단 안내 메시지
+
+redirect에서 `?error=` 파라미터로 차단 이유를 전달하면, 로그인 화면에서 적절한 안내를 보여줍니다.
+
+```dart
+// lib/screens/login_screen.dart
+class LoginScreen extends StatelessWidget {
+  final String? errorCode;
+  const LoginScreen({super.key, this.errorCode});
+
+  String? _platformErrorMessage() {
+    return switch (errorCode) {
+      // 모바일 앱에서 기사 아닌 계정 로그인 시도
+      'mobile_driver_only' =>
+        '📱 모바일 앱은 배송 기사 전용입니다.\n'
+        '사무직 계정은 웹 브라우저로 접속해 주세요.',
+      // Web에서 기사 계정 로그인 시도
+      'driver_use_app' =>
+        '🚚 기사 계정은 모바일 앱을 이용해 주세요.\n'
+        'Play Store / App Store에서 "메이대구 기사" 앱을 설치하세요.',
+      _ => null,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final errMsg = _platformErrorMessage();
+    return Scaffold(
+      body: Column(
+        children: [
+          if (errMsg != null)
+            Container(
+              width: double.infinity,
+              color: Colors.orange.shade50,
+              padding: const EdgeInsets.all(12),
+              child: Text(errMsg,
+                style: const TextStyle(color: Colors.deepOrange)),
+            ),
+          // ... 로그인 폼
+        ],
+      ),
     );
   }
 }
