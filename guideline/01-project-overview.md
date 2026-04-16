@@ -269,7 +269,7 @@
 | 13 | [13-testing-strategy.md](./13-testing-strategy.md) | 테스트 전략 (Unit, Widget, Integration) |
 | 14 | [14-deployment.md](./14-deployment.md) | 빌드 및 배포 (Web, Android, iOS) |
 | 15 | [15-migration-plan.md](./15-migration-plan.md) | v1 -> v2 마이그레이션 계획 및 체크리스트 |
-| 16 | [16-windows-desktop-app.md](./16-windows-desktop-app.md) | Windows 데스크톱 앱 (C++) — Web vs Desktop 비교 |
+| 16 | [16-windows-desktop-app.md](./16-windows-desktop-app.md) | Flutter Web vs Flutter Desktop — 비교 · 공유/분리 코드 · 구현 가이드 |
 
 ---
 
