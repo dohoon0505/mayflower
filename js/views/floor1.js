@@ -379,7 +379,7 @@ const Floor1View = {
   _handleClick: async function(e) {
     const actionBtn = e.target.closest('.f1-action');
     if (actionBtn) {
-      await Floor1View._handleAction(+actionBtn.dataset.id, actionBtn.dataset.action, actionBtn);
+      await Floor1View._handleAction(actionBtn.dataset.id, actionBtn.dataset.action, actionBtn);
       return;
     }
     const copyEl = e.target.closest('[data-copy]');
@@ -524,7 +524,7 @@ const Floor1View = {
       if (!selectedFile) { UI.toast('사진을 선택해 주세요.', 'warning'); return; }
       confirmBtn.disabled = true; confirmBtn.textContent = '저장 중...';
       try {
-        const { url } = await Api.uploadStorePhoto(selectedFile);
+        const { url } = await Api.uploadStorePhoto(selectedFile, orderId);
         await Api.updateOrder(orderId, { storePhotoUrl: url });
         UI.toast('매장사진이 등록되었습니다.', 'success');
         overlay.classList.remove('show');
@@ -748,7 +748,7 @@ const Floor1View = {
         if (!drvFile) { UI.toast('배송 완료 사진을 첨부해 주세요.', 'warning'); return; }
         doneBtn.disabled = true; doneBtn.textContent = '처리 중...';
         try {
-          const { url } = await Api.uploadDeliveryPhoto(drvFile);
+          const { url } = await Api.uploadDeliveryPhoto(drvFile, orderId);
           await Api.completeOrder(orderId, url);
           UI.toast('배송이 완료 처리되었습니다! 🎉', 'success');
           overlay.classList.remove('show');
@@ -791,14 +791,14 @@ const Floor1View = {
     const confirmBtn = overlay.querySelector('.modal-confirm');
     confirmBtn.onclick = async () => {
       const chainName      = overlay.querySelector('#eo-chain').value.trim();
-      const productId      = +overlay.querySelector('#eo-product').value;
+      const productId      = overlay.querySelector('#eo-product').value;
       const rawDT          = overlay.querySelector('#eo-datetime').value;
       const deliveryAddress= overlay.querySelector('#eo-address').value.trim();
       const recipientName  = overlay.querySelector('#eo-name').value.trim();
       const recipientPhone = overlay.querySelector('#eo-phone').value.trim();
       const ribbonText     = overlay.querySelector('#eo-ribbon').value.trim();
       const occasionText   = overlay.querySelector('#eo-occasion').value.trim();
-      const driverIdRaw    = overlay.querySelector('#eo-driver')?.value || String(o.assignedDriverId || '0');
+      const driverIdRaw    = overlay.querySelector('#eo-driver')?.value ?? (o.assignedDriverId || '');
       const newStatus      = overlay.querySelector('#eo-status') ? +overlay.querySelector('#eo-status').value : o.status;
 
       if (!chainName)       { UI.toast('체인명을 입력해 주세요.', 'warning'); return; }
@@ -815,8 +815,8 @@ const Floor1View = {
       try {
         let newStoreUrl = o.storePhotoUrl;
         let newDelivUrl = o.deliveryPhotoUrl;
-        if (storeFile) { const r = await Api.uploadStorePhoto(storeFile);   newStoreUrl = r.url; }
-        if (delivFile) { const r = await Api.uploadDeliveryPhoto(delivFile); newDelivUrl = r.url; }
+        if (storeFile) { const r = await Api.uploadStorePhoto(storeFile, orderId);   newStoreUrl = r.url; }
+        if (delivFile) { const r = await Api.uploadDeliveryPhoto(delivFile, orderId); newDelivUrl = r.url; }
 
         await Api.updateOrder(orderId, {
           chainName, productId, deliveryDatetime,
@@ -847,7 +847,7 @@ const Floor1View = {
 
   /* ── Bulk bar ────────────────────────────────────────────── */
   _getCheckedIds() {
-    return [...document.querySelectorAll('.order-checkbox:checked')].map(cb => +cb.dataset.id);
+    return [...document.querySelectorAll('.order-checkbox:checked')].map(cb => cb.dataset.id);
   },
 
   _updateBulkBar() {
@@ -914,7 +914,7 @@ const Floor1View = {
 
     overlay.querySelectorAll('[data-assign]').forEach(btn => {
       btn.addEventListener('click', async () => {
-        const driverId = +btn.dataset.assign;
+        const driverId = btn.dataset.assign;
         btn.disabled = true; btn.textContent = '배정 중...';
         try {
           for (const id of orderIds) {

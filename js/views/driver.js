@@ -37,7 +37,7 @@ const DriverView = {
       }
       const btn = e.target.closest('[data-action]');
       if (!btn) return;
-      const id     = +btn.dataset.id;
+      const id     = btn.dataset.id;
       const action = btn.dataset.action;
       if (action === 'edit')             { await Floor1View._openEditModal(id); }
       else if (action === 'store-photo') { await Floor1View._openStorePhotoModal(id); }

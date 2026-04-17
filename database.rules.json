@@ -1,0 +1,60 @@
+{
+  "rules": {
+    ".read": "auth != null",
+
+    "users": {
+      ".read": "auth != null",
+      ".indexOn": ["username", "isApproved", "role"],
+      "$uid": {
+        ".write": "auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin'",
+        ".validate": "newData.hasChildren(['username', 'displayName', 'isApproved'])"
+      }
+    },
+
+    "products": {
+      ".read": "auth != null",
+      ".write": "root.child('users').child(auth.uid).child('role').val() === 'admin'",
+      ".indexOn": ["createdAt", "category"]
+    },
+
+    "categories": {
+      ".read": "auth != null",
+      ".write": "root.child('users').child(auth.uid).child('role').val() === 'admin'",
+      ".indexOn": ["order"]
+    },
+
+    "drivers": {
+      ".read": "auth != null",
+      ".write": "root.child('users').child(auth.uid).child('role').val() === 'admin'",
+      ".indexOn": ["linkedUserId", "isActive"]
+    },
+
+    "orders": {
+      ".read": "auth != null",
+      ".indexOn": ["createdAt", "assignedDriverId", "status", "deliveryDatetime", "createdByUserId"],
+      "$orderId": {
+        ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'floor2' || root.child('users').child(auth.uid).child('role').val() === 'floor1' || root.child('users').child(auth.uid).child('role').val() === 'admin' || (root.child('users').child(auth.uid).child('role').val() === 'driver' && root.child('drivers').child(data.child('assignedDriverId').val()).child('linkedUserId').val() === auth.uid))",
+        ".validate": "newData.hasChildren(['chainName', 'productId', 'deliveryAddress', 'status', 'createdAt'])"
+      }
+    },
+
+    "messages": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      ".indexOn": ["ts"]
+    },
+
+    "driverStatus": {
+      ".read": "auth != null",
+      ".indexOn": ["lastUpdate"],
+      "$driverId": {
+        ".write": "auth != null && (root.child('drivers').child($driverId).child('linkedUserId').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin')"
+      }
+    },
+
+    "auditLog": {
+      ".read": "root.child('users').child(auth.uid).child('role').val() === 'admin'",
+      ".write": "auth != null"
+    }
+  }
+}

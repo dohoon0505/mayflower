@@ -83,19 +83,21 @@
   <!-- Scripts — order matters -->
   <!-- Firebase (compat = 전역 firebase 객체 제공) -->
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
-  <script src="js/firebase-config.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-storage-compat.js"></script>
+  <script src="js/firebase-config.js?v=4"></script>
 
-  <script src="js/store.js"></script>
-  <script src="js/auth.js"></script>
-  <script src="js/ui.js"></script>
-  <script src="js/api.js"></script>
-  <script src="js/router.js"></script>
-  <script src="js/chat.js"></script>
-  <script src="js/views/floor2.js"></script>
-  <script src="js/views/floor1.js"></script>
-  <script src="js/views/driver.js"></script>
-  <script src="js/views/admin.js"></script>
+  <script src="js/store.js?v=4"></script>
+  <script src="js/auth.js?v=4"></script>
+  <script src="js/ui.js?v=4"></script>
+  <script src="js/api.js?v=4"></script>
+  <script src="js/router.js?v=4"></script>
+  <script src="js/chat.js?v=4"></script>
+  <script src="js/views/floor2.js?v=4"></script>
+  <script src="js/views/floor1.js?v=4"></script>
+  <script src="js/views/driver.js?v=4"></script>
+  <script src="js/views/admin.js?v=4"></script>
 
   <script>
     /* ═══════════════════════════════════════════════════════
@@ -147,6 +149,7 @@
           ],
           admin: [
             { icon: '📦', label: '전체 주문',       route: 'all-orders' },
+            { icon: '👥', label: '사용자 승인',      route: 'manage-users' },
             { icon: '🌸', label: '상품 관리',        route: 'manage-products' },
             { icon: '🚗', label: '기사 관리',        route: 'manage-drivers' },
             { icon: '📊', label: '통계 · 정산',      route: 'statistics' },
@@ -229,6 +232,21 @@
        DeliveryPanel — 배송기사 현황 패널
     ═══════════════════════════════════════════════════════ */
     const DeliveryPanel = {
+      /* RTDB /driverStatus 캐시 (드라이버 Flutter 앱이 기록하는 실시간 상태·GPS) */
+      _driverStatus: {},
+      _dsSubscribed: false,
+      _ensureDriverStatusSubscription() {
+        if (DeliveryPanel._dsSubscribed) return;
+        if (!window.FirebaseDB) return;
+        window.FirebaseDB.ref('driverStatus').on('value', (snap) => {
+          DeliveryPanel._driverStatus = snap.val() || {};
+          DeliveryPanel.render();
+        }, (err) => {
+          console.warn('[DeliveryPanel] /driverStatus 구독 에러:', err?.message);
+        });
+        DeliveryPanel._dsSubscribed = true;
+      },
+
       /* ═════════════════════════════════════════════════════════════
          배송기사 상태 알고리즘 (주문 상태 기반 자동 판정)
 
@@ -271,7 +289,8 @@
         else     localStorage.removeItem(`maydaegu.driver.offduty.${driverId}`);
       },
 
-      /* 공통 뱃지 판정 — render()와 openTimeline()이 공유 */
+      /* 공통 뱃지 판정 — render()와 openTimeline()이 공유
+         우선순위: /driverStatus.badge 가 있으면 그것 사용, 없으면 주문 기반 계산 */
       _computeBadge(d, allOrders) {
         const resetTs    = DeliveryPanel._getResetTs(d.id);
         const myOrders   = allOrders.filter(o => o.assignedDriverId === d.id);
@@ -279,6 +298,13 @@
         const delivering = myOrders.filter(o => o.status === 3);
         const completed  = myOrders.filter(o => o.status === 4 && DeliveryPanel._afterReset(o, resetTs));
         const isOff      = DeliveryPanel._getOffDuty(d.id);
+
+        /* driver Flutter 앱이 기록한 실시간 뱃지 우선 */
+        const remote = DeliveryPanel._driverStatus[d.id];
+        const allowed = ['delivering', 'assigned', 'returning', 'waiting', 'off'];
+        if (remote?.badge && allowed.includes(remote.badge)) {
+          return { badge: remote.badge, assigned, delivering, completed };
+        }
 
         let badge;
         if (delivering.length > 0)     badge = 'delivering';
@@ -292,6 +318,8 @@
       render() {
         const el = document.getElementById('dp-body');
         if (!el) return;
+
+        DeliveryPanel._ensureDriverStatusSubscription();
 
         const drivers   = Store.getDrivers();
         const allOrders = Store.getOrders();
@@ -426,8 +454,38 @@
       },
     };
 
-    AppShell.init();
-    DeliveryPanel.render();
+    /* onAuthStateChanged 복원 후 AppShell 부트 — 새로고침 플래시 방지 */
+    (async () => {
+      await Auth.waitForReady(3000);
+      const session = Auth.getSession();
+      if (!session) { window.location.href = 'index.html?error=unauth'; return; }
+      /* 드라이버는 모바일 앱 전용 */
+      if (session.role === 'driver') {
+        await Auth.logout();
+        window.location.href = 'index.html?error=driver_only';
+        return;
+      }
+
+      /* RTDB 구독 시작 — 첫 스냅샷 수신까지 대기 */
+      Store.startSubscriptions();
+      await Store.whenReady(4000);
+
+      /* 라이브 리렌더: orders 변경 시 현재 뷰와 DeliveryPanel 재렌더 */
+      const refreshOrders = () => {
+        if (typeof Floor1View !== 'undefined' && Floor1View._loadOrders && document.querySelector('.order-list')) {
+          Floor1View._loadOrders();
+        }
+        if (typeof Floor2View !== 'undefined' && Floor2View._loadMyOrders && document.querySelector('[data-view="floor2"]')) {
+          Floor2View._loadMyOrders();
+        }
+        if (typeof DeliveryPanel !== 'undefined') DeliveryPanel.render();
+      };
+      Store.onUpdate('orders',  refreshOrders);
+      Store.onUpdate('drivers', refreshOrders);
+
+      AppShell.init();
+      DeliveryPanel.render();
+    })();
   </script>
 </body>
 </html>

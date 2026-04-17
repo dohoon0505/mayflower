@@ -29,18 +29,30 @@
 
   <div id="toast-container"></div>
 
-  <script src="js/store.js"></script>
-  <script src="js/auth.js"></script>
-  <script src="js/ui.js"></script>
-  <script src="js/api.js"></script>
-  <script src="js/views/login.js"></script>
+  <!-- Firebase (compat = 전역 firebase 객체 제공) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-storage-compat.js"></script>
+  <script src="js/firebase-config.js?v=4"></script>
+
+  <script src="js/store.js?v=4"></script>
+  <script src="js/auth.js?v=4"></script>
+  <script src="js/ui.js?v=4"></script>
+  <script src="js/api.js?v=4"></script>
+  <script src="js/views/login.js?v=4"></script>
   <script>
-    /* 이미 로그인된 경우 바로 이동 */
-    if (Auth.isAuthenticated()) {
-      window.location.href = 'app.html';
-    } else {
-      LoginView.init();
-    }
+    /* onAuthStateChanged 1회 대기 후 라우팅 결정
+       - 이미 로그인된 사용자(승인/활성/role 검증 통과)는 app.html로 이동
+       - 그 외 로그인 폼 노출 */
+    (async () => {
+      await Auth.waitForReady(3000);
+      if (Auth.isAuthenticated()) {
+        window.location.href = 'app.html';
+      } else {
+        LoginView.init();
+      }
+    })();
   </script>
 </body>
 </html>

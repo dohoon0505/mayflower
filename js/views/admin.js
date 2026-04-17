@@ -8,10 +8,135 @@ const AdminView = {
   init(session) {
     AdminView._session = session;
     Router.register('all-orders',      () => Floor1View.showAllOrders());
+    Router.register('manage-users',    () => AdminView.showUsers());
     Router.register('manage-products', () => AdminView.showProducts());
     Router.register('manage-drivers',  () => AdminView.showDrivers());
     Router.register('statistics',      () => AdminView.showStats());
     Router.default('all-orders');
+  },
+
+  /* ── 사용자 관리 (승인/역할/활성) ─────────────────────────── */
+  showUsers() {
+    UI.setFilter(`
+      <div class="filter-area-inner">
+        <span class="filter-label">사용자 관리</span>
+        <label style="margin-left:1rem;display:inline-flex;align-items:center;gap:0.3rem">
+          <input type="checkbox" id="u-only-pending" style="transform:scale(1.1)"> 승인 대기만
+        </label>
+      </div>`);
+    const rerender = () => {
+      const onlyPending = document.getElementById('u-only-pending')?.checked;
+      const all = Store.getUsers();
+      const list = onlyPending ? all.filter(u => !u.isApproved) : all;
+      UI.setMain(AdminView._renderUserTable(list));
+      AdminView._bindUserActions(list);
+    };
+    rerender();
+    document.getElementById('u-only-pending')?.addEventListener('change', rerender);
+    /* 사용자 데이터 갱신 시 자동 재렌더 */
+    AdminView._userUnsub?.();
+    AdminView._userUnsub = Store.onUpdate('users', rerender);
+  },
+
+  _renderUserTable(users) {
+    const roleBadge = (r) => {
+      if (!r) return '<span class="text-muted">—</span>';
+      const labels = { admin: '관리자', floor1: '1층 제작', floor2: '2층 수주', driver: '배송기사' };
+      return `<span class="badge badge-role">${labels[r] || r}</span>`;
+    };
+    const rows = users.map(u => `
+      <tr data-id="${u.id}">
+        <td class="td-dname">${UI.escHtml(u.displayName || '-')}</td>
+        <td>${UI.escHtml(u.username || '-')}</td>
+        <td>${roleBadge(u.role)}</td>
+        <td>${u.isApproved ? '<span class="badge status-complete">승인</span>' : '<span class="badge status-warning" style="background:#fef3c7;color:#92400e">대기</span>'}</td>
+        <td>${u.isActive !== false ? '<span class="badge status-complete">활성</span>' : '<span class="badge status-cancel">비활성</span>'}</td>
+        <td>
+          <div class="td-actions">
+            ${!u.isApproved ? `
+              <select class="inline-input u-role-sel" data-id="${u.id}" style="max-width:130px;font-size:0.8rem">
+                <option value="floor2">2층 수주</option>
+                <option value="floor1">1층 제작</option>
+                <option value="driver">배송기사</option>
+                <option value="admin">관리자</option>
+              </select>
+              <button class="btn btn-success btn-xs u-approve" data-id="${u.id}">승인</button>` : ''}
+            <button class="btn btn-secondary btn-xs u-role" data-id="${u.id}">역할변경</button>
+            <button class="btn ${u.isActive !== false ? 'btn-danger' : 'btn-success'} btn-xs u-toggle" data-id="${u.id}">
+              ${u.isActive !== false ? '비활성' : '활성'}
+            </button>
+          </div>
+        </td>
+      </tr>`).join('');
+
+    const pending = users.filter(u => !u.isApproved).length;
+    return `
+      <div class="section-header">
+        <div><div class="section-title">사용자</div><div class="section-sub">${users.length}명 · 승인 대기 ${pending}명</div></div>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>표시 이름</th><th>아이디</th><th>역할</th><th>승인</th><th>활성</th><th>관리</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  },
+
+  _bindUserActions(users) {
+    /* 승인 */
+    document.querySelectorAll('.u-approve').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const uid = btn.dataset.id;
+        const sel = document.querySelector(`.u-role-sel[data-id="${uid}"]`);
+        const role = sel?.value || 'floor2';
+        try {
+          await Api.approveUser(uid, role);
+          UI.toast('승인되었습니다.', 'success');
+        } catch (e) { UI.toast(e.message || '승인 실패', 'error'); }
+      });
+    });
+    /* 역할 변경 */
+    document.querySelectorAll('.u-role').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const uid = btn.dataset.id;
+        const u = users.find(x => x.id === uid);
+        const overlay = UI.modal({
+          title: `역할 변경 — ${UI.escHtml(u?.displayName || '')}`,
+          content: `
+            <div class="form-group">
+              <label class="form-label">역할</label>
+              <select id="ur-sel" class="form-control">
+                <option value="floor2" ${u?.role==='floor2'?'selected':''}>2층 수주</option>
+                <option value="floor1" ${u?.role==='floor1'?'selected':''}>1층 제작</option>
+                <option value="driver" ${u?.role==='driver'?'selected':''}>배송기사</option>
+                <option value="admin"  ${u?.role==='admin' ?'selected':''}>관리자</option>
+              </select>
+            </div>`,
+          confirmText: '저장', cancelText: '취소',
+        });
+        overlay.querySelector('.modal-confirm').addEventListener('click', async () => {
+          const newRole = document.getElementById('ur-sel').value;
+          try {
+            await Api.updateUser(uid, { role: newRole });
+            UI.toast('역할이 변경되었습니다.', 'success');
+            overlay.classList.remove('show');
+            setTimeout(() => overlay.remove(), 300);
+          } catch (e) { UI.toast(e.message || '변경 실패', 'error'); }
+        });
+      });
+    });
+    /* 활성/비활성 */
+    document.querySelectorAll('.u-toggle').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const uid = btn.dataset.id;
+        const u = users.find(x => x.id === uid);
+        const next = !(u?.isActive !== false);
+        try {
+          await Api.toggleUserActive(uid, next);
+          UI.toast(next ? '활성화되었습니다.' : '비활성화되었습니다.', 'success');
+        } catch (e) { UI.toast(e.message || '변경 실패', 'error'); }
+      });
+    });
   },
 
   /* ── 상품 관리 ────────────────────────────────────────────── */
@@ -92,14 +217,14 @@ const AdminView = {
     /* ── 카테고리: 추가 ── */
     const addCatBtn   = document.getElementById('btn-add-cat');
     const newCatInput = document.getElementById('new-cat-name');
-    const doAddCat = () => {
+    const doAddCat = async () => {
       const name = newCatInput.value.trim();
       if (!name) { UI.toast('카테고리명을 입력해 주세요.', 'warning'); return; }
-      if (!Store.createCategory(name)) {
-        UI.toast('이미 존재하는 카테고리입니다.', 'warning'); return;
-      }
-      UI.toast(`"${name}" 카테고리가 추가되었습니다.`, 'success');
-      AdminView.showProducts();
+      try {
+        await Api.createCategory(name);
+        UI.toast(`"${name}" 카테고리가 추가되었습니다.`, 'success');
+        AdminView.showProducts();
+      } catch (e) { UI.toast(e.message || '추가 실패', 'error'); }
     };
     addCatBtn.addEventListener('click', doAddCat);
     newCatInput.addEventListener('keydown', e => { if (e.key === 'Enter') doAddCat(); });
@@ -111,11 +236,11 @@ const AdminView = {
         const newName = await UI.prompt?.(`"${old}" 카테고리의 새 이름을 입력하세요.`, '카테고리 이름 변경', old)
           ?? window.prompt(`"${old}" 카테고리의 새 이름`, old);
         if (!newName || newName.trim() === old) return;
-        if (!Store.renameCategory(old, newName.trim())) {
-          UI.toast('이름 변경 실패 (중복 또는 공백)', 'error'); return;
-        }
-        UI.toast('카테고리 이름이 변경되었습니다.', 'success');
-        AdminView.showProducts();
+        try {
+          await Api.renameCategory(old, newName.trim());
+          UI.toast('카테고리 이름이 변경되었습니다.', 'success');
+          AdminView.showProducts();
+        } catch (e) { UI.toast(e.message || '이름 변경 실패', 'error'); }
       });
     });
 
@@ -125,17 +250,11 @@ const AdminView = {
         const name = btn.dataset.cat;
         const ok = await UI.confirm(`"${name}" 카테고리를 삭제할까요?`, '카테고리 삭제');
         if (!ok) return;
-        const res = Store.deleteCategory(name);
-        if (!res.ok) {
-          if (res.reason === 'in_use') {
-            UI.toast(`사용 중인 상품이 ${res.count}건 있어 삭제할 수 없습니다.`, 'warning');
-          } else {
-            UI.toast('삭제 실패', 'error');
-          }
-          return;
-        }
-        UI.toast('카테고리가 삭제되었습니다.', 'success');
-        AdminView.showProducts();
+        try {
+          await Api.deleteCategory(name);
+          UI.toast('카테고리가 삭제되었습니다.', 'success');
+          AdminView.showProducts();
+        } catch (e) { UI.toast(e.message || '삭제 실패', 'error'); }
       });
     });
 
@@ -159,7 +278,7 @@ const AdminView = {
     /* 수정 */
     document.querySelectorAll('.p-edit').forEach(btn => {
       btn.addEventListener('click', () => {
-        const id = +btn.dataset.id;
+        const id = btn.dataset.id;
         const p = products.find(x => x.id === id);
         if (!p) return;
         const tr = btn.closest('tr');
@@ -189,7 +308,7 @@ const AdminView = {
     /* 삭제 */
     document.querySelectorAll('.p-delete').forEach(btn => {
       btn.addEventListener('click', async () => {
-        const id = +btn.dataset.id;
+        const id = btn.dataset.id;
         const p = products.find(x => x.id === id);
         const ok = await UI.confirm(`"${p?.name}" 상품을 삭제(비활성)할까요?`, '상품 삭제');
         if (!ok) return;
@@ -204,7 +323,7 @@ const AdminView = {
     /* 복원 */
     document.querySelectorAll('.p-restore').forEach(btn => {
       btn.addEventListener('click', async () => {
-        const id = +btn.dataset.id;
+        const id = btn.dataset.id;
         const p = products.find(x => x.id === id);
         try {
           await Api.updateProduct(id, { name: p.name, category: p.category || '기타', isActive: true });
@@ -232,18 +351,19 @@ const AdminView = {
     } finally { UI.loading(false); }
   },
 
-  /* driver users 테이블에서 기사에 연결된 계정 검색 (displayName 매핑) */
-  _findDriverUser(driverName, driverUsers) {
-    return driverUsers.find(u => u.displayName === driverName) || null;
+  /* linkedUserId 로 연결된 계정 검색 */
+  _findLinkedUser(driver, driverUsers) {
+    if (!driver.linkedUserId) return null;
+    return driverUsers.find(u => u.id === driver.linkedUserId) || null;
   },
 
   _renderDriverTable(drivers, driverUsers) {
     const rows = drivers.map(d => {
-      const linked = AdminView._findDriverUser(d.name, driverUsers);
+      const linked = AdminView._findLinkedUser(d, driverUsers);
       const loginId = linked ? UI.escHtml(linked.username) : '<span class="text-muted">미설정</span>';
       return `
         <tr data-id="${d.id}">
-          <td>${d.id}</td>
+          <td title="${d.id}">${UI.escHtml(String(d.id).slice(0, 8))}…</td>
           <td class="td-dname">${UI.escHtml(d.name)}</td>
           <td class="td-dphone">${UI.escHtml(d.phone || '-')}</td>
           <td>${loginId}</td>
@@ -251,7 +371,7 @@ const AdminView = {
           <td>
             <div class="td-actions">
               <button class="btn btn-secondary btn-xs d-edit" data-id="${d.id}">수정</button>
-              <button class="btn btn-secondary btn-xs d-cred" data-id="${d.id}" title="아이디·비밀번호 수정">🔑 계정</button>
+              <button class="btn btn-secondary btn-xs d-cred" data-id="${d.id}" title="기사 계정 연결">🔗 계정 연결</button>
               <button class="btn btn-danger btn-xs d-delete" data-id="${d.id}" ${!d.isActive?'disabled':''}>삭제</button>
               ${!d.isActive ? `<button class="btn btn-success btn-xs d-restore" data-id="${d.id}">복원</button>` : ''}
             </div>
@@ -261,7 +381,7 @@ const AdminView = {
 
     return `
       <div class="section-header">
-        <div><div class="section-title">기사 목록</div><div class="section-sub">${drivers.filter(d=>d.isActive).length}명 활성</div></div>
+        <div><div class="section-title">기사 목록</div><div class="section-sub">${drivers.filter(d=>d.isActive).length}명 활성 · 기사 계정은 모바일 앱 회원가입 후 승인 → 여기서 연결</div></div>
       </div>
       <div class="table-wrapper">
         <table>
@@ -269,10 +389,8 @@ const AdminView = {
           <tbody id="driver-tbody">${rows}</tbody>
         </table>
         <div class="add-row-form">
-          <input type="text"     id="new-driver-name"  class="inline-input" placeholder="이름"            style="max-width:110px">
-          <input type="tel"      id="new-driver-phone" class="inline-input" placeholder="010-0000-0000"   style="max-width:145px">
-          <input type="text"     id="new-driver-uid"   class="inline-input" placeholder="아이디 (선택)"    style="max-width:120px">
-          <input type="password" id="new-driver-pw"    class="inline-input" placeholder="비밀번호 (선택)"  style="max-width:130px">
+          <input type="text" id="new-driver-name"  class="inline-input" placeholder="이름"            style="max-width:140px">
+          <input type="tel"  id="new-driver-phone" class="inline-input" placeholder="010-0000-0000"   style="max-width:160px">
           <button class="btn btn-primary btn-sm" id="btn-add-driver">+ 기사 추가</button>
         </div>
       </div>`;
@@ -283,29 +401,18 @@ const AdminView = {
     document.getElementById('btn-add-driver').addEventListener('click', async () => {
       const name  = document.getElementById('new-driver-name').value.trim();
       const phone = document.getElementById('new-driver-phone').value.trim();
-      const uid   = document.getElementById('new-driver-uid').value.trim();
-      const pw    = document.getElementById('new-driver-pw').value.trim();
       if (!name) { UI.toast('이름을 입력해 주세요.', 'warning'); return; }
-      if ((uid && !pw) || (!uid && pw)) {
-        UI.toast('아이디와 비밀번호를 함께 입력해 주세요.', 'warning'); return;
-      }
-      if (uid && Store.getUserByUsername(uid)) {
-        UI.toast('이미 사용 중인 아이디입니다.', 'warning'); return;
-      }
       try {
         await Api.createDriver({ name, phone });
-        if (uid && pw) {
-          Store.createUser({ username: uid, passwordHash: pw, displayName: name, role: 'driver' });
-        }
         UI.toast(`"${name}" 기사가 추가되었습니다.`, 'success');
         AdminView.showDrivers();
       } catch(e) { UI.toast(e.message || '추가 실패', 'error'); }
     });
 
-    /* ── 이름·연락처 수정 (인라인 → 모달로 교체하여 이벤트 충돌 방지) ── */
+    /* ── 이름·연락처 수정 ── */
     document.querySelectorAll('.d-edit').forEach(btn => {
       btn.addEventListener('click', () => {
-        const id = +btn.dataset.id;
+        const id = btn.dataset.id;
         const d  = drivers.find(x => x.id === id);
         if (!d) return;
 
@@ -331,14 +438,7 @@ const AdminView = {
           const newPhone = document.getElementById('medit-phone').value.trim();
           if (!newName) { UI.toast('이름을 입력해 주세요.', 'warning'); return; }
           try {
-            await Api.updateDriver(id, { name: newName, phone: newPhone, isActive: d.isActive });
-
-            /* 이름이 바뀌면 연결된 user 계정의 displayName도 동기화 */
-            if (newName !== d.name) {
-              const linked = AdminView._findDriverUser(d.name, driverUsers);
-              if (linked) Store.updateUser(linked.id, { displayName: newName });
-            }
-
+            await Api.updateDriver(id, { name: newName, phone: newPhone });
             UI.toast('수정되었습니다.', 'success');
             overlay.classList.remove('show');
             setTimeout(() => { overlay.remove(); AdminView.showDrivers(); }, 300);
@@ -347,60 +447,43 @@ const AdminView = {
       });
     });
 
-    /* ── 계정(아이디·비밀번호) 수정 ── */
+    /* ── 기사 계정 연결 (driver role + 승인된 user 를 드롭다운으로 선택) ── */
     document.querySelectorAll('.d-cred').forEach(btn => {
       btn.addEventListener('click', () => {
-        const id = +btn.dataset.id;
+        const id = btn.dataset.id;
         const d  = drivers.find(x => x.id === id);
         if (!d) return;
-        const linked = AdminView._findDriverUser(d.name, driverUsers);
+        const approved = driverUsers.filter(u => u.isApproved);
+        /* 다른 기사에 이미 연결된 uid 는 제외 */
+        const takenUids = new Set(drivers.filter(x => x.id !== id && x.linkedUserId).map(x => x.linkedUserId));
+        const options = approved
+          .filter(u => !takenUids.has(u.id))
+          .map(u => `<option value="${u.id}" ${u.id === d.linkedUserId ? 'selected' : ''}>${UI.escHtml(u.displayName)} (${UI.escHtml(u.username)})</option>`)
+          .join('');
 
         const overlay = UI.modal({
-          title:       `🔑 계정 관리 — ${UI.escHtml(d.name)}`,
+          title:       `🔗 계정 연결 — ${UI.escHtml(d.name)}`,
           content: `
             <div class="form-group">
-              <label class="form-label">로그인 아이디</label>
-              <input type="text" id="cred-uid" class="form-control"
-                value="${linked ? UI.escHtml(linked.username) : ''}"
-                placeholder="영문·숫자 조합">
-            </div>
-            <div class="form-group">
-              <label class="form-label">비밀번호${linked ? ' <span class="text-muted" style="font-weight:400">(변경하지 않으려면 비워두세요)</span>' : ''}</label>
-              <input type="password" id="cred-pw" class="form-control"
-                placeholder="${linked ? '변경할 비밀번호 입력' : '비밀번호 입력'}">
-            </div>
-            ${linked ? `<p class="text-muted" style="font-size:0.82rem;margin-top:0.5rem">현재 아이디: <strong>${UI.escHtml(linked.username)}</strong></p>` : '<p class="text-muted" style="font-size:0.82rem;margin-top:0.5rem">이 기사에 연결된 계정이 없습니다. 아이디와 비밀번호를 입력하면 새로 생성됩니다.</p>'}`,
-          confirmText: linked ? '저장' : '계정 생성',
+              <label class="form-label">연결할 기사 계정</label>
+              <select id="cred-link" class="form-control">
+                <option value="">— 해제 —</option>
+                ${options}
+              </select>
+              <p class="text-muted" style="font-size:0.82rem;margin-top:0.5rem">
+                드롭다운 항목은 <strong>모바일 앱에서 회원가입 → 관리자가 driver 로 승인</strong>한 계정입니다.
+                연결이 없으면 이 기사 레코드는 로그인 계정과 매핑되지 않습니다.
+              </p>
+            </div>`,
+          confirmText: '저장',
           cancelText:  '취소',
         });
 
-        setTimeout(() => document.getElementById('cred-uid')?.focus(), 50);
-
         overlay.querySelector('.modal-confirm').addEventListener('click', async () => {
-          const newUid = document.getElementById('cred-uid').value.trim();
-          const newPw  = document.getElementById('cred-pw').value.trim();
-
-          if (!newUid) { UI.toast('아이디를 입력해 주세요.', 'warning'); return; }
-          if (!linked && !newPw) { UI.toast('비밀번호를 입력해 주세요.', 'warning'); return; }
-
-          /* 아이디 중복 확인 (자기 자신 제외) */
-          const existing = Store.getUserByUsername(newUid);
-          if (existing && (!linked || existing.id !== linked.id)) {
-            UI.toast('이미 사용 중인 아이디입니다.', 'warning'); return;
-          }
-
+          const uid = document.getElementById('cred-link').value || null;
           try {
-            if (linked) {
-              /* 기존 계정 업데이트 */
-              const updates = { username: newUid };
-              if (newPw) updates.passwordHash = newPw;
-              Store.updateUser(linked.id, updates);
-              UI.toast('계정이 수정되었습니다.', 'success');
-            } else {
-              /* 신규 계정 생성 */
-              Store.createUser({ username: newUid, passwordHash: newPw, displayName: d.name, role: 'driver' });
-              UI.toast('계정이 생성되었습니다.', 'success');
-            }
+            await Api.updateDriver(id, { linkedUserId: uid });
+            UI.toast(uid ? '계정이 연결되었습니다.' : '연결이 해제되었습니다.', 'success');
             overlay.classList.remove('show');
             setTimeout(() => { overlay.remove(); AdminView.showDrivers(); }, 300);
           } catch(e) { UI.toast(e.message || '처리 실패', 'error'); }
@@ -411,7 +494,7 @@ const AdminView = {
     /* ── 삭제 ── */
     document.querySelectorAll('.d-delete').forEach(btn => {
       btn.addEventListener('click', async () => {
-        const id = +btn.dataset.id;
+        const id = btn.dataset.id;
         const d = drivers.find(x => x.id === id);
         const ok = await UI.confirm(`"${d?.name}" 기사를 삭제할까요?`, '기사 삭제');
         if (!ok) return;
@@ -426,7 +509,7 @@ const AdminView = {
     /* ── 복원 ── */
     document.querySelectorAll('.d-restore').forEach(btn => {
       btn.addEventListener('click', async () => {
-        const id = +btn.dataset.id;
+        const id = btn.dataset.id;
         const d = drivers.find(x => x.id === id);
         try {
           await Api.updateDriver(id, { name: d.name, phone: d.phone, isActive: true });

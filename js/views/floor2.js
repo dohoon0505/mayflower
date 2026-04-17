@@ -39,7 +39,7 @@ const Floor2View = {
       }
       const btn = e.target.closest('[data-action]');
       if (!btn) return;
-      const id     = +btn.dataset.id;
+      const id     = btn.dataset.id;
       const action = btn.dataset.action;
       if (action === 'edit')             { await Floor1View._openEditModal(id); }
       else if (action === 'store-photo') { await Floor1View._openStorePhotoModal(id); }
@@ -432,7 +432,7 @@ const Floor2View = {
       }
       const data = {
         chainName:       overlay.querySelector('#no-chain').value.trim(),
-        productId:       +overlay.querySelector('#no-product').value,
+        productId:       overlay.querySelector('#no-product').value,
         deliveryDatetime, isImmediate,
         deliveryAddress: overlay.querySelector('#no-address').value.trim(),
         recipientName:   overlay.querySelector('#no-name').value.trim(),
