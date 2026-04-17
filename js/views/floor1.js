@@ -67,13 +67,6 @@ const Floor1View = {
               <input type="checkbox" id="f1-photo-no" checked> 이미지 없음
             </label>
           </div>
-          <div class="status-flow">
-            <span class="flow-step" id="flow-waiting">주문접수</span>
-            <span class="flow-arrow">→</span>
-            <span class="flow-step" id="flow-processing">배송중</span>
-            <span class="flow-arrow">→</span>
-            <span class="flow-step" id="flow-complete">배송완료</span>
-          </div>
         </div>
 
         <!-- Row 2: Date range -->
@@ -130,7 +123,6 @@ const Floor1View = {
       document.querySelectorAll('#f1-status-tabs .status-tab-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       Floor1View._filterState.statusGroup = btn.dataset.sg;
-      Floor1View._updateFlowIndicator(btn.dataset.sg);
       Floor1View._loadOrders();
     });
 
@@ -219,17 +211,6 @@ const Floor1View = {
 
   _clearQuickActive() {
     document.querySelectorAll('.quick-date-btn').forEach(b => b.classList.remove('active'));
-  },
-
-  _updateFlowIndicator(sg) {
-    const w = document.getElementById('flow-waiting');
-    const p = document.getElementById('flow-processing');
-    const c = document.getElementById('flow-complete');
-    if (!w) return;
-    w.className = 'flow-step'; p.className = 'flow-step'; c.className = 'flow-step';
-    if (sg === '0,1,2') { w.className = 'flow-step flow-active'; }
-    if (sg === '3')     { p.className = 'flow-step flow-active'; }
-    if (sg === '4')     { c.className = 'flow-step flow-complete'; }
   },
 
   /* ── Load & filter orders ────────────────────────────────── */
