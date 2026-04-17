@@ -41,7 +41,10 @@ const Floor2View = {
       if (!btn) return;
       const id     = btn.dataset.id;
       const action = btn.dataset.action;
-      if (action === 'edit')             { await Floor1View._openEditModal(id); }
+      if (action === 'edit') {
+        try { await Floor1View._openEditModal(id); }
+        catch(e) { UI.toast(e.message || '수정 중 오류가 발생했습니다.', 'error'); }
+      }
       else if (action === 'store-photo') { await Floor1View._openStorePhotoModal(id); }
       else if (action === 'view-store-photo') {
         const o = Store.getOrderById(id);
@@ -271,7 +274,8 @@ const Floor2View = {
         : '';
 
     const _chainCodes = ['ㄲㅌ','ㅂㅎㄷ','ㄷㅍㄹㅇ','ㄷㄹ','ㅇㅎ','ㅄㅌ'];
-    const chainCode = _chainCodes[o.id % _chainCodes.length];
+    const _chainIdx = String(o.id).split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+    const chainCode = _chainCodes[_chainIdx % _chainCodes.length];
 
     let timeFieldCls, timeText;
     if (o.status === 4 && o.createdAt && o.updatedAt) {

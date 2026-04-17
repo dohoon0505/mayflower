@@ -212,7 +212,7 @@ const Api = {
   async deleteProduct(id) {
     const s = _requireSession();
     if (s.role !== 'admin') throw { status: 403, message: '권한이 없습니다.' };
-    await _db().ref(`products/${id}`).update({ isActive: false });
+    await _db().ref(`products/${id}`).remove();
     return true;
   },
 

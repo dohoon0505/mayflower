@@ -197,12 +197,10 @@ const AdminView = {
         <td>${p.id}</td>
         <td class="td-name">${UI.escHtml(p.name)}</td>
         <td class="td-cat"><span class="badge badge-role">${UI.escHtml(p.category || '기타')}</span></td>
-        <td>${p.isActive ? '<span class="badge status-complete">활성</span>' : '<span class="badge status-cancel">비활성</span>'}</td>
         <td>
           <div class="td-actions">
             <button class="btn btn-secondary btn-xs p-edit" data-id="${p.id}">수정</button>
-            <button class="btn btn-danger btn-xs p-delete" data-id="${p.id}" ${!p.isActive?'disabled':''}>삭제</button>
-            ${!p.isActive ? `<button class="btn btn-success btn-xs p-restore" data-id="${p.id}">복원</button>` : ''}
+            <button class="btn btn-danger btn-xs p-delete" data-id="${p.id}">삭제</button>
           </div>
         </td>
       </tr>`).join('');
@@ -332,26 +330,13 @@ const AdminView = {
       btn.addEventListener('click', async () => {
         const id = btn.dataset.id;
         const p = products.find(x => x.id === id);
-        const ok = await UI.confirm(`"${p?.name}" 상품을 삭제(비활성)할까요?`, '상품 삭제');
+        const ok = await UI.confirm(`"${p?.name}" 상품을 삭제할까요? 삭제 후 복구할 수 없습니다.`, '상품 삭제');
         if (!ok) return;
         try {
           await Api.deleteProduct(id);
           UI.toast('삭제되었습니다.', 'success');
           AdminView.showProducts();
         } catch(e) { UI.toast(e.message || '삭제 실패', 'error'); }
-      });
-    });
-
-    /* 복원 */
-    document.querySelectorAll('.p-restore').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const id = btn.dataset.id;
-        const p = products.find(x => x.id === id);
-        try {
-          await Api.updateProduct(id, { name: p.name, category: p.category || '기타', isActive: true });
-          UI.toast('복원되었습니다.', 'success');
-          AdminView.showProducts();
-        } catch(e) { UI.toast(e.message || '복원 실패', 'error'); }
       });
     });
   },

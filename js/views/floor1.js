@@ -304,9 +304,10 @@ const Floor1View = {
         ? '<span class="ocard-day-badge ocard-day-future">예약건</span>'
         : '';
 
-    /* Chain code (deterministic per order id) */
+    /* Chain code (deterministic per order id — string hash) */
     const _chainCodes = ['ㄲㅌ','ㅂㅎㄷ','ㄷㅍㄹㅇ','ㄷㄹ','ㅇㅎ','ㅄㅌ'];
-    const chainCode = _chainCodes[o.id % _chainCodes.length];
+    const _chainIdx = String(o.id).split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+    const chainCode = _chainCodes[_chainIdx % _chainCodes.length];
 
     /* Time field */
     let timeFieldCls, timeText;
@@ -379,7 +380,8 @@ const Floor1View = {
   _handleClick: async function(e) {
     const actionBtn = e.target.closest('.f1-action');
     if (actionBtn) {
-      await Floor1View._handleAction(actionBtn.dataset.id, actionBtn.dataset.action, actionBtn);
+      try { await Floor1View._handleAction(actionBtn.dataset.id, actionBtn.dataset.action, actionBtn); }
+      catch(e) { UI.toast(e.message || '처리 중 오류가 발생했습니다.', 'error'); }
       return;
     }
     const copyEl = e.target.closest('[data-copy]');
@@ -550,11 +552,11 @@ const Floor1View = {
     const rdonly = s => isDriver ? `readonly style="opacity:0.6;background:var(--bg-elevated)" title="${s}"` : '';
 
     let products = [], drivers = [];
-    try { [products, drivers] = await Promise.all([Api.getProducts(), Api.getDrivers()]); }
+    try { [products, drivers] = await Promise.all([Api.getProducts(true), Api.getDrivers()]); }
     catch(e) { UI.toast('데이터 로드 실패', 'error'); return; }
 
     const productOpts = products.map(p =>
-      `<option value="${p.id}" ${p.id === o.productId ? 'selected' : ''}>${UI.escHtml(p.name)}</option>`
+      `<option value="${p.id}" ${p.id === o.productId ? 'selected' : ''}>${UI.escHtml(p.name)}${p.isActive === false ? ' (비활성)' : ''}</option>`
     ).join('');
     const driverOpts = `<option value="0" ${!o.assignedDriverId ? 'selected' : ''}>— 미배정 —</option>` +
       drivers.map(d =>

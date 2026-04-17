@@ -224,7 +224,8 @@ const DriverView = {
         : '';
 
     const _chainCodes = ['ㄲㅌ','ㅂㅎㄷ','ㄷㅍㄹㅇ','ㄷㄹ','ㅇㅎ','ㅄㅌ'];
-    const chainCode = _chainCodes[o.id % _chainCodes.length];
+    const _chainIdx = String(o.id).split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+    const chainCode = _chainCodes[_chainIdx % _chainCodes.length];
 
     let timeFieldCls, timeText;
     if (o.status === 4 && o.createdAt && o.updatedAt) {
