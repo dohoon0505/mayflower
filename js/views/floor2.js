@@ -51,6 +51,10 @@ const Floor2View = {
         if (o?.storePhotoUrl) window.open(o.storePhotoUrl);
       }
       else if (action === 'receipt')     { Floor1View._openReceiptModal(id); }
+      else if (action === 'force-complete') {
+        try { await Floor1View._forceComplete(id); }
+        catch(e) { UI.toast(e.message || '처리 실패', 'error'); }
+      }
     });
   },
 
@@ -236,9 +240,19 @@ const Floor2View = {
       if (fs.searchRecipient) orders = orders.filter(o => lc(o.recipientName).includes(lc(fs.searchRecipient)));
       if (fs.searchRibbon)    orders = orders.filter(o => lc(o.ribbonText).includes(lc(fs.searchRibbon)));
 
-      const _cg = s => s === 3 ? 1 : s === 4 ? 2 : s >= 5 ? 3 : 0;
+      const _p = n => String(n).padStart(2,'0');
+      const _n = new Date();
+      const _today = `${_n.getFullYear()}-${_p(_n.getMonth()+1)}-${_p(_n.getDate())}`;
+      const _bucket = o => {
+        if (o.status === 4) return 2;
+        const dd = o.deliveryDatetime ? new Date(o.deliveryDatetime) : null;
+        const dday = dd ? `${dd.getFullYear()}-${_p(dd.getMonth()+1)}-${_p(dd.getDate())}` : '';
+        if (dday === _today) return 0;
+        if (dday > _today)   return 1;
+        return 3;
+      };
       orders.sort((a, b) => {
-        const g = _cg(a.status) - _cg(b.status);
+        const g = _bucket(a) - _bucket(b);
         return g !== 0 ? g : new Date(a.deliveryDatetime) - new Date(b.deliveryDatetime);
       });
       UI.setMain(Floor2View._renderOrderList(orders));
@@ -347,6 +361,7 @@ const Floor2View = {
           <button class="ocard-action oa-primary" data-id="${o.id}" data-action="edit">✏️<br>주문서 수정</button>
           <button class="ocard-action ${storePhotoCls}" data-id="${o.id}" data-action="${storePhotoAction}">${storePhotoLabel}</button>
           <button class="ocard-action oa-warning" data-id="${o.id}" data-action="receipt">🧾<br>인수증 출력</button>
+          <button class="ocard-action oa-danger" data-id="${o.id}" data-action="force-complete" ${o.status === 4 || o.status >= 5 ? 'disabled' : ''}>✅<br>강제배송완료</button>
         </div>
       </div>`;
   },

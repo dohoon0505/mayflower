@@ -257,10 +257,20 @@ const Floor1View = {
       if (fs.searchRecipient) orders = orders.filter(o => lc(o.recipientName).includes(lc(fs.searchRecipient)));
       if (fs.searchRibbon)    orders = orders.filter(o => lc(o.ribbonText).includes(lc(fs.searchRibbon)));
 
-      /* Sort: black(배차전 0-2) → blue(배송중 3) → green(배송완료 4) → red(취소/반품 5-6) */
-      const _cg = s => s === 3 ? 1 : s === 4 ? 2 : s >= 5 ? 3 : 0;
+      /* Sort: 당일건 → 예약건 → 완료건 → 기타 (과거/취소) */
+      const _p = n => String(n).padStart(2,'0');
+      const _n = new Date();
+      const _today = `${_n.getFullYear()}-${_p(_n.getMonth()+1)}-${_p(_n.getDate())}`;
+      const _bucket = o => {
+        if (o.status === 4) return 2;
+        const dd = o.deliveryDatetime ? new Date(o.deliveryDatetime) : null;
+        const dday = dd ? `${dd.getFullYear()}-${_p(dd.getMonth()+1)}-${_p(dd.getDate())}` : '';
+        if (dday === _today) return 0;
+        if (dday > _today)   return 1;
+        return 3;
+      };
       orders.sort((a, b) => {
-        const g = _cg(a.status) - _cg(b.status);
+        const g = _bucket(a) - _bucket(b);
         return g !== 0 ? g : new Date(a.deliveryDatetime) - new Date(b.deliveryDatetime);
       });
 
@@ -387,6 +397,7 @@ const Floor1View = {
           <button class="ocard-action oa-primary f1-action" data-id="${o.id}" data-action="edit">✏️<br>주문서 수정</button>
           <button class="ocard-action ${storePhotoCls} f1-action" data-id="${o.id}" data-action="${storePhotoAction}">${storePhotoLabel}</button>
           <button class="ocard-action oa-warning f1-action" data-id="${o.id}" data-action="receipt">🧾<br>인수증 출력</button>
+          <button class="ocard-action oa-danger f1-action" data-id="${o.id}" data-action="force-complete" ${o.status === 4 || o.status >= 5 ? 'disabled' : ''}>✅<br>강제배송완료</button>
         </div>
       </div>`;
   },
@@ -488,8 +499,19 @@ const Floor1View = {
       return;
     }
     if (action === 'receipt')          { Floor1View._openReceiptModal(id);          return; }
+    if (action === 'force-complete')   { await Floor1View._forceComplete(id);       return; }
     /* Legacy bulk-assign from bulk bar still supported */
     if (action === 'assign')           { await Floor1View._openAssignModal([id]);   return; }
+  },
+
+  async _forceComplete(orderId) {
+    const o = Store.getOrderById(orderId);
+    if (!o) { UI.toast('주문 정보를 찾을 수 없습니다.', 'error'); return; }
+    if (o.status === 4) { UI.toast('이미 배송완료 상태입니다.', 'info'); return; }
+    if (o.status >= 5)  { UI.toast('취소된 주문은 변경할 수 없습니다.', 'warning'); return; }
+    if (!confirm('강제로 배송완료 처리하시겠습니까?\n사진 업로드 없이 상태가 변경됩니다.')) return;
+    await Api.updateOrderStatus(orderId, 4);
+    UI.toast('배송완료 처리되었습니다.', 'success');
   },
 
   /* ── Store Photo Upload Modal ────────────────────────────── */
