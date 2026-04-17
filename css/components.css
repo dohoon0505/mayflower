@@ -255,6 +255,7 @@
 /* Shared badge base for all ocard-header items */
 .ocard-chain,
 .ocard-product,
+.ocard-price,
 .ocard-datetime {
   display: inline-flex; align-items: center; gap: 0.25rem;
   padding: 0.15rem 0.55rem;
@@ -265,9 +266,10 @@
   flex-shrink: 0;
   font-size: 0.825rem;
 }
-/* Chain + Product: same secondary style */
+/* Chain + Product + Price: same secondary style */
 .ocard-chain,
-.ocard-product {
+.ocard-product,
+.ocard-price {
   color: var(--text-secondary);
 }
 /* Datetime */
@@ -275,13 +277,6 @@
   color: var(--text-secondary);
 }
 .order-immediate { font-size: 0.72rem; color: var(--warning); background: #fffbeb; padding: 0.15rem 0.55rem; border-radius: var(--radius-sm); border: 1px solid #fde68a; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
-.ocard-price {
-  display: inline-flex; align-items: center;
-  padding: 0.15rem 0.6rem; border-radius: var(--radius-sm);
-  background: #eff6ff; border: 1px solid #bfdbfe;
-  color: #1d4ed8; font-size: 0.82rem; font-weight: 700;
-  white-space: nowrap; flex-shrink: 0;
-}
 
 /* Day-type badges */
 .ocard-day-badge {
