@@ -230,9 +230,15 @@ const Floor2View = {
         orders = orders.filter(o => allowed.includes(o.status));
       }
 
-      /* Date range */
-      if (fs.dateFrom) orders = orders.filter(o => o.deliveryDatetime >= fs.dateFrom);
-      if (fs.dateTo)   orders = orders.filter(o => o.deliveryDatetime <= fs.dateTo + 'T23:59:59');
+      /* Date range — 로컬(KST) 기준 YYYY-MM-DD 로 정규화 비교 */
+      const _toLocalDate = iso => {
+        if (!iso) return '';
+        const d = new Date(iso);
+        const p = n => String(n).padStart(2,'0');
+        return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+      };
+      if (fs.dateFrom) orders = orders.filter(o => _toLocalDate(o.deliveryDatetime) >= fs.dateFrom);
+      if (fs.dateTo)   orders = orders.filter(o => _toLocalDate(o.deliveryDatetime) <= fs.dateTo);
 
       /* Text search */
       const lc = s => (s || '').toLowerCase();
@@ -323,7 +329,7 @@ const Floor2View = {
 
     const storePhotoAction = o.storePhotoUrl ? 'view-store-photo' : 'store-photo';
     const storePhotoCls    = o.storePhotoUrl ? 'oa-success' : 'oa-muted';
-    const storePhotoLabel  = o.storePhotoUrl ? '🏪<br><span style="font-size:0.7rem">매장사진 보기</span>' : '🏪<br><span style="font-size:0.7rem">매장사진 없음</span>';
+    const storePhotoLabel  = o.storePhotoUrl ? '매장사진<br>보기' : '매장사진<br>없음';
 
     return `
       <div class="order-card" data-id="${o.id}" data-status="${o.status}">
@@ -358,10 +364,10 @@ const Floor2View = {
           </div>
         </div>
         <div class="ocard-actions">
-          <button class="ocard-action oa-primary" data-id="${o.id}" data-action="edit">✏️<br>주문서 수정</button>
+          <button class="ocard-action oa-edit" data-id="${o.id}" data-action="edit">주문서<br>수정</button>
           <button class="ocard-action ${storePhotoCls}" data-id="${o.id}" data-action="${storePhotoAction}">${storePhotoLabel}</button>
-          <button class="ocard-action oa-warning" data-id="${o.id}" data-action="receipt">🧾<br>인수증 출력</button>
-          <button class="ocard-action oa-danger" data-id="${o.id}" data-action="force-complete" ${o.status === 4 || o.status >= 5 ? 'disabled' : ''}>✅<br>강제배송완료</button>
+          <button class="ocard-action oa-receipt" data-id="${o.id}" data-action="receipt">인수증<br>출력</button>
+          <button class="ocard-action oa-complete" data-id="${o.id}" data-action="force-complete" ${o.status === 4 || o.status >= 5 ? 'disabled' : ''}>강제<br>배송완료</button>
         </div>
       </div>`;
   },

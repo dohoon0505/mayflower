@@ -333,25 +333,42 @@
 }
 .ocard-action {
   flex: 1; display: flex; align-items: center; justify-content: center;
-  padding: 0.4rem 0.5rem; font-size: 0.78rem; font-weight: 600;
-  color: var(--text-secondary); border: none; background: transparent;
-  cursor: pointer; transition: background 0.15s, color 0.15s;
-  text-align: center; line-height: 1.35; word-break: keep-all;
-  border-bottom: 1px dashed var(--border);
+  padding: 0.4rem 0.5rem; font-size: 0.82rem; font-weight: 700;
+  color: #374151; border: none; background: transparent;
+  cursor: pointer; transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+  text-align: center; line-height: 1.3; word-break: keep-all; letter-spacing: -0.2px;
+  border-bottom: 1px solid var(--border);
   min-height: 46px; flex-direction: column; gap: 2px;
 }
 .ocard-action:last-child { border-bottom: none; }
-.ocard-action:hover:not(:disabled) { background: var(--bg-elevated); }
-.ocard-action.oa-primary { color: var(--primary); }
-.ocard-action.oa-primary:hover:not(:disabled) { background: #eff6ff; }
-.ocard-action.oa-success { color: var(--success); }
-.ocard-action.oa-success:hover:not(:disabled) { background: #f0fdf4; }
-.ocard-action.oa-warning { color: var(--warning); }
-.ocard-action.oa-warning:hover:not(:disabled) { background: #fffbeb; }
-.ocard-action.oa-danger  { color: var(--error); font-size: 0.75rem; }
-.ocard-action.oa-danger:hover:not(:disabled)  { background: #fef2f2; }
-.ocard-action.oa-muted   { color: var(--text-muted); font-size: 0.74rem; }
-.ocard-action:disabled { opacity: 0.35; cursor: not-allowed; }
+.ocard-action:hover:not(:disabled) { filter: brightness(0.97); }
+.ocard-action:active:not(:disabled) { box-shadow: inset 0 2px 4px rgba(0,0,0,0.08); }
+
+/* === 역할/의미별 색상 팔레트 — 가독성 최우선 (진한 배경 + 흰 글자) === */
+.ocard-action.oa-edit     { background: #eff6ff; color: #1d4ed8; }
+.ocard-action.oa-edit:hover:not(:disabled)     { background: #dbeafe; }
+
+.ocard-action.oa-success  { background: #ecfdf5; color: #047857; }
+.ocard-action.oa-success:hover:not(:disabled)  { background: #d1fae5; }
+
+.ocard-action.oa-receipt  { background: #fffbeb; color: #b45309; }
+.ocard-action.oa-receipt:hover:not(:disabled)  { background: #fef3c7; }
+
+.ocard-action.oa-complete { background: #fef2f2; color: #b91c1c; }
+.ocard-action.oa-complete:hover:not(:disabled) { background: #fee2e2; }
+
+.ocard-action.oa-muted    { background: #f3f4f6; color: #6b7280; }
+.ocard-action.oa-muted:hover:not(:disabled)    { background: #e5e7eb; }
+
+/* legacy */
+.ocard-action.oa-primary { background: #eff6ff; color: #1d4ed8; }
+.ocard-action.oa-primary:hover:not(:disabled) { background: #dbeafe; }
+.ocard-action.oa-warning { background: #fffbeb; color: #b45309; }
+.ocard-action.oa-warning:hover:not(:disabled) { background: #fef3c7; }
+.ocard-action.oa-danger  { background: #fef2f2; color: #b91c1c; font-size: 0.8rem; }
+.ocard-action.oa-danger:hover:not(:disabled)  { background: #fee2e2; }
+
+.ocard-action:disabled { opacity: 0.4; cursor: not-allowed; filter: grayscale(0.3); }
 .ocard-action img {
   width: 54px; height: 38px; object-fit: cover;
   border-radius: 3px; border: 1px solid var(--border);

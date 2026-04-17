@@ -183,8 +183,14 @@ const DriverView = {
       const fs = DriverView._filterState;
       let orders = all;
 
-      if (fs.dateFrom) orders = orders.filter(o => o.deliveryDatetime >= fs.dateFrom);
-      if (fs.dateTo)   orders = orders.filter(o => o.deliveryDatetime <= fs.dateTo + 'T23:59:59');
+      const _toLocalDate = iso => {
+        if (!iso) return '';
+        const d = new Date(iso);
+        const p = n => String(n).padStart(2,'0');
+        return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+      };
+      if (fs.dateFrom) orders = orders.filter(o => _toLocalDate(o.deliveryDatetime) >= fs.dateFrom);
+      if (fs.dateTo)   orders = orders.filter(o => _toLocalDate(o.deliveryDatetime) <= fs.dateTo);
 
       const lc = s => (s || '').toLowerCase();
       if (fs.searchAddress)   orders = orders.filter(o => lc(o.deliveryAddress).includes(lc(fs.searchAddress)));
@@ -270,7 +276,7 @@ const DriverView = {
 
     const storePhotoAction = o.storePhotoUrl ? 'view-store-photo' : 'store-photo';
     const storePhotoCls    = o.storePhotoUrl ? 'oa-success' : 'oa-muted';
-    const storePhotoLabel  = o.storePhotoUrl ? '🏪<br><span style="font-size:0.7rem">매장사진 보기</span>' : '🏪<br><span style="font-size:0.7rem">매장사진 없음</span>';
+    const storePhotoLabel  = o.storePhotoUrl ? '매장사진<br>보기' : '매장사진<br>없음';
 
     return `
       <div class="order-card" data-id="${o.id}" data-status="${o.status}">
@@ -305,9 +311,9 @@ const DriverView = {
           </div>
         </div>
         <div class="ocard-actions">
-          <button class="ocard-action oa-primary" data-id="${o.id}" data-action="edit">✏️<br>주문서 수정</button>
+          <button class="ocard-action oa-edit" data-id="${o.id}" data-action="edit">주문서<br>수정</button>
           <button class="ocard-action ${storePhotoCls}" data-id="${o.id}" data-action="${storePhotoAction}">${storePhotoLabel}</button>
-          <button class="ocard-action oa-success" data-id="${o.id}" data-action="receipt">🧾<br>인수증 출력</button>
+          <button class="ocard-action oa-receipt" data-id="${o.id}" data-action="receipt">인수증<br>출력</button>
         </div>
       </div>`;
   },

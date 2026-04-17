@@ -249,8 +249,14 @@ const Floor1View = {
       if (!fs.photoYes && fs.photoNo)  orders = orders.filter(o => !o.deliveryPhotoUrl);
       if (!fs.photoYes && !fs.photoNo) orders = [];
 
-      if (fs.dateFrom) orders = orders.filter(o => o.deliveryDatetime >= fs.dateFrom);
-      if (fs.dateTo)   orders = orders.filter(o => o.deliveryDatetime <= fs.dateTo + 'T23:59:59');
+      const _toLocalDate = iso => {
+        if (!iso) return '';
+        const d = new Date(iso);
+        const p = n => String(n).padStart(2,'0');
+        return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+      };
+      if (fs.dateFrom) orders = orders.filter(o => _toLocalDate(o.deliveryDatetime) >= fs.dateFrom);
+      if (fs.dateTo)   orders = orders.filter(o => _toLocalDate(o.deliveryDatetime) <= fs.dateTo);
 
       const lc = s => (s || '').toLowerCase();
       if (fs.searchAddress)   orders = orders.filter(o => lc(o.deliveryAddress).includes(lc(fs.searchAddress)));
@@ -352,7 +358,7 @@ const Floor1View = {
     }
 
     /* Store photo slot label */
-    const storePhotoLabel = o.storePhotoUrl ? '🏪<br><span style="font-size:0.7rem">매장사진 보기</span>' : '🏪<br><span style="font-size:0.7rem">매장사진 없음</span>';
+    const storePhotoLabel = o.storePhotoUrl ? '매장사진<br>보기' : '매장사진<br>없음';
     const storePhotoAction = o.storePhotoUrl ? 'view-store-photo' : 'store-photo';
     const storePhotoCls    = o.storePhotoUrl ? 'oa-success' : 'oa-muted';
 
@@ -394,10 +400,10 @@ const Floor1View = {
           </div>
         </div>
         <div class="ocard-actions">
-          <button class="ocard-action oa-primary f1-action" data-id="${o.id}" data-action="edit">✏️<br>주문서 수정</button>
+          <button class="ocard-action oa-edit f1-action" data-id="${o.id}" data-action="edit">주문서<br>수정</button>
           <button class="ocard-action ${storePhotoCls} f1-action" data-id="${o.id}" data-action="${storePhotoAction}">${storePhotoLabel}</button>
-          <button class="ocard-action oa-warning f1-action" data-id="${o.id}" data-action="receipt">🧾<br>인수증 출력</button>
-          <button class="ocard-action oa-danger f1-action" data-id="${o.id}" data-action="force-complete" ${o.status === 4 || o.status >= 5 ? 'disabled' : ''}>✅<br>강제배송완료</button>
+          <button class="ocard-action oa-receipt f1-action" data-id="${o.id}" data-action="receipt">인수증<br>출력</button>
+          <button class="ocard-action oa-complete f1-action" data-id="${o.id}" data-action="force-complete" ${o.status === 4 || o.status >= 5 ? 'disabled' : ''}>강제<br>배송완료</button>
         </div>
       </div>`;
   },
