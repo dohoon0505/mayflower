@@ -100,15 +100,15 @@ const Floor1View = {
         <div class="filter-row" style="padding-top:0.6rem;padding-bottom:0.6rem">
           <div class="search-fields-group">
             <div class="search-field-item">
-              <span class="search-field-label">🔍 주소지 검색</span>
+              <span class="search-field-label">🔍 배송지</span>
               <input type="text" id="f1-search-address" class="search-field-input" placeholder="주소지를 입력해주세요">
             </div>
             <div class="search-field-item">
-              <span class="search-field-label">🔍 받는분 검색</span>
+              <span class="search-field-label">🔍 받는분</span>
               <input type="text" id="f1-search-recipient" class="search-field-input" placeholder="받는 분 성함을 입력해주세요">
             </div>
             <div class="search-field-item">
-              <span class="search-field-label">🔍 보낸문구 검색</span>
+              <span class="search-field-label">🔍 보내는분</span>
               <input type="text" id="f1-search-ribbon" class="search-field-input" placeholder="리본 문구를 입력해주세요">
             </div>
           </div>
