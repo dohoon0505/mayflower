@@ -85,15 +85,16 @@ const Floor2View = {
           <span class="filter-label">배송요청일</span>
           <div class="date-range-box">
             <span class="date-icon">📅</span>
-            <input type="date" id="f2-date-from" value="${firstDay}">
+            <input type="date" id="f2-date-from" value="">
             <span class="date-sep">~</span>
-            <input type="date" id="f2-date-to" value="${todayStr}">
+            <input type="date" id="f2-date-to" value="">
           </div>
           <div class="quick-date-group">
+            <button class="quick-date-btn f2-quick active" data-quick="all">전체</button>
             <button class="quick-date-btn f2-quick" data-quick="today">오늘</button>
             <button class="quick-date-btn f2-quick" data-quick="yesterday">어제</button>
             <button class="quick-date-btn f2-quick" data-quick="tomorrow">내일</button>
-            <button class="quick-date-btn f2-quick active" data-quick="this-month">이번 달</button>
+            <button class="quick-date-btn f2-quick" data-quick="this-month">이번 달</button>
             <button class="quick-date-btn f2-quick" data-quick="last-month">지난 달</button>
             <button class="quick-date-btn f2-quick" data-quick="future">예약건</button>
           </div>
@@ -120,7 +121,7 @@ const Floor2View = {
       </div>`);
 
     Floor2View._bindFilterEvents();
-    Floor2View._applyQuickDate('this-month');
+    Floor2View._applyQuickDate('all');
     await Floor2View._loadMyOrders();
   },
 
@@ -182,6 +183,13 @@ const Floor2View = {
       const p = n => String(n).padStart(2,'0');
       return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
     };
+    if (quick === 'all') {
+      Floor2View._filterState.dateFrom = '';
+      Floor2View._filterState.dateTo   = '';
+      const elF = document.getElementById('f2-date-from'); if (elF) elF.value = '';
+      const elT = document.getElementById('f2-date-to');   if (elT) elT.value = '';
+      return;
+    }
     if (quick === 'today')      { from = to = fmt(today); }
     else if (quick === 'yesterday') { const d = new Date(today); d.setDate(d.getDate()-1); from = to = fmt(d); }
     else if (quick === 'tomorrow')  { const d = new Date(today); d.setDate(d.getDate()+1); from = to = fmt(d); }

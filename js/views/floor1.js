@@ -81,15 +81,16 @@ const Floor1View = {
           <span class="filter-label">배송요청일</span>
           <div class="date-range-box">
             <span class="date-icon">📅</span>
-            <input type="date" id="f1-date-from" value="${firstDay}">
+            <input type="date" id="f1-date-from" value="">
             <span class="date-sep">~</span>
-            <input type="date" id="f1-date-to" value="${todayStr}">
+            <input type="date" id="f1-date-to" value="">
           </div>
           <div class="quick-date-group">
+            <button class="quick-date-btn active" data-quick="all">전체</button>
             <button class="quick-date-btn" data-quick="today">오늘</button>
             <button class="quick-date-btn" data-quick="yesterday">어제</button>
             <button class="quick-date-btn" data-quick="tomorrow">내일</button>
-            <button class="quick-date-btn active" data-quick="this-month">이번 달</button>
+            <button class="quick-date-btn" data-quick="this-month">이번 달</button>
             <button class="quick-date-btn" data-quick="last-month">지난 달</button>
             <button class="quick-date-btn" data-quick="future">예약건</button>
           </div>
@@ -117,7 +118,7 @@ const Floor1View = {
       </div>`);
 
     Floor1View._bindFilterEvents();
-    Floor1View._applyQuickDate('this-month');
+    Floor1View._applyQuickDate('all');
     Floor1View._loadOrders();
   },
 
@@ -185,6 +186,13 @@ const Floor1View = {
       const p = n => String(n).padStart(2,'0');
       return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
     };
+    if (quick === 'all') {
+      Floor1View._filterState.dateFrom = '';
+      Floor1View._filterState.dateTo   = '';
+      const elF = document.getElementById('f1-date-from'); if (elF) elF.value = '';
+      const elT = document.getElementById('f1-date-to');   if (elT) elT.value = '';
+      return;
+    }
     if (quick === 'today') {
       from = to = fmt(today);
     } else if (quick === 'yesterday') {

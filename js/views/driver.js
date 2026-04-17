@@ -68,6 +68,7 @@ const DriverView = {
             <input type="date" id="drv-date-to">
           </div>
           <div class="quick-date-group">
+            <button class="quick-date-btn drv-quick active" data-quick="all">전체</button>
             <button class="quick-date-btn drv-quick" data-quick="today">오늘</button>
             <button class="quick-date-btn drv-quick" data-quick="tomorrow">내일</button>
             <button class="quick-date-btn drv-quick" data-quick="this-month">이번 달</button>
@@ -150,6 +151,13 @@ const DriverView = {
       const p = n => String(n).padStart(2,'0');
       return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
     };
+    if (quick === 'all') {
+      DriverView._filterState.dateFrom = '';
+      DriverView._filterState.dateTo   = '';
+      const elF = document.getElementById('drv-date-from'); if (elF) elF.value = '';
+      const elT = document.getElementById('drv-date-to');   if (elT) elT.value = '';
+      return;
+    }
     if (quick === 'today')      { from = to = fmt(today); }
     else if (quick === 'tomorrow')   { const d = new Date(today); d.setDate(d.getDate()+1); from = to = fmt(d); }
     else if (quick === 'this-month') {
