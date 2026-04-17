@@ -37,7 +37,6 @@ const Api = {
   /* ── Orders ────────────────────────────────────────────── */
   async getOrders(filters = {}) {
     const s = _requireSession();
-    if (s.role === 'floor2') filters = { ...filters, createdByUserId: s.userId };
     if (s.role === 'driver') throw { status: 403, message: '권한이 없습니다.' };
     return Store.getOrders(filters);
   },

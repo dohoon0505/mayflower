@@ -208,7 +208,6 @@ const Floor2View = {
   async _loadMyOrders() {
     UI.loading(true);
     try {
-      /* Api.getOrders automatically filters by createdByUserId for floor2 */
       const all = await Api.getOrders();
       const fs = Floor2View._filterState;
       let orders = all;
