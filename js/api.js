@@ -161,6 +161,8 @@ const Api = {
     }
 
     patch.updatedAt = _now();
+    /* Firebase는 undefined 값을 거부하므로 제거 */
+    Object.keys(patch).forEach(k => { if (patch[k] === undefined) delete patch[k]; });
     await _db().ref(`orders/${id}`).update(patch);
     return true;
   },

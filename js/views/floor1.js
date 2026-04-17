@@ -821,8 +821,8 @@ const Floor1View = {
 
       confirmBtn.disabled = true; confirmBtn.textContent = '저장 중...';
       try {
-        let newStoreUrl = o.storePhotoUrl;
-        let newDelivUrl = o.deliveryPhotoUrl;
+        let newStoreUrl = o.storePhotoUrl ?? null;
+        let newDelivUrl = o.deliveryPhotoUrl ?? null;
         if (storeFile) { const r = await Api.uploadStorePhoto(storeFile, orderId);   newStoreUrl = r.url; }
         if (delivFile) { const r = await Api.uploadDeliveryPhoto(delivFile, orderId); newDelivUrl = r.url; }
 

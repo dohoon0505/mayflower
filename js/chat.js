@@ -4,10 +4,11 @@
    ============================================================ */
 
 const Chat = {
-  _session:  null,
-  _msgsRef:  null,   // 읽기용 (정렬·제한 적용)
-  _writeRef: null,   // 쓰기용 (push/update)
-  _cache:    {},     // key → message object
+  _session:       null,
+  _msgsRef:       null,   // 읽기용 (정렬·제한 적용)
+  _writeRef:      null,   // 쓰기용 (push/update)
+  _cache:         {},     // key → message object
+  _lastRendDate:  null,   // child_added 날짜 구분선 추적용
 
   NOTICES: {
     floor2: '📦 오늘 접수된 주문은 1층에서 빠르게 확인됩니다.',
@@ -47,9 +48,15 @@ const Chat = {
     if (!el) return;
     el.innerHTML = '';
 
+    Chat._lastRendDate = null;
     Chat._msgsRef.on('child_added', snap => {
       const m = { ...snap.val(), _key: snap.key };
       Chat._cache[snap.key] = m;
+      const dateStr = Chat._localDateLabel(new Date(m.ts));
+      if (dateStr !== Chat._lastRendDate) {
+        el.insertAdjacentHTML('beforeend', Chat._dateSepHtml(dateStr));
+        Chat._lastRendDate = dateStr;
+      }
       el.insertAdjacentHTML('beforeend', Chat._msgHtml(m));
       el.scrollTop = el.scrollHeight;
     }, err => console.error('[Chat] child_added error:', err));
@@ -71,7 +78,18 @@ const Chat = {
     if (!el) return;
     const sorted = Object.values(Chat._cache)
       .sort((a, b) => new Date(a.ts) - new Date(b.ts));
-    el.innerHTML = sorted.map(m => Chat._msgHtml(m)).join('');
+    let lastDate = null;
+    const parts = [];
+    sorted.forEach(m => {
+      const dateStr = Chat._localDateLabel(new Date(m.ts));
+      if (dateStr !== lastDate) {
+        parts.push(Chat._dateSepHtml(dateStr));
+        lastDate = dateStr;
+      }
+      parts.push(Chat._msgHtml(m));
+    });
+    el.innerHTML = parts.join('');
+    Chat._lastRendDate = lastDate;
     el.scrollTop = el.scrollHeight;
   },
 
@@ -113,13 +131,13 @@ const Chat = {
     const roleCls   = `chat-role-${m.role || 'system'}`;
     const avatarCls = `chat-avatar-role-${m.role || 'system'}`;
 
-    const checkedBy = m.checkedBy || [];
-    const checkChips = checkedBy.map(c =>
-      `<span class="check-chip">✓ ${UI.escHtml(c.name)}</span>`
-    ).join('');
+    const checkedBy = Array.isArray(m.checkedBy) ? m.checkedBy : Object.values(m.checkedBy || {});
     const alreadyChecked = checkedBy.some(c => c.userId === session?.userId);
     const checkBtn = !isMe
-      ? `<button class="chat-check-btn${alreadyChecked ? ' checked' : ''}" data-mkey="${m._key}">${alreadyChecked ? '✓ 확인함' : '✓ 확인'}</button>`
+      ? `<button class="chat-check-btn${alreadyChecked ? ' checked' : ''}" data-mkey="${m._key}">${alreadyChecked ? '✓ 확인함' : '확인'}</button>`
+      : '';
+    const checkChips = checkedBy.length
+      ? `<div class="chat-checked-by">${checkedBy.map(c => `<span class="check-chip"><span class="check-chip-name">${UI.escHtml(c.name)}</span><span class="check-chip-role">${Chat.ROLE_LABELS[c.role] || c.role}</span></span>`).join('')}</div>`
       : '';
 
     if (isMe) {
@@ -128,7 +146,7 @@ const Chat = {
           <div class="chat-bubble">${UI.escHtml(m.text)}</div>
           <div class="chat-msg-footer">
             <span class="chat-msg-time">${time}</span>
-            ${checkChips ? `<div class="chat-checked-by">${checkChips}</div>` : ''}
+            ${checkChips}
           </div>
         </div>`;
     }
@@ -136,7 +154,6 @@ const Chat = {
     return `
       <div class="chat-msg ${cls}">
         <div class="chat-msg-header">
-          <div class="chat-avatar-sm ${avatarCls}">${UI.escHtml(UI.initials(m.name || '?'))}</div>
           <span class="chat-sender-name">${UI.escHtml(m.name || '시스템')}</span>
           ${roleLabel ? `<span class="chat-sender-badge ${roleCls}">${roleLabel}</span>` : ''}
         </div>
@@ -144,7 +161,7 @@ const Chat = {
         <div class="chat-msg-footer">
           <span class="chat-msg-time">${time}</span>
           ${checkBtn}
-          ${checkChips ? `<div class="chat-checked-by">${checkChips}</div>` : ''}
+          ${checkChips}
         </div>
       </div>`;
   },
@@ -219,6 +236,17 @@ const Chat = {
   },
 
   /* ── Utility ─────────────────────────────────────────────── */
+  _localDateLabel(date) {
+    const d = new Date(date);
+    const y = d.getFullYear(), mo = d.getMonth() + 1, day = d.getDate();
+    const pad = n => String(n).padStart(2, '0');
+    return `${y}년 ${pad(mo)}월 ${pad(day)}일`;
+  },
+
+  _dateSepHtml(dateStr) {
+    return `<div class="chat-date-sep"><span>${dateStr}</span></div>`;
+  },
+
   _timeAgo(iso) {
     const diff = Date.now() - new Date(iso).getTime();
     const mins = Math.floor(diff / 60000);

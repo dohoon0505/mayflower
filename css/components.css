@@ -595,27 +595,40 @@ tr:hover td { background: var(--bg-elevated); }
 .chat-msg.me .chat-msg-footer { justify-content: flex-end; }
 
 .chat-check-btn {
-  padding: 0.1rem 0.5rem;
-  border: 1px solid var(--border-strong);
+  padding: 0.3rem 0.9rem;
+  border: 1.5px solid var(--border-strong);
   border-radius: 99px;
   background: transparent;
-  font-size: 0.7rem; font-weight: 600; color: var(--text-muted);
+  font-size: 0.82rem; font-weight: 700; color: var(--text-muted);
   cursor: pointer; transition: all 0.15s; white-space: nowrap;
 }
 .chat-check-btn:hover { border-color: var(--success); color: var(--success); background: #f0fdf4; }
-.chat-check-btn.checked { border-color: var(--success); color: var(--success); background: #f0fdf4; }
+.chat-check-btn.checked { border-color: var(--success); color: var(--success); background: #f0fdf4; cursor: default; }
 
 .chat-checked-by {
-  display: flex; flex-wrap: wrap; gap: 2px; align-items: center;
+  display: flex; flex-wrap: wrap; gap: 4px; align-items: center;
+  margin-top: 2px;
 }
 .check-chip {
-  display: inline-flex; align-items: center; gap: 2px;
+  display: inline-flex; align-items: center; gap: 4px;
   background: #f0fdf4; border: 1px solid #bbf7d0;
-  color: #059669; border-radius: 99px;
-  padding: 0.08rem 0.4rem; font-size: 0.68rem; font-weight: 600;
+  border-radius: 99px;
+  padding: 0.18rem 0.6rem; font-size: 0.75rem;
 }
+.check-chip-name { font-weight: 700; color: #065f46; }
+.check-chip-role { color: #059669; font-weight: 500; }
 
-/* Make chat bubble slightly larger in the redesign */
+/* Date separator */
+.chat-date-sep {
+  display: flex; align-items: center; gap: 0.75rem;
+  margin: 1.2rem 0 0.6rem;
+  color: var(--text-muted); font-size: 0.75rem; font-weight: 600;
+}
+.chat-date-sep::before, .chat-date-sep::after {
+  content: ''; flex: 1; border-top: 1px solid var(--border);
+}
+.chat-date-sep span { white-space: nowrap; }
+
 .chat-bubble { max-width: 85%; }
 
 /* ── Order card extras (kept for compatibility) ───────────── */
