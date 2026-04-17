@@ -212,7 +212,7 @@ const Auth = {
       createOrder:      ['floor2', 'admin'],
       myOrders:         ['floor2'],
       allOrders:        ['floor1', 'admin'],
-      updateStatus:     ['floor1', 'admin'],
+      updateStatus:     ['floor1', 'floor2', 'admin'],
       assignDriver:     ['floor1', 'admin'],
       myDeliveries:     ['driver'],
       completeDelivery: ['driver', 'admin'],
