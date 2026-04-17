@@ -46,10 +46,6 @@ const DriverView = {
         if (o?.storePhotoUrl) window.open(o.storePhotoUrl);
       }
       else if (action === 'receipt')     { Floor1View._openReceiptModal(id); }
-      else if (action === 'force-complete') {
-        try { await Floor1View._forceComplete(id); }
-        catch(e) { UI.toast(e.message || '처리 실패', 'error'); }
-      }
     });
   },
 
@@ -312,7 +308,6 @@ const DriverView = {
           <button class="ocard-action oa-primary" data-id="${o.id}" data-action="edit">✏️<br>주문서 수정</button>
           <button class="ocard-action ${storePhotoCls}" data-id="${o.id}" data-action="${storePhotoAction}">${storePhotoLabel}</button>
           <button class="ocard-action oa-success" data-id="${o.id}" data-action="receipt">🧾<br>인수증 출력</button>
-          <button class="ocard-action oa-danger" data-id="${o.id}" data-action="force-complete" ${o.status === 4 || o.status >= 5 ? 'disabled' : ''}>✅<br>강제배송완료</button>
         </div>
       </div>`;
   },
