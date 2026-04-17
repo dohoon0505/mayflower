@@ -65,6 +65,7 @@ const AdminView = {
             <button class="btn ${u.isActive !== false ? 'btn-danger' : 'btn-success'} btn-xs u-toggle" data-id="${u.id}">
               ${u.isActive !== false ? '비활성' : '활성'}
             </button>
+            <button class="btn btn-danger btn-xs u-delete" data-id="${u.id}" data-name="${UI.escHtml(u.displayName || u.username || '')}">삭제</button>
           </div>
         </td>
       </tr>`).join('');
@@ -135,6 +136,27 @@ const AdminView = {
           await Api.toggleUserActive(uid, next);
           UI.toast(next ? '활성화되었습니다.' : '비활성화되었습니다.', 'success');
         } catch (e) { UI.toast(e.message || '변경 실패', 'error'); }
+      });
+    });
+    /* 삭제 */
+    document.querySelectorAll('.u-delete').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const uid = btn.dataset.id;
+        const name = btn.dataset.name;
+        const overlay = UI.modal({
+          title: '사용자 삭제',
+          content: `<p><strong>${UI.escHtml(name)}</strong> 계정을 삭제하시겠습니까?<br><span class="text-muted" style="font-size:0.85rem">삭제 후 복구할 수 없습니다.</span></p>`,
+          confirmText: '삭제', cancelText: '취소',
+        });
+        overlay.querySelector('.modal-confirm').style.cssText = 'background:#ef4444;border-color:#ef4444';
+        overlay.querySelector('.modal-confirm').addEventListener('click', async () => {
+          try {
+            await Api.deleteUser(uid);
+            UI.toast('사용자가 삭제되었습니다.', 'success');
+            overlay.classList.remove('show');
+            setTimeout(() => overlay.remove(), 300);
+          } catch (e) { UI.toast(e.message || '삭제 실패', 'error'); }
+        });
       });
     });
   },
