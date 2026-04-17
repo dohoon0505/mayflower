@@ -64,13 +64,29 @@ const Chat = {
     Chat._msgsRef.on('child_changed', snap => {
       const m = { ...snap.val(), _key: snap.key };
       Chat._cache[snap.key] = m;
-      Chat._rerenderAll();
+      /* 단일 메시지만 in-place 교체 — 스크롤/포커스 유지 */
+      Chat._replaceOne(m);
     }, err => console.error('[Chat] child_changed error:', err));
 
     Chat._msgsRef.on('child_removed', snap => {
-      delete Chat._cache[snap.key];
-      Chat._rerenderAll();
+      const key = snap.key;
+      delete Chat._cache[key];
+      const el = document.getElementById('chat-messages');
+      const node = el && el.querySelector(`.chat-msg[data-mkey="${CSS.escape(key)}"]`);
+      if (node) node.remove();
     });
+  },
+
+  /* 해당 키의 메시지 DOM 만 교체 (스크롤 보존) */
+  _replaceOne(m) {
+    const el = document.getElementById('chat-messages');
+    if (!el) return;
+    const old = el.querySelector(`.chat-msg[data-mkey="${CSS.escape(m._key)}"]`);
+    if (!old) { Chat._rerenderAll(); return; }  // 못 찾으면 전체 재렌더 폴백
+    const tmp = document.createElement('div');
+    tmp.innerHTML = Chat._msgHtml(m).trim();
+    const fresh = tmp.firstElementChild;
+    if (fresh) old.replaceWith(fresh);
   },
 
   _rerenderAll() {
@@ -78,7 +94,9 @@ const Chat = {
     if (!el) return;
     const sorted = Object.values(Chat._cache)
       .sort((a, b) => new Date(a.ts) - new Date(b.ts));
-    const wasNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    const prevScrollTop  = el.scrollTop;
+    const prevScrollFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    const wasNearBottom  = prevScrollFromBottom < 80;
     let lastDate = null;
     const parts = [];
     sorted.forEach(m => {
@@ -91,7 +109,9 @@ const Chat = {
     });
     el.innerHTML = parts.join('');
     Chat._lastRendDate = lastDate;
+    /* 스크롤 복원: 하단 근처면 계속 하단 고정, 아니면 원래 위치 보존 */
     if (wasNearBottom) el.scrollTop = el.scrollHeight;
+    else               el.scrollTop = prevScrollTop;
   },
 
   /* ── Profile / Notice ────────────────────────────────────── */
@@ -135,7 +155,7 @@ const Chat = {
     const checkedBy = Array.isArray(m.checkedBy) ? m.checkedBy : Object.values(m.checkedBy || {});
     const alreadyChecked = checkedBy.some(c => c.userId === session?.userId);
     const checkBtn = !isMe
-      ? `<button class="chat-check-btn${alreadyChecked ? ' checked' : ''}" data-mkey="${m._key}">${alreadyChecked ? '✓ 확인함' : '확인'}</button>`
+      ? `<button type="button" class="chat-check-btn${alreadyChecked ? ' checked' : ''}" data-mkey="${m._key}">${alreadyChecked ? '✓ 확인함' : '확인'}</button>`
       : '';
     const checkChips = checkedBy.length
       ? `<div class="chat-checked-by">${checkedBy.map(c => `<span class="check-chip">${UI.escHtml(c.name)}</span>`).join('')}</div>`
@@ -143,7 +163,7 @@ const Chat = {
 
     if (isMe) {
       return `
-        <div class="chat-msg ${cls}">
+        <div class="chat-msg ${cls}" data-mkey="${m._key}">
           <div class="chat-bubble">${UI.escHtml(m.text)}</div>
           <div class="chat-msg-footer">
             <span class="chat-msg-time">${time}</span>
@@ -153,7 +173,7 @@ const Chat = {
     }
 
     return `
-      <div class="chat-msg ${cls}">
+      <div class="chat-msg ${cls}" data-mkey="${m._key}">
         <div class="chat-msg-header">
           <span class="chat-sender-name">${UI.escHtml(m.name || '시스템')}</span>
           ${roleLabel ? `<span class="chat-sender-badge ${roleCls}">${roleLabel}</span>` : ''}
@@ -209,6 +229,8 @@ const Chat = {
     el.addEventListener('click', e => {
       const btn = e.target.closest('.chat-check-btn');
       if (!btn) return;
+      e.preventDefault();
+      e.stopPropagation();
       const key = btn.dataset.mkey;
       const s   = Chat._session;
       const m   = Chat._cache[key];
