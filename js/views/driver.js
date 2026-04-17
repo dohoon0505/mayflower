@@ -219,11 +219,13 @@ const DriverView = {
     const _today = `${_n.getFullYear()}-${_pad(_n.getMonth()+1)}-${_pad(_n.getDate())}`;
     const _dd = o.deliveryDatetime ? new Date(o.deliveryDatetime) : null;
     const _delivDay = _dd ? `${_dd.getFullYear()}-${_pad(_dd.getMonth()+1)}-${_pad(_dd.getDate())}` : '';
-    const dayBadge = _delivDay === _today
-      ? '<span class="ocard-day-badge ocard-day-today">당일건</span>'
-      : _delivDay > _today
-        ? '<span class="ocard-day-badge ocard-day-future">예약건</span>'
-        : '';
+    const dayBadge = o.status === 4
+      ? '<span class="ocard-day-badge ocard-day-done">완료건</span>'
+      : _delivDay === _today
+        ? '<span class="ocard-day-badge ocard-day-today">당일건</span>'
+        : _delivDay > _today
+          ? '<span class="ocard-day-badge ocard-day-future">예약건</span>'
+          : '';
 
     const _chainCodes = ['ㄲㅌ','ㅂㅎㄷ','ㄷㅍㄹㅇ','ㄷㄹ','ㅇㅎ','ㅄㅌ'];
     const _chainIdx = String(o.id).split('').reduce((a, c) => a + c.charCodeAt(0), 0);

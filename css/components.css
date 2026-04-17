@@ -287,6 +287,7 @@
 }
 .ocard-day-today  { background: #fce7f3; color: #be185d; border: 1px solid #fbcfe8; }
 .ocard-day-future { background: #dbeafe; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.ocard-day-done   { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
 
 /* Completed order elapsed-time field */
 .ocard-field--done { background: #f0fdf4; border-color: #bbf7d0; color: #166534; }
