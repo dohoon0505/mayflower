@@ -62,6 +62,7 @@ const Api = {
       recipientPhone:     String(data.recipientPhone || '').trim(),
       ribbonText:         String(data.ribbonText   || '').trim(),
       occasionText:       String(data.occasionText || '').trim(),
+      price:              data.price != null && data.price !== '' ? Number(data.price) : null,
       status:             0,
       assignedDriverId:   null,
       assignedDriverName: null,

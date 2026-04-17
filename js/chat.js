@@ -78,6 +78,7 @@ const Chat = {
     if (!el) return;
     const sorted = Object.values(Chat._cache)
       .sort((a, b) => new Date(a.ts) - new Date(b.ts));
+    const wasNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
     let lastDate = null;
     const parts = [];
     sorted.forEach(m => {
@@ -90,7 +91,7 @@ const Chat = {
     });
     el.innerHTML = parts.join('');
     Chat._lastRendDate = lastDate;
-    el.scrollTop = el.scrollHeight;
+    if (wasNearBottom) el.scrollTop = el.scrollHeight;
   },
 
   /* ── Profile / Notice ────────────────────────────────────── */
@@ -137,7 +138,7 @@ const Chat = {
       ? `<button class="chat-check-btn${alreadyChecked ? ' checked' : ''}" data-mkey="${m._key}">${alreadyChecked ? '✓ 확인함' : '확인'}</button>`
       : '';
     const checkChips = checkedBy.length
-      ? `<div class="chat-checked-by">${checkedBy.map(c => `<span class="check-chip"><span class="check-chip-name">${UI.escHtml(c.name)}</span><span class="check-chip-role">${Chat.ROLE_LABELS[c.role] || c.role}</span></span>`).join('')}</div>`
+      ? `<div class="chat-checked-by">${checkedBy.map(c => `<span class="check-chip">${UI.escHtml(c.name)}</span>`).join('')}</div>`
       : '';
 
     if (isMe) {

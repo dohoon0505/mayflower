@@ -314,6 +314,8 @@ const Floor1View = {
     const _prod = Store.getProductById(o.productId);
     const _cat  = _prod ? Store.getCategoryById(_prod.category) : null;
     const categoryName = _cat ? _cat.name : o.productName;
+    const priceBadge = o.price != null
+      ? `<span class="ocard-price">${Number(o.price).toLocaleString('ko-KR')}원</span>` : '';
 
     /* Time field */
     let timeFieldCls, timeText;
@@ -344,6 +346,7 @@ const Floor1View = {
             <span class="ocard-datetime">🕐 ${dt}</span>
             <span class="ocard-product">${UI.escHtml(categoryName)}</span>
             <span class="ocard-chain">${chainCode}</span>
+            ${priceBadge}
           </div>
           <!-- Row 1: Address | Recipient (2-col) -->
           <div class="ocard-2col">
@@ -697,6 +700,10 @@ const Floor1View = {
               <input type="text" id="eo-occasion" class="form-control" value="${UI.escHtml(o.occasionText || '')}" ${rdonly('조회 전용')} placeholder="예: 삼가 고인의 명복을 빕니다">
             </div>
           </div>
+          <div class="form-group" style="margin-bottom:0.75rem">
+            <label class="form-label">금액 (원)</label>
+            <input type="number" id="eo-price" class="form-control" value="${o.price ?? ''}" placeholder="예: 80000" min="0" step="1000" ${rdonly('조회 전용')}>
+          </div>
           ${driverPhotoLinks}
         </div>
         <div class="eo-right">
@@ -806,6 +813,7 @@ const Floor1View = {
       const recipientPhone = overlay.querySelector('#eo-phone').value.trim();
       const ribbonText     = overlay.querySelector('#eo-ribbon').value.trim();
       const occasionText   = overlay.querySelector('#eo-occasion').value.trim();
+      const priceRaw       = overlay.querySelector('#eo-price')?.value;
       const driverIdRaw    = overlay.querySelector('#eo-driver')?.value ?? (o.assignedDriverId || '');
       const newStatus      = overlay.querySelector('#eo-status') ? +overlay.querySelector('#eo-status').value : o.status;
 
@@ -833,6 +841,7 @@ const Floor1View = {
           assignedDriverId: driverIdRaw,
           storePhotoUrl:    newStoreUrl,
           deliveryPhotoUrl: newDelivUrl,
+          price: priceRaw != null && priceRaw !== '' ? Number(priceRaw) : null,
         });
 
         /* Status change (floor1/admin only) */

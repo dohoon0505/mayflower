@@ -232,6 +232,8 @@ const DriverView = {
     const _prod = Store.getProductById(o.productId);
     const _cat  = _prod ? Store.getCategoryById(_prod.category) : null;
     const categoryName = _cat ? _cat.name : o.productName;
+    const priceBadge = o.price != null
+      ? `<span class="ocard-price">${Number(o.price).toLocaleString('ko-KR')}원</span>` : '';
 
     let timeFieldCls, timeText;
     if (o.status === 4 && o.createdAt && o.updatedAt) {
@@ -258,6 +260,7 @@ const DriverView = {
             <span class="ocard-datetime">🕐 ${dt}</span>
             <span class="ocard-product">${UI.escHtml(categoryName)}</span>
             <span class="ocard-chain">${chainCode}</span>
+            ${priceBadge}
           </div>
           <div class="ocard-2col">
             <div class="ocard-field">

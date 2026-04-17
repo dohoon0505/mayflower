@@ -281,6 +281,8 @@ const Floor2View = {
     const _prod = Store.getProductById(o.productId);
     const _cat  = _prod ? Store.getCategoryById(_prod.category) : null;
     const categoryName = _cat ? _cat.name : o.productName;
+    const priceBadge = o.price != null
+      ? `<span class="ocard-price">${Number(o.price).toLocaleString('ko-KR')}원</span>` : '';
 
     let timeFieldCls, timeText;
     if (o.status === 4 && o.createdAt && o.updatedAt) {
@@ -307,6 +309,7 @@ const Floor2View = {
             <span class="ocard-datetime">🕐 ${dt}</span>
             <span class="ocard-product">${UI.escHtml(categoryName)}</span>
             <span class="ocard-chain">${chainCode}</span>
+            ${priceBadge}
           </div>
           <div class="ocard-2col">
             <div class="ocard-field">
@@ -406,6 +409,10 @@ const Floor2View = {
           <label class="form-label">경조사어 문구</label>
           <input type="text" id="no-occasion" class="form-control" placeholder="예: 삼가 고인의 명복을 빕니다">
         </div>
+      </div>
+      <div class="form-group" style="margin-bottom:0.75rem">
+        <label class="form-label">금액 (원)</label>
+        <input type="number" id="no-price" class="form-control" placeholder="예: 80000" min="0" step="1000">
       </div>`;
 
     const overlay = UI.modal({
@@ -448,6 +455,7 @@ const Floor2View = {
         recipientPhone:  overlay.querySelector('#no-phone').value.trim(),
         ribbonText:      overlay.querySelector('#no-ribbon').value.trim(),
         occasionText:    overlay.querySelector('#no-occasion').value.trim(),
+        price:           overlay.querySelector('#no-price').value,
       };
 
       confirmBtn.disabled = true; confirmBtn.textContent = '접수 중...';
