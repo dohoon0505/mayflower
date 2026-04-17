@@ -133,10 +133,9 @@ const Api = {
     const o = Store.getOrderById(id);
     if (!o) throw { status: 404, message: '주문을 찾을 수 없습니다.' };
 
-    /* floor2: 본인 주문만, assignedDriverId 박탈 */
+    /* floor2: 배차 필드 수정 불가 (나머지 필드는 전체 주문 수정 가능) */
     let patch = { ...data };
     if (s.role === 'floor2') {
-      if (o.createdByUserId !== s.userId) throw { status: 403, message: '권한이 없습니다.' };
       delete patch.assignedDriverId;
     } else if (!Auth.can('updateStatus', s.role)) {
       throw { status: 403, message: '권한이 없습니다.' };
