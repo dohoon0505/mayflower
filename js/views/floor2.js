@@ -264,8 +264,10 @@ const Floor2View = {
       : `<span class="ocard-field-icon">🚚</span><span class="ocard-driver-none">배차 전</span>`;
     const driverFieldCls = o.assignedDriverName ? 'ocard-field--assigned' : '';
 
-    const _today = new Date().toISOString().slice(0, 10);
-    const _delivDay = (o.deliveryDatetime || '').slice(0, 10);
+    const _n = new Date(), _pad = n => String(n).padStart(2, '0');
+    const _today = `${_n.getFullYear()}-${_pad(_n.getMonth()+1)}-${_pad(_n.getDate())}`;
+    const _dd = o.deliveryDatetime ? new Date(o.deliveryDatetime) : null;
+    const _delivDay = _dd ? `${_dd.getFullYear()}-${_pad(_dd.getMonth()+1)}-${_pad(_dd.getDate())}` : '';
     const dayBadge = _delivDay === _today
       ? '<span class="ocard-day-badge ocard-day-today">당일건</span>'
       : _delivDay > _today
