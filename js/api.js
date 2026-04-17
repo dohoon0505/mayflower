@@ -321,8 +321,10 @@ const Api = {
     const s = _requireSession();
     if (s.role !== 'admin') throw { status: 403, message: '권한이 없습니다.' };
     if (s.userId === uid) throw { status: 400, message: '자신의 계정은 삭제할 수 없습니다.' };
-    await _db().ref(`users/${uid}`).remove();
-    return true;
+    if (!window.FirebaseFunctions) throw { status: 500, message: 'Functions가 초기화되지 않았습니다.' };
+    const fn = window.FirebaseFunctions.httpsCallable('deleteAuthUser');
+    const result = await fn({ uid });
+    return result.data;
   },
 
   /* ── Delivery (driver 전용 — 웹에서는 사실상 사용 안 함) ── */

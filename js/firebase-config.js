@@ -4,9 +4,10 @@
    chat.js · auth.js · api.js 등이 로드되기 전에 먼저 실행되어야 함
 
    노출 전역:
-     window.FirebaseDB       — Realtime Database (asia-southeast1)
-     window.FirebaseAuth     — Firebase Auth (Email/Password)
-     window.FirebaseStorage  — Firebase Storage
+     window.FirebaseDB        — Realtime Database (asia-southeast1)
+     window.FirebaseAuth      — Firebase Auth (Email/Password)
+     window.FirebaseStorage   — Firebase Storage
+     window.FirebaseFunctions — Cloud Functions (us-central1)
    ============================================================ */
 
 const firebaseConfig = {
@@ -51,4 +52,12 @@ try {
 } catch (err) {
   console.error('[Firebase] Storage 초기화 실패:', err);
   window.FirebaseStorage = null;
+}
+
+try {
+  window.FirebaseFunctions = firebase.functions();
+  console.log('[Firebase] Functions OK');
+} catch (err) {
+  console.error('[Firebase] Functions 초기화 실패:', err);
+  window.FirebaseFunctions = null;
 }
