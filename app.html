@@ -87,18 +87,18 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-storage-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-functions-compat.js"></script>
-  <script src="js/firebase-config.js?v=13"></script>
+  <script src="js/firebase-config.js?v=14"></script>
 
-  <script src="js/store.js?v=13"></script>
-  <script src="js/auth.js?v=13"></script>
-  <script src="js/ui.js?v=13"></script>
-  <script src="js/api.js?v=13"></script>
-  <script src="js/router.js?v=13"></script>
-  <script src="js/chat.js?v=13"></script>
-  <script src="js/views/floor2.js?v=13"></script>
-  <script src="js/views/floor1.js?v=13"></script>
-  <script src="js/views/driver.js?v=13"></script>
-  <script src="js/views/admin.js?v=13"></script>
+  <script src="js/store.js?v=14"></script>
+  <script src="js/auth.js?v=14"></script>
+  <script src="js/ui.js?v=14"></script>
+  <script src="js/api.js?v=14"></script>
+  <script src="js/router.js?v=14"></script>
+  <script src="js/chat.js?v=14"></script>
+  <script src="js/views/floor2.js?v=14"></script>
+  <script src="js/views/floor1.js?v=14"></script>
+  <script src="js/views/driver.js?v=14"></script>
+  <script src="js/views/admin.js?v=14"></script>
 
   <script>
     /* ═══════════════════════════════════════════════════════
@@ -389,19 +389,38 @@
         if (!d) return;
 
         const resetTs = DeliveryPanel._getResetTs(driverId);
-        const completed = allOrders
-          .filter(o => o.assignedDriverId === d.id && o.status === 4 && o.updatedAt
-                    && DeliveryPanel._afterReset(o, resetTs))
+        const myOrders = allOrders.filter(o => o.assignedDriverId === d.id);
+
+        /* 배송중: status=3 (출발 완료, 운송 중). reset 과 무관하게 현재 진행중인 건은 모두 표시. */
+        const delivering = myOrders
+          .filter(o => o.status === 3)
+          .sort((a, b) => new Date(a.deliveryDatetime || a.assignedAt || a.updatedAt)
+                        - new Date(b.deliveryDatetime || b.assignedAt || b.updatedAt));
+
+        /* 배송완료: reset 이후의 완료건만 */
+        const completed = myOrders
+          .filter(o => o.status === 4 && o.updatedAt && DeliveryPanel._afterReset(o, resetTs))
           .sort((a, b) => new Date(a.updatedAt) - new Date(b.updatedAt));
 
-        const rows = completed.length
-          ? completed.map(o => `
-              <div class="dp-tl-item">
-                <span class="dp-tl-time">${UI.fmtDatetime(o.updatedAt)}</span>
-                <span class="dp-tl-addr">${UI.escHtml(o.deliveryAddress || '')}</span>
-                <span class="dp-tl-done">배송완료</span>
-              </div>`).join('')
-          : '<p class="dp-tl-empty">완료된 배송 이력이 없습니다.</p>';
+        const _row = (o, label, cls) => `
+          <div class="dp-tl-item">
+            <span class="dp-tl-time">${UI.fmtDatetime(o.status === 4 ? o.updatedAt : (o.deliveryDatetime || o.assignedAt || o.updatedAt))}</span>
+            <span class="dp-tl-addr">${UI.escHtml(o.deliveryAddress || '')}</span>
+            <span class="${cls}">${label}</span>
+          </div>`;
+
+        const sectionDelivering = delivering.length
+          ? `<div class="dp-tl-section-title dp-tl-sec-ing">🚚 배송중 <span class="dp-tl-count">${delivering.length}</span></div>
+             <div class="dp-tl-group">${delivering.map(o => _row(o, '배송중', 'dp-tl-ing')).join('')}</div>`
+          : '';
+        const sectionCompleted = completed.length
+          ? `<div class="dp-tl-section-title dp-tl-sec-done">✅ 배송완료 <span class="dp-tl-count">${completed.length}</span></div>
+             <div class="dp-tl-group">${completed.map(o => _row(o, '배송완료', 'dp-tl-done')).join('')}</div>`
+          : '';
+
+        const rows = (sectionDelivering || sectionCompleted)
+          ? (sectionDelivering + sectionCompleted)
+          : '<p class="dp-tl-empty">진행중이거나 완료된 배송이 없습니다.</p>';
 
         const content = `<div class="dp-tl-modal-body" style="pointer-events:none;user-select:text">${rows}</div>`;
 
