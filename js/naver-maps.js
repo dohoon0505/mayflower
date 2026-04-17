@@ -1,35 +1,18 @@
 /* ============================================================
-   NAVER-MAPS.JS — NCP Maps API wrapper
-   · Geocoding v2:   주소 → 좌표
-   · Directions 15:  출발지/도착지 좌표 → 소요시간·거리
-   ·
-   ⚠️ CORS 주의: NCP Maps 는 기본적으로 브라우저 직호출 허용 여부가
-      NCP Console → API Gateway → Application 에 등록된 Web 서비스
-      URL (Origin) 에 달려 있습니다. 실패 시 graceful fallback 으로
-      "복귀 시간 계산 불가" 배너를 노출합니다.
+   NAVER-MAPS.JS — NCP Maps API 클라이언트
+   · 브라우저는 NCP 엔드포인트를 직접 호출할 수 없음 (CORS 미지원).
+   · Firebase Cloud Functions (naverGeocode / naverDirections)
+     프록시를 경유하여 Geocoding v2 + Directions 15 API 호출.
+   · localStorage 7일 캐시로 함수 호출 비용 최소화.
    ============================================================ */
 
 (() => {
-  const CLIENT_ID     = '59hums7gl0';
-  const CLIENT_SECRET = 'DubVxJ5Ix7Sn5cXVaMwMmMozV0JnJzYYzb0geJcR';
-
-  const BASE_GEOCODE    = 'https://maps.apigw.ntruss.com/map-geocode/v2/geocode';
-  const BASE_DIRECTIONS = 'https://maps.apigw.ntruss.com/map-direction-15/v1/driving';
-
   /* 회사(사무실) 고정 주소 */
   const OFFICE_ADDRESS = '대구광역시 달서구 장기동 666-1';
 
   /* localStorage 캐시 키 */
   const CACHE_KEY = 'nmap_geocode_cache_v1';
   const CACHE_TTL = 1000 * 60 * 60 * 24 * 7;  // 7일
-
-  function _headers() {
-    return {
-      'x-ncp-apigw-api-key-id': CLIENT_ID,
-      'x-ncp-apigw-api-key':    CLIENT_SECRET,
-      'Accept':                 'application/json',
-    };
-  }
 
   function _readCache() {
     try { return JSON.parse(localStorage.getItem(CACHE_KEY) || '{}'); }
@@ -51,6 +34,13 @@
     _writeCache(c);
   }
 
+  function _fns() {
+    if (!window.firebase || !firebase.functions) {
+      throw new Error('Firebase Functions SDK 미로드');
+    }
+    return firebase.functions();
+  }
+
   /* ── Geocoding: address → { x(경도), y(위도) } ──────────────── */
   async function geocode(address) {
     if (!address) throw new Error('주소가 비어있습니다.');
@@ -58,14 +48,9 @@
     const cached = _cacheGet(addr);
     if (cached) return cached;
 
-    const url = `${BASE_GEOCODE}?query=${encodeURIComponent(addr)}`;
-    const res = await fetch(url, { method: 'GET', headers: _headers() });
-    if (!res.ok) throw new Error(`Geocoding HTTP ${res.status}`);
-    const data = await res.json();
-    const first = (data.addresses && data.addresses[0]) || null;
-    if (!first) throw new Error('주소 검색 결과가 없습니다.');
-    const x = Number(first.x);   // 경도 longitude
-    const y = Number(first.y);   // 위도 latitude
+    const call = _fns().httpsCallable('naverGeocode');
+    const { data } = await call({ address: addr });
+    const x = Number(data?.x), y = Number(data?.y);
     if (!Number.isFinite(x) || !Number.isFinite(y)) throw new Error('좌표 변환 실패');
     _cacheSet(addr, x, y);
     return { x, y };
@@ -73,26 +58,18 @@
 
   /* ── Directions 15: 출발/도착 좌표 → { durationMs, distanceM } ─ */
   async function driving(start, goal) {
-    const s = `${start.x},${start.y}`;
-    const g = `${goal.x},${goal.y}`;
-    const url = `${BASE_DIRECTIONS}?start=${s}&goal=${g}`;
-    const res = await fetch(url, { method: 'GET', headers: _headers() });
-    if (!res.ok) throw new Error(`Directions HTTP ${res.status}`);
-    const data = await res.json();
-    const route = data.route && (data.route.traoptimal || data.route.trafast || data.route.tracomfort);
-    const first = route && route[0];
-    if (!first || !first.summary) throw new Error('경로 탐색 결과가 없습니다.');
+    const call = _fns().httpsCallable('naverDirections');
+    const { data } = await call({ start, goal });
     return {
-      durationMs: Number(first.summary.duration) || 0,   // ms
-      distanceM:  Number(first.summary.distance) || 0,   // m
+      durationMs: Number(data?.durationMs) || 0,
+      distanceM:  Number(data?.distanceM)  || 0,
     };
   }
 
-  /* ── 편의: 주소 → 사무실 복귀 예상시간 (ms) ───────────────── */
+  /* ── 편의: 주소 → 사무실 복귀 예상시간 ──────────────────────── */
   async function estimateReturnFromAddress(fromAddress) {
     const [from, to] = await Promise.all([geocode(fromAddress), geocode(OFFICE_ADDRESS)]);
-    const r = await driving(from, to);
-    return r;
+    return await driving(from, to);
   }
 
   window.NaverMaps = {
