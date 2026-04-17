@@ -145,7 +145,14 @@ const AdminView = {
         const name = btn.dataset.name;
         const overlay = UI.modal({
           title: '사용자 삭제',
-          content: `<p><strong>${UI.escHtml(name)}</strong> 계정을 삭제하시겠습니까?<br><span class="text-muted" style="font-size:0.85rem">삭제 후 복구할 수 없습니다.</span></p>`,
+          content: `
+            <p><strong>${UI.escHtml(name)}</strong> 계정을 삭제하시겠습니까?</p>
+            <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:6px;padding:0.75rem;margin-top:0.75rem;font-size:0.82rem;color:#92400e;line-height:1.5">
+              ⚠️ DB 레코드만 삭제됩니다.<br>
+              해당 아이디로 <strong>재가입을 허용</strong>하려면
+              <a href="https://console.firebase.google.com/project/mayflower-5c9dd/authentication/users" target="_blank" style="color:#b45309;font-weight:600">Firebase Console → Authentication</a>
+              에서 Auth 계정도 함께 삭제해야 합니다.
+            </div>`,
           confirmText: '삭제', cancelText: '취소',
         });
         overlay.querySelector('.modal-confirm').style.cssText = 'background:#ef4444;border-color:#ef4444';

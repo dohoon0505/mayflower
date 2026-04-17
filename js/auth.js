@@ -133,9 +133,22 @@ const Auth = {
     try {
       cred = await window.FirebaseAuth.createUserWithEmailAndPassword(email, password);
     } catch (e) {
-      if (e?.code === 'auth/email-already-in-use') throw { status: 400, message: '이미 사용 중인 아이디입니다.' };
-      if (e?.code === 'auth/weak-password')         throw { status: 400, message: '비밀번호는 6자 이상이어야 합니다.' };
-      if (e?.code === 'auth/invalid-email')         throw { status: 400, message: '아이디 형식이 올바르지 않습니다.' };
+      if (e?.code === 'auth/email-already-in-use') {
+        /* RTDB에 레코드가 없으면 삭제된 사용자의 고스트 Auth 계정 */
+        let hasDbRecord = false;
+        try {
+          const snap = await window.FirebaseDB.ref('users')
+            .orderByChild('username').equalTo(String(username).trim().toLowerCase())
+            .limitToFirst(1).once('value');
+          hasDbRecord = snap.exists();
+        } catch (_) {}
+        if (!hasDbRecord) {
+          throw { status: 400, message: '이 아이디는 현재 사용할 수 없습니다. 관리자가 Firebase Console에서 Auth 계정을 삭제한 후 재가입이 가능합니다.' };
+        }
+        throw { status: 400, message: '이미 사용 중인 아이디입니다.' };
+      }
+      if (e?.code === 'auth/weak-password')  throw { status: 400, message: '비밀번호는 6자 이상이어야 합니다.' };
+      if (e?.code === 'auth/invalid-email')  throw { status: 400, message: '아이디 형식이 올바르지 않습니다.' };
       throw { status: 500, message: e?.message || '회원가입 실패' };
     }
 
