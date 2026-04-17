@@ -388,6 +388,22 @@
 }
 .dp-tl-group { display: flex; flex-direction: column; gap: 0.25rem; padding-bottom: 0.3rem; }
 
+.dp-tl-eta {
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.55rem 0.7rem;
+  margin: 0 0 0.6rem;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #92400e;
+  border: 1px solid #fcd34d;
+  display: flex; align-items: center; gap: 0.4rem;
+}
+.dp-tl-eta b { color: #78350f; font-size: 0.95rem; }
+.dp-tl-eta-fail {
+  background: #fee2e2; color: #991b1b; border-color: #fecaca;
+}
+
 .dp-footer {
   padding: 0.625rem 0.75rem;
   border-top: 1px solid var(--border);

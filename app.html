@@ -89,16 +89,17 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-functions-compat.js"></script>
   <script src="js/firebase-config.js?v=14"></script>
 
-  <script src="js/store.js?v=14"></script>
-  <script src="js/auth.js?v=14"></script>
-  <script src="js/ui.js?v=14"></script>
-  <script src="js/api.js?v=14"></script>
-  <script src="js/router.js?v=14"></script>
-  <script src="js/chat.js?v=14"></script>
-  <script src="js/views/floor2.js?v=14"></script>
-  <script src="js/views/floor1.js?v=14"></script>
-  <script src="js/views/driver.js?v=14"></script>
-  <script src="js/views/admin.js?v=14"></script>
+  <script src="js/store.js?v=15"></script>
+  <script src="js/auth.js?v=15"></script>
+  <script src="js/ui.js?v=15"></script>
+  <script src="js/api.js?v=15"></script>
+  <script src="js/router.js?v=15"></script>
+  <script src="js/chat.js?v=15"></script>
+  <script src="js/naver-maps.js?v=15"></script>
+  <script src="js/views/floor2.js?v=15"></script>
+  <script src="js/views/floor1.js?v=15"></script>
+  <script src="js/views/driver.js?v=15"></script>
+  <script src="js/views/admin.js?v=15"></script>
 
   <script>
     /* ═══════════════════════════════════════════════════════
@@ -422,7 +423,13 @@
           ? (sectionDelivering + sectionCompleted)
           : '<p class="dp-tl-empty">진행중이거나 완료된 배송이 없습니다.</p>';
 
-        const content = `<div class="dp-tl-modal-body" style="pointer-events:none;user-select:text">${rows}</div>`;
+        /* 복귀중(returning) 상태일 때 '사무실 복귀까지' 배너 placeholder */
+        const { badge: curBadge } = DeliveryPanel._computeBadge(d, allOrders);
+        const etaBanner = curBadge === 'returning'
+          ? `<div class="dp-tl-eta" id="dp-tl-eta-${d.id}">🏢 사무실 복귀까지 계산 중…</div>`
+          : '';
+
+        const content = `<div class="dp-tl-modal-body" style="pointer-events:none;user-select:text">${etaBanner}${rows}</div>`;
 
         const overlay = UI.modal({
           title: `🚚 ${UI.escHtml(d.name)} — 배송 타임라인`,
@@ -433,8 +440,29 @@
         });
         overlay.querySelector('.modal-cancel').style.display = 'none';
 
-        /* 현재 뱃지 상태에 따라 버튼 구성 분기 */
-        const { badge: curBadge } = DeliveryPanel._computeBadge(d, allOrders);
+        /* 복귀 ETA 계산 — 마지막 배송완료 주소 → 사무실 */
+        if (curBadge === 'returning' && completed.length && window.NaverMaps) {
+          const last = completed[completed.length - 1];
+          const etaEl = overlay.querySelector(`#dp-tl-eta-${d.id}`);
+          if (etaEl && last.deliveryAddress) {
+            (async () => {
+              try {
+                const { durationMs, distanceM } = await window.NaverMaps.estimateReturnFromAddress(last.deliveryAddress);
+                const mins = Math.max(1, Math.round(durationMs / 60000));
+                const arrive = new Date(Date.now() + durationMs);
+                const hh = String(arrive.getHours()).padStart(2, '0');
+                const mm = String(arrive.getMinutes()).padStart(2, '0');
+                const km = (distanceM / 1000).toFixed(1);
+                etaEl.innerHTML = `🏢 사무실 복귀까지 약 <b>${mins}분</b> 예상 · ${km}km · 도착 예정 ${hh}:${mm}`;
+              } catch (e) {
+                console.warn('[ETA] 복귀 시간 계산 실패:', e);
+                etaEl.classList.add('dp-tl-eta-fail');
+                etaEl.innerHTML = '🏢 복귀 시간 계산 불가 (네이버 지도 API 도메인 등록 필요)';
+              }
+            })();
+          }
+        }
+
         const footer = overlay.querySelector('.modal-footer');
         const wrap = document.createElement('div');
         wrap.style.cssText = 'display:flex;gap:0.5rem;margin-right:auto';
