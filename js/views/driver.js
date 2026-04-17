@@ -262,14 +262,10 @@ const DriverView = {
             <span class="ocard-chain">${chainCode}</span>
             ${priceBadge}
           </div>
-          <div class="ocard-2col">
+          <div class="ocard-1col">
             <div class="ocard-field">
               <span class="ocard-field-icon">📍</span>
               <span>${UI.escHtml(o.deliveryAddress)}</span>
-            </div>
-            <div class="ocard-field">
-              <span class="ocard-field-icon">👤</span>
-              <span>${UI.escHtml(o.recipientName)}${o.recipientPhone ? ' / ' + UI.escHtml(o.recipientPhone) : ''}</span>
             </div>
           </div>
           <div class="ocard-2col">

@@ -312,6 +312,7 @@
 /* 2-column field row */
 .ocard-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
 @media (max-width: 680px) { .ocard-2col { grid-template-columns: 1fr; } }
+.ocard-1col { display: grid; grid-template-columns: 1fr; gap: 0.4rem; }
 
 /* Driver / time-remaining field modifiers */
 .ocard-driver-tag  { font-weight: 600; color: var(--primary); white-space: nowrap; }

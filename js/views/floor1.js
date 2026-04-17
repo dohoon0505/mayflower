@@ -348,15 +348,11 @@ const Floor1View = {
             <span class="ocard-chain">${chainCode}</span>
             ${priceBadge}
           </div>
-          <!-- Row 1: Address | Recipient (2-col) -->
-          <div class="ocard-2col">
+          <!-- Row 1: Address (full width) -->
+          <div class="ocard-1col">
             <div class="ocard-field">
               <span class="ocard-field-icon">📍</span>
               <span>${UI.escHtml(o.deliveryAddress)}</span>
-            </div>
-            <div class="ocard-field">
-              <span class="ocard-field-icon">👤</span>
-              <span>${UI.escHtml(o.recipientName)}${o.recipientPhone ? ' / ' + UI.escHtml(o.recipientPhone) : ''}</span>
             </div>
           </div>
           <!-- Row 2: Ribbon | Occasion (2-col) -->
