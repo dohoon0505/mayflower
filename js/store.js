@@ -106,6 +106,7 @@
     /* 원본 객체 배열도 노출 (admin 관리용) */
     getCategoriesRaw: () => cache.categories.slice(),
     getCategoryByName: (name) => cache.categories.find(c => c.name === name) || null,
+    getCategoryById:   (id)   => cache.categories.find(c => c.id   === id)   || null,
 
     /* ── Products ────────────────────────────────────────── */
     getProducts: (activeOnly = true) => {

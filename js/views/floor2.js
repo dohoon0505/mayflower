@@ -276,6 +276,10 @@ const Floor2View = {
     const _chainIdx = String(o.id).split('').reduce((a, c) => a + c.charCodeAt(0), 0);
     const chainCode = _chainCodes[_chainIdx % _chainCodes.length];
 
+    const _prod = Store.getProductById(o.productId);
+    const _cat  = _prod ? Store.getCategoryById(_prod.category) : null;
+    const categoryName = _cat ? _cat.name : o.productName;
+
     let timeFieldCls, timeText;
     if (o.status === 4 && o.createdAt && o.updatedAt) {
       const _el = new Date(o.updatedAt) - new Date(o.createdAt);
@@ -299,7 +303,7 @@ const Floor2View = {
           <div class="ocard-header">
             ${dayBadge}
             <span class="ocard-datetime">🕐 ${dt}</span>
-            <span class="ocard-product">${UI.escHtml(o.productName)}</span>
+            <span class="ocard-product">${UI.escHtml(categoryName)}</span>
             <span class="ocard-chain">${chainCode}</span>
           </div>
           <div class="ocard-2col">

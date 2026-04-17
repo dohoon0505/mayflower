@@ -309,6 +309,10 @@ const Floor1View = {
     const _chainIdx = String(o.id).split('').reduce((a, c) => a + c.charCodeAt(0), 0);
     const chainCode = _chainCodes[_chainIdx % _chainCodes.length];
 
+    const _prod = Store.getProductById(o.productId);
+    const _cat  = _prod ? Store.getCategoryById(_prod.category) : null;
+    const categoryName = _cat ? _cat.name : o.productName;
+
     /* Time field */
     let timeFieldCls, timeText;
     if (o.status === 4 && o.createdAt && o.updatedAt) {
@@ -336,7 +340,7 @@ const Floor1View = {
             <input type="checkbox" class="ocard-checkbox order-checkbox" data-id="${o.id}" title="선택">
             ${dayBadge}
             <span class="ocard-datetime">🕐 ${dt}</span>
-            <span class="ocard-product">${UI.escHtml(o.productName)}</span>
+            <span class="ocard-product">${UI.escHtml(categoryName)}</span>
             <span class="ocard-chain">${chainCode}</span>
           </div>
           <!-- Row 1: Address | Recipient (2-col) -->
