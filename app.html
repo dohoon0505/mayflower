@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>메이대구</title>
+  <title>메이?��?/title>
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/layout.css">
   <link rel="stylesheet" href="css/components.css">
@@ -18,14 +18,14 @@
 
   <div class="shell">
 
-    <!-- ── Sidebar ─────────────────────────────────────────── -->
+    <!-- ?�?� Sidebar ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?� -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-top">
         <div class="sidebar-logo">
-          <img src="assets/logo.svg" alt="메이대구">
-          <span class="sidebar-logo-text">메이대구</span>
-          <button class="sidebar-toggle-btn" id="sidebar-toggle" title="메뉴 접기/펼치기">
-            <span class="toggle-arrow">‹</span>
+          <img src="assets/logo.svg" alt="메이?��?>
+          <span class="sidebar-logo-text">메이?��?/span>
+          <button class="sidebar-toggle-btn" id="sidebar-toggle" title="메뉴 ?�기/?�치�?>
+            <span class="toggle-arrow">??/span>
           </button>
         </div>
         <div class="sidebar-profile" id="sidebar-profile"></div>
@@ -35,21 +35,21 @@
       </div>
       <div class="sidebar-bottom">
         <button class="nav-item logout-btn" id="btn-logout">
-          <span class="nav-icon">⏻</span>
-          <span>로그아웃</span>
+          <span class="nav-icon">??/span>
+          <span>로그?�웃</span>
         </button>
       </div>
     </aside>
 
-    <!-- ── Main Panel ─────────────────────────────────────── -->
+    <!-- ?�?� Main Panel ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?� -->
     <main class="main-panel">
       <!-- Mobile top bar -->
       <div class="mobile-header">
-        <button class="hamburger-btn" id="hamburger-btn" aria-label="메뉴 열기">
+        <button class="hamburger-btn" id="hamburger-btn" aria-label="메뉴 ?�기">
           <span></span><span></span><span></span>
         </button>
-        <span class="mobile-title" id="mobile-title">메이대구</span>
-        <button class="chat-toggle-btn" id="chat-toggle-btn" title="채팅 패널">💬</button>
+        <span class="mobile-title" id="mobile-title">메이?��?/span>
+        <button class="chat-toggle-btn" id="chat-toggle-btn" title="채팅 ?�널">?��</button>
       </div>
 
       <!-- Filter area (filled per view) -->
@@ -59,52 +59,51 @@
       <div class="content-area" id="main-content"></div>
     </main>
 
-    <!-- ── Delivery Panel ───────────────────────────────── -->
+    <!-- ?�?� Delivery Panel ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?� -->
     <aside class="delivery-panel" id="delivery-panel">
       <div class="dp-header">
-        <span>🚚 배송기사 현황</span>
-        <button class="dp-refresh-btn" onclick="DeliveryPanel.render()" title="새로고침">↻</button>
+        <span>?�� 배송기사 ?�황</span>
+        <button class="dp-refresh-btn" onclick="DeliveryPanel.render()" title="?�로고침">??/button>
       </div>
       <div class="dp-body" id="dp-body"></div>
     </aside>
 
-    <!-- ── Chat Panel ────────────────────────────────────── -->
+    <!-- ?�?� Chat Panel ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?� -->
     <aside class="chat-panel" id="chat-panel">
-      <div class="chat-header">💬 메이플라워 채팅방</div>
+      <div class="chat-header">?�� 메이?�라??채팅�?/div>
       <div class="chat-messages" id="chat-messages"></div>
       <div class="chat-input-area">
-        <input type="text" id="chat-input" class="chat-input" placeholder="메시지 입력...">
-        <button id="chat-send" class="btn btn-primary btn-sm">전송</button>
+        <input type="text" id="chat-input" class="chat-input" placeholder="메시지 ?�력...">
+        <button id="chat-send" class="btn btn-primary btn-sm">?�송</button>
       </div>
     </aside>
 
   </div><!-- /.shell -->
 
-  <!-- Scripts — order matters -->
-  <!-- Firebase (compat = 전역 firebase 객체 제공) -->
+  <!-- Scripts ??order matters -->
+  <!-- Firebase (compat = ?�역 firebase 객체 ?�공) -->
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-storage-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-functions-compat.js"></script>
-  <script src="js/firebase-config.js?v=14"></script>
+  <script src="js/firebase-config.js?v=23"></script>
 
-  <script src="js/store.js?v=22"></script>
-  <script src="js/auth.js?v=22"></script>
-  <script src="js/ui.js?v=22"></script>
-  <script src="js/api.js?v=22"></script>
-  <script src="js/router.js?v=22"></script>
-  <script src="js/chat.js?v=22"></script>
-  <script src="js/naver-maps.js?v=22"></script>
-  <script src="js/views/floor2.js?v=22"></script>
-  <script src="js/views/floor1.js?v=22"></script>
-  <script src="js/views/driver.js?v=22"></script>
-  <script src="js/views/admin.js?v=22"></script>
+  <script src="js/store.js?v=23"></script>
+  <script src="js/auth.js?v=23"></script>
+  <script src="js/ui.js?v=23"></script>
+  <script src="js/api.js?v=23"></script>
+  <script src="js/router.js?v=23"></script>
+  <script src="js/chat.js?v=23"></script>
+  <script src="js/naver-maps.js?v=23"></script>
+  <script src="js/views/floor2.js?v=23"></script>
+  <script src="js/views/floor1.js?v=23"></script>
+  <script src="js/views/driver.js?v=23"></script>
+  <script src="js/views/admin.js?v=23"></script>
 
   <script>
-    /* ═══════════════════════════════════════════════════════
-       AppShell — session guard, nav build, sidebar toggle
-    ═══════════════════════════════════════════════════════ */
+    /* ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??       AppShell ??session guard, nav build, sidebar toggle
+    ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??*/
     const AppShell = {
       _session: null,
 
@@ -128,7 +127,7 @@
           case 'floor1': Floor1View.init(session); break;
           case 'driver': DriverView.init(session); break;
           case 'admin':
-            Floor1View.init(session); /* must be first — registers listeners */
+            Floor1View.init(session); /* must be first ??registers listeners */
             AdminView.init(session);
             break;
         }
@@ -140,21 +139,21 @@
       buildNav(role) {
         const menus = {
           floor2: [
-            { icon: '📋', label: '내 주문',    route: 'my-orders' },
-            { icon: '✏️', label: '신규 접수',  route: 'new-order' },
+            { icon: '?��', label: '??주문',    route: 'my-orders' },
+            { icon: '?�️', label: '?�규 ?�수',  route: 'new-order' },
           ],
           floor1: [
-            { icon: '📦', label: '전체 주문',  route: 'all-orders' },
+            { icon: '?��', label: '?�체 주문',  route: 'all-orders' },
           ],
           driver: [
-            { icon: '🚚', label: '내 배송',    route: 'my-deliveries' },
+            { icon: '?��', label: '??배송',    route: 'my-deliveries' },
           ],
           admin: [
-            { icon: '📦', label: '전체 주문',       route: 'all-orders' },
-            { icon: '👥', label: '사용자 승인',      route: 'manage-users' },
-            { icon: '🌸', label: '상품 관리',        route: 'manage-products' },
-            { icon: '🚗', label: '기사 관리',        route: 'manage-drivers' },
-            { icon: '📊', label: '통계 · 정산',      route: 'statistics' },
+            { icon: '?��', label: '?�체 주문',       route: 'all-orders' },
+            { icon: '?��', label: '?�용???�인',      route: 'manage-users' },
+            { icon: '?��', label: '?�품 관�?,        route: 'manage-products' },
+            { icon: '?��', label: '기사 관�?,        route: 'manage-drivers' },
+            { icon: '?��', label: '?�계 · ?�산',      route: 'statistics' },
           ],
         };
 
@@ -175,7 +174,7 @@
 
       bindLogout() {
         document.getElementById('btn-logout').addEventListener('click', async () => {
-          const ok = await UI.confirm('로그아웃 하시겠습니까?', '로그아웃');
+          const ok = await UI.confirm('로그?�웃 ?�시겠습?�까?', '로그?�웃');
           if (ok) Auth.logout();
         });
       },
@@ -205,7 +204,7 @@
 
         const applyState = (collapsed) => {
           shell.classList.toggle('sidebar-collapsed', collapsed);
-          arrow.textContent = collapsed ? '›' : '‹';
+          arrow.textContent = collapsed ? '?? : '??;
         };
 
         /* Restore persisted state */
@@ -230,11 +229,10 @@
       },
     };
 
-    /* ═══════════════════════════════════════════════════════
-       DeliveryPanel — 배송기사 현황 패널
-    ═══════════════════════════════════════════════════════ */
+    /* ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??       DeliveryPanel ??배송기사 ?�황 ?�널
+    ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??*/
     const DeliveryPanel = {
-      /* RTDB /driverStatus 캐시 (드라이버 Flutter 앱이 기록하는 실시간 상태·GPS) */
+      /* RTDB /driverStatus 캐시 (?�라?�버 Flutter ?�이 기록?�는 ?�시�??�태·GPS) */
       _driverStatus: {},
       _dsSubscribed: false,
       _ensureDriverStatusSubscription() {
@@ -244,32 +242,30 @@
           DeliveryPanel._driverStatus = snap.val() || {};
           DeliveryPanel.render();
         }, (err) => {
-          console.warn('[DeliveryPanel] /driverStatus 구독 에러:', err?.message);
+          console.warn('[DeliveryPanel] /driverStatus 구독 ?�러:', err?.message);
         });
         DeliveryPanel._dsSubscribed = true;
       },
 
-      /* ═════════════════════════════════════════════════════════════
-         배송기사 상태 알고리즘 (주문 상태 기반 자동 판정)
+      /* ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??         배송기사 ?�태 ?�고리즘 (주문 ?�태 기반 ?�동 ?�정)
 
-         뱃지 자동 결정 (우선순위 순):
-           배송중   = delivering(status=3) > 0
-           배차완료 = assigned(status 0-2) > 0, delivering=0
-           복귀중   = delivering=0, assigned=0, 리셋후 completed(status=4) > 0
-           배송대기 = 모두 0 (리셋 직후 또는 당일 활동 없음)
+         뱃�? ?�동 결정 (?�선?�위 ??:
+           배송�?  = delivering(status=3) > 0
+           배차?�료 = assigned(status 0-2) > 0, delivering=0
+           복�?�?  = delivering=0, assigned=0, 리셋??completed(status=4) > 0
+           배송?��?= 모두 0 (리셋 직후 ?�는 ?�일 ?�동 ?�음)
 
-         ⚠️ APP 연동 이후 변경 예정 (현재 미구현):
-           [1] 배송중 = 드라이버 APP "배송출발" 버튼 클릭 시 설정
-               → 현재는 주문 status=3 으로 대체 감지
-           [2] 복귀중 자동 전환 = 배차된 마지막 주문의 배송사진 업로드 시점
-               → 현재는 delivering=0 && assigned=0 && completed>0 으로 대체 감지
-           [3] 배송대기 자동 전환 = GPS 위치 기반
-               (대구 달서구 장기동 666-1 반경 100m 접근)
-               → 현재는 admin 수동 "배송대기로 리셋" 버튼 사용
-           [4] 드라이버 ID/PW 로그인 + admin 페이지에서 계정 관리
-        ════════════════════════════════════════════════════════════ */
+         ?�️ APP ?�동 ?�후 변�??�정 (?�재 미구??:
+           [1] 배송�?= ?�라?�버 APP "배송출발" 버튼 ?�릭 ???�정
+               ???�재??주문 status=3 ?�로 ?��?감�?
+           [2] 복�?�??�동 ?�환 = 배차??마�?�?주문??배송?�진 ?�로???�점
+               ???�재??delivering=0 && assigned=0 && completed>0 ?�로 ?��?감�?
+           [3] 배송?��??�동 ?�환 = GPS ?�치 기반
+               (?��??�서�??�기??666-1 반경 100m ?�근)
+               ???�재??admin ?�동 "배송?�기로 리셋" 버튼 ?�용
+           [4] ?�라?�버 ID/PW 로그??+ admin ?�이지?�서 계정 관�?        ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═ */
 
-      /* 리셋 타임스탬프: 이 시각 이후 updatedAt 주문만 카운트 → 타임라인 초기화 효과 */
+      /* 리셋 ?�?�스?�프: ???�각 ?�후 updatedAt 주문�?카운?????�?�라??초기???�과 */
       _getResetTs(driverId) {
         return localStorage.getItem(`maydaegu.driver.resetTs.${driverId}`) || '';
       },
@@ -282,7 +278,7 @@
         return new Date(order.updatedAt) >= new Date(resetTs);
       },
 
-      /* 휴무(off-duty) 상태: 배송대기일 때만 수동 토글 가능 */
+      /* ?�무(off-duty) ?�태: 배송?�기일 ?�만 ?�동 ?��? 가??*/
       _getOffDuty(driverId) {
         return localStorage.getItem(`maydaegu.driver.offduty.${driverId}`) === '1';
       },
@@ -291,8 +287,8 @@
         else     localStorage.removeItem(`maydaegu.driver.offduty.${driverId}`);
       },
 
-      /* 공통 뱃지 판정 — render()와 openTimeline()이 공유
-         우선순위: /driverStatus.badge 가 있으면 그것 사용, 없으면 주문 기반 계산 */
+      /* 공통 뱃�? ?�정 ??render()?� openTimeline()??공유
+         ?�선?�위: /driverStatus.badge 가 ?�으�?그것 ?�용, ?�으�?주문 기반 계산 */
       _computeBadge(d, allOrders) {
         const resetTs    = DeliveryPanel._getResetTs(d.id);
         const myOrders   = allOrders.filter(o => o.assignedDriverId === d.id);
@@ -301,7 +297,7 @@
         const completed  = myOrders.filter(o => o.status === 4 && DeliveryPanel._afterReset(o, resetTs));
         const isOff      = DeliveryPanel._getOffDuty(d.id);
 
-        /* driver Flutter 앱이 기록한 실시간 뱃지 우선 */
+        /* driver Flutter ?�이 기록???�시�?뱃�? ?�선 */
         const remote = DeliveryPanel._driverStatus[d.id];
         const allowed = ['delivering', 'assigned', 'returning', 'waiting', 'off'];
         if (remote?.badge && allowed.includes(remote.badge)) {
@@ -312,7 +308,7 @@
         if (delivering.length > 0)     badge = 'delivering';
         else if (assigned.length > 0)  badge = 'assigned';
         else if (completed.length > 0) badge = 'returning';
-        else if (isOff)                badge = 'off';       /* 배송대기 상태에서만 휴무 허용 */
+        else if (isOff)                badge = 'off';       /* 배송?��??�태?�서�??�무 ?�용 */
         else                           badge = 'waiting';
         return { badge, assigned, delivering, completed };
       },
@@ -327,11 +323,11 @@
         const allOrders = Store.getOrders();
 
         if (!drivers.length) {
-          el.innerHTML = '<div class="dp-empty">등록된 기사가 없습니다.</div>';
+          el.innerHTML = '<div class="dp-empty">?�록??기사가 ?�습?�다.</div>';
           return;
         }
 
-        /* Build + sort: 배송중(0) → 배차완료(1) → 복귀중(2) → 배송대기(3) → 휴무(4) */
+        /* Build + sort: 배송�?0) ??배차?�료(1) ??복�?�?2) ??배송?��?3) ???�무(4) */
         const data = drivers.map(d => {
           const { badge, assigned, delivering, completed } = DeliveryPanel._computeBadge(d, allOrders);
           const total    = delivering.length + completed.length;
@@ -349,26 +345,26 @@
             .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0];
           const lastAddr = lastDone
             ? UI.escHtml((lastDone.deliveryAddress || '').substring(0, 26))
-            : '없음';
+            : '?�음';
 
           const [statusBadge, cardCls] =
-            badge === 'delivering' ? [`<span class="dp-badge dp-badge-delivering">배송중</span>`,  'dp-card-active']    :
-            badge === 'assigned'   ? [`<span class="dp-badge dp-badge-assigned">배차완료</span>`, 'dp-card-assigned']  :
-            badge === 'returning'  ? [`<span class="dp-badge dp-badge-returning">복귀중</span>`,   'dp-card-returning'] :
-            badge === 'off'        ? [`<span class="dp-badge dp-badge-off">휴무</span>`,          'dp-card-off']       :
-                                     [`<span class="dp-badge dp-badge-waiting">배송대기</span>`,  ''];
+            badge === 'delivering' ? [`<span class="dp-badge dp-badge-delivering">배송�?/span>`,  'dp-card-active']    :
+            badge === 'assigned'   ? [`<span class="dp-badge dp-badge-assigned">배차?�료</span>`, 'dp-card-assigned']  :
+            badge === 'returning'  ? [`<span class="dp-badge dp-badge-returning">복�?�?/span>`,   'dp-card-returning'] :
+            badge === 'off'        ? [`<span class="dp-badge dp-badge-off">?�무</span>`,          'dp-card-off']       :
+                                     [`<span class="dp-badge dp-badge-waiting">배송?��?/span>`,  ''];
 
           return `
             <div class="dp-driver-card ${cardCls}">
               <div class="dp-card-name-row">
-                <button class="dp-driver-name-btn" onclick="DeliveryPanel.openTimeline('${d.id}')" title="타임라인 / 상태 변경">
+                <button class="dp-driver-name-btn" onclick="DeliveryPanel.openTimeline('${d.id}')" title="?�?�라??/ ?�태 변�?>
                   ${UI.escHtml(d.name)}
                 </button>
                 ${statusBadge}
               </div>
               <div class="dp-card-stats">
-                <span class="dp-stat dp-stat-delivering"><span class="dp-stat-num">${delivering.length}</span> 배송중</span>
-                <span class="dp-stat dp-stat-done"><span class="dp-stat-num">${completed.length}</span> 완료</span>
+                <span class="dp-stat dp-stat-delivering"><span class="dp-stat-num">${delivering.length}</span> 배송�?/span>
+                <span class="dp-stat dp-stat-done"><span class="dp-stat-num">${completed.length}</span> ?�료</span>
               </div>
               <div class="dp-progress-row">
                 <div class="dp-progress-wrap">
@@ -376,7 +372,7 @@
                 </div>
                 <span class="dp-progress-pct">${pct}%</span>
               </div>
-              <div class="dp-last-addr"><span class="dp-meta-icon">📍</span>최종배송지: ${lastAddr}</div>
+              <div class="dp-last-addr"><span class="dp-meta-icon">?��</span>최종배송지: ${lastAddr}</div>
             </div>`;
         }).join('');
 
@@ -392,13 +388,13 @@
         const resetTs = DeliveryPanel._getResetTs(driverId);
         const myOrders = allOrders.filter(o => o.assignedDriverId === d.id);
 
-        /* 배송중: status=3 (출발 완료, 운송 중). reset 과 무관하게 현재 진행중인 건은 모두 표시. */
+        /* 배송�? status=3 (출발 ?�료, ?�송 �?. reset �?무�??�게 ?�재 진행중인 건�? 모두 ?�시. */
         const delivering = myOrders
           .filter(o => o.status === 3)
           .sort((a, b) => new Date(a.deliveryDatetime || a.assignedAt || a.updatedAt)
                         - new Date(b.deliveryDatetime || b.assignedAt || b.updatedAt));
 
-        /* 배송완료: reset 이후의 완료건만 */
+        /* 배송?�료: reset ?�후???�료건만 */
         const completed = myOrders
           .filter(o => o.status === 4 && o.updatedAt && DeliveryPanel._afterReset(o, resetTs))
           .sort((a, b) => new Date(a.updatedAt) - new Date(b.updatedAt));
@@ -411,36 +407,36 @@
           </div>`;
 
         const sectionDelivering = delivering.length
-          ? `<div class="dp-tl-section-title dp-tl-sec-ing">🚚 배송중 <span class="dp-tl-count">${delivering.length}</span></div>
-             <div class="dp-tl-group">${delivering.map(o => _row(o, '배송중', 'dp-tl-ing')).join('')}</div>`
+          ? `<div class="dp-tl-section-title dp-tl-sec-ing">?�� 배송�?<span class="dp-tl-count">${delivering.length}</span></div>
+             <div class="dp-tl-group">${delivering.map(o => _row(o, '배송�?, 'dp-tl-ing')).join('')}</div>`
           : '';
         const sectionCompleted = completed.length
-          ? `<div class="dp-tl-section-title dp-tl-sec-done">✅ 배송완료 <span class="dp-tl-count">${completed.length}</span></div>
-             <div class="dp-tl-group">${completed.map(o => _row(o, '배송완료', 'dp-tl-done')).join('')}</div>`
+          ? `<div class="dp-tl-section-title dp-tl-sec-done">??배송?�료 <span class="dp-tl-count">${completed.length}</span></div>
+             <div class="dp-tl-group">${completed.map(o => _row(o, '배송?�료', 'dp-tl-done')).join('')}</div>`
           : '';
 
         const rows = (sectionDelivering || sectionCompleted)
           ? (sectionDelivering + sectionCompleted)
-          : '<p class="dp-tl-empty">진행중이거나 완료된 배송이 없습니다.</p>';
+          : '<p class="dp-tl-empty">진행중이거나 ?�료??배송???�습?�다.</p>';
 
-        /* 복귀중(returning) 상태일 때 '사무실 복귀까지' 배너 placeholder */
+        /* 복�?�?returning) ?�태????'?�무??복�?까�?' 배너 placeholder */
         const { badge: curBadge } = DeliveryPanel._computeBadge(d, allOrders);
         const etaBanner = curBadge === 'returning'
-          ? `<div class="dp-tl-eta" id="dp-tl-eta-${d.id}">🏢 사무실 복귀까지 계산 중…</div>`
+          ? `<div class="dp-tl-eta" id="dp-tl-eta-${d.id}">?�� ?�무??복�?까�? 계산 중�?/div>`
           : '';
 
         const content = `<div class="dp-tl-modal-body" style="pointer-events:none;user-select:text">${etaBanner}${rows}</div>`;
 
         const overlay = UI.modal({
-          title: `🚚 ${UI.escHtml(d.name)} — 배송 타임라인`,
+          title: `?�� ${UI.escHtml(d.name)} ??배송 ?�?�라??,
           content,
-          confirmText: '닫기',
+          confirmText: '?�기',
           cancelText: '',
           size: 'modal-timeline',
         });
         overlay.querySelector('.modal-cancel').style.display = 'none';
 
-        /* 복귀 ETA 계산 — 마지막 배송완료 주소 → 사무실 */
+        /* 복�? ETA 계산 ??마�?�?배송?�료 주소 ???�무??*/
         if (curBadge === 'returning' && completed.length && window.NaverMaps) {
           const last = completed[completed.length - 1];
           const etaEl = overlay.querySelector(`#dp-tl-eta-${d.id}`);
@@ -453,11 +449,11 @@
                 const hh = String(arrive.getHours()).padStart(2, '0');
                 const mm = String(arrive.getMinutes()).padStart(2, '0');
                 const km = (distanceM / 1000).toFixed(1);
-                etaEl.innerHTML = `🏢 사무실 복귀까지 약 <b>${mins}분</b> 예상 · ${km}km · 도착 예정 ${hh}:${mm}`;
+                etaEl.innerHTML = `?�� ?�무??복�?까�? ??<b>${mins}�?/b> ?�상 · ${km}km · ?�착 ?�정 ${hh}:${mm}`;
               } catch (e) {
-                console.warn('[ETA] 복귀 시간 계산 실패:', e);
+                console.warn('[ETA] 복�? ?�간 계산 ?�패:', e);
                 etaEl.classList.add('dp-tl-eta-fail');
-                etaEl.innerHTML = '🏢 복귀 시간 계산 불가 (네이버 지도 API 도메인 등록 필요)';
+                etaEl.innerHTML = '?�� 복�? ?�간 계산 불�? (?�이�?지??API ?�메???�록 ?�요)';
               }
             })();
           }
@@ -470,11 +466,11 @@
         const close = () => { overlay.classList.remove('show'); setTimeout(() => overlay.remove(), 300); };
 
         if (curBadge === 'waiting' || curBadge === 'off') {
-          /* 배송대기 / 휴무 상태: 출근 ↔ 휴무 토글 */
+          /* 배송?��?/ ?�무 ?�태: 출근 ???�무 ?��? */
           const isOff = curBadge === 'off';
           wrap.innerHTML = `
-            <button class="btn btn-sm ${!isOff ? 'btn-primary' : 'btn-secondary'}" id="dp-btn-on">🚚 출근</button>
-            <button class="btn btn-sm ${isOff ? 'btn-warning' : 'btn-secondary'}"  id="dp-btn-off">🏠 휴무</button>`;
+            <button class="btn btn-sm ${!isOff ? 'btn-primary' : 'btn-secondary'}" id="dp-btn-on">?�� 출근</button>
+            <button class="btn btn-sm ${isOff ? 'btn-warning' : 'btn-secondary'}"  id="dp-btn-off">?�� ?�무</button>`;
           footer.insertBefore(wrap, footer.firstChild);
 
           wrap.querySelector('#dp-btn-on').addEventListener('click', () => {
@@ -486,14 +482,14 @@
             close(); DeliveryPanel.render();
           });
         } else {
-          /* 배송중 / 배차완료 / 복귀중: 타임라인 초기화 (배송대기로 리셋) */
-          /* ⚠️ [3] APP 연동 전 임시: GPS 기반 자동 "배송대기" 전환 대체 */
+          /* 배송�?/ 배차?�료 / 복�?�? ?�?�라??초기??(배송?�기로 리셋) */
+          /* ?�️ [3] APP ?�동 ???�시: GPS 기반 ?�동 "배송?��? ?�환 ?��?*/
           wrap.innerHTML = `
-            <button class="btn btn-sm btn-warning" id="dp-btn-reset" title="타임라인을 초기화하고 배송대기 상태로 전환 (APP GPS 연동 전 임시 버튼)">🔄 배송대기로 리셋</button>`;
+            <button class="btn btn-sm btn-warning" id="dp-btn-reset" title="?�?�라?�을 초기?�하�?배송?��??�태�??�환 (APP GPS ?�동 ???�시 버튼)">?�� 배송?�기로 리셋</button>`;
           footer.insertBefore(wrap, footer.firstChild);
 
           wrap.querySelector('#dp-btn-reset').addEventListener('click', async () => {
-            const ok = await UI.confirm(`${d.name} 기사의 배송 타임라인을 초기화하고 배송대기 상태로 전환합니다.`, '배송대기로 리셋');
+            const ok = await UI.confirm(`${d.name} 기사??배송 ?�?�라?�을 초기?�하�?배송?��??�태�??�환?�니??`, '배송?�기로 리셋');
             if (!ok) return;
             DeliveryPanel._setResetTs(driverId, new Date().toISOString());
             close(); DeliveryPanel.render();
@@ -502,23 +498,23 @@
       },
     };
 
-    /* onAuthStateChanged 복원 후 AppShell 부트 — 새로고침 플래시 방지 */
+    /* onAuthStateChanged 복원 ??AppShell 부?????�로고침 ?�래??방�? */
     (async () => {
       await Auth.waitForReady(3000);
       const session = Auth.getSession();
       if (!session) { window.location.href = 'index.html?error=unauth'; return; }
-      /* 드라이버는 모바일 앱 전용 */
+      /* ?�라?�버??모바?????�용 */
       if (session.role === 'driver') {
         await Auth.logout();
         window.location.href = 'index.html?error=driver_only';
         return;
       }
 
-      /* RTDB 구독 시작 — 첫 스냅샷 수신까지 대기 */
+      /* RTDB 구독 ?�작 ??�??�냅???�신까�? ?��?*/
       Store.startSubscriptions();
       await Store.whenReady(4000);
 
-      /* 라이브 리렌더: orders 변경 시 현재 뷰와 DeliveryPanel 재렌더 */
+      /* ?�이�?리렌?? orders 변�????�재 뷰�? DeliveryPanel ?�렌??*/
       const refreshOrders = () => {
         if (typeof Floor1View !== 'undefined' && Floor1View._loadOrders && document.querySelector('.order-list')) {
           Floor1View._loadOrders();

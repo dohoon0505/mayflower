@@ -239,9 +239,14 @@
 .order-card[data-status="6"] { border-left-color: var(--s6-border); }
 
 /* ── Card body (left) ────────────────────────────────────── */
+/*  좌우 컬럼 높이가 흐름도 상태에 따라 바뀌는 문제를 보정하기 위해
+    justify-content: space-between 로 row 간 여백이 자동 흡수되도록 함.
+    (flex 컨테이너 안에서 extra space 를 gap 사이에 균등 배분) */
 .ocard-body {
-  padding: 0.75rem 0.875rem 0;
-  display: flex; flex-direction: column; gap: 0.4rem; min-width: 0;
+  padding: 0.6rem 0.875rem;
+  display: flex; flex-direction: column;
+  justify-content: space-between;
+  gap: 0.4rem; min-width: 0;
 }
 
 /* Header row */
@@ -375,15 +380,19 @@
 }
 
 /* ── 업무 흐름도 (.ocard-flow) — 우측 컬럼 신규 디자인 ──────── */
+/*  좌측 ocard-body 와 높이를 일치시키기 위해 justify-content: space-between
+    사용. 단계 버튼에 flex:1 을 주어 남는 세로 공간을 균등 흡수시킨다. */
 .ocard-flow {
   display: flex; flex-direction: column;
   border-left: 1px solid var(--border);
-  padding: 0.55rem 0.55rem 0.6rem;
+  padding: 0.55rem;
   background: #fff;
   gap: 0.4rem;
   min-width: 0;
+  justify-content: space-between;
 }
 .ocard-flow-topbar {
+  flex: 0 0 auto;
   display: flex; align-items: center; justify-content: space-between;
   gap: 0.4rem;
   padding: 0 0.1rem 0.15rem;
@@ -411,6 +420,7 @@
   cursor: pointer; transition: background 0.15s, border-color 0.15s, transform 0.08s;
   min-height: 44px;
   font-family: inherit;
+  flex: 1 1 0;
 }
 .ocard-flow-step:hover:not(:disabled):not(.fs-readonly) { transform: translateY(-1px); }
 .ocard-flow-step:active:not(:disabled):not(.fs-readonly) { transform: translateY(0); }
