@@ -123,7 +123,7 @@ const DeliveryBoard = {
           <input type="number" id="db-in-qty" class="form-control" min="0" step="1" value="1" required>
         </div>
         <div class="form-group">
-          <label for="db-in-time">출차 시각</label>
+          <label for="db-in-time">도착 시간</label>
           <input type="time" id="db-in-time" class="form-control" value="${defH}:${defM}" required>
         </div>
       </div>`;
