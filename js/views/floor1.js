@@ -1331,9 +1331,10 @@ ${pages}
         if (overlay._eoSnapshotReset) overlay._eoSnapshotReset();
         overlay.classList.remove('show');
         setTimeout(() => overlay.remove(), 300);
-        /* Reload the appropriate view */
-        if (typeof Floor1View !== 'undefined' && Floor1View._loadOrders) Floor1View._loadOrders();
-        if (typeof Floor2View !== 'undefined' && Floor2View._loadMyOrders) Floor2View._loadMyOrders();
+        /* 주: 리스트 재렌더는 app.html 의 Store.onUpdate('orders', refreshOrders) 가
+         * RTDB 라이브 업데이트로 이미 처리하므로 여기서는 명시적 _loadOrders 호출을 하지 않음.
+         * 과거 버전에서 Floor2View._loadMyOrders() 까지 호출해 floor1 사용자의
+         * main-content 를 floor2 렌더로 덮어써 "모든 버튼이 먹통" 되는 회귀가 있었음. */
       } catch(e) {
         UI.toast(e.message || '수정 실패', 'error');
         confirmBtn.disabled = false; confirmBtn.textContent = '저장';
