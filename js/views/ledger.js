@@ -189,7 +189,6 @@ const LedgerView = {
             <div>상품</div>
             <div>장소</div>
             <div class="lg-th-qty">수량</div>
-            <div>작성자</div>
             <div></div>
           </div>
           <div id="lg-body"></div>
@@ -335,7 +334,6 @@ const LedgerView = {
       const chipCls = e.product === 'funeral' ? 'lg-chip-j' : 'lg-chip-c';
       const prodLbl = LedgerView.PRODUCT_LABEL[e.product] || '-';
       const qty     = Number(e.quantity || 0);
-      const creator = e.createdByName || '-';
       return `
         <div class="lg-row" data-id="${UI.escHtml(e.id)}">
           <div class="lg-c-date">${ts}</div>
@@ -343,7 +341,6 @@ const LedgerView = {
           <div class="lg-c-product"><span class="lg-chip ${chipCls}">${prodLbl}</span></div>
           <div class="lg-c-location" title="${UI.escHtml(e.location || '')}">${UI.escHtml(e.location || '')}</div>
           <div class="lg-c-qty"><span class="lg-qty-n">${qty}</span><span class="lg-qty-u">개</span></div>
-          <div class="lg-c-author">${UI.escHtml(creator)}</div>
           <div class="lg-c-act">
             <button class="lg-iconbtn lg-edit" data-id="${UI.escHtml(e.id)}" title="수정">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
