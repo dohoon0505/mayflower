@@ -807,14 +807,15 @@ ${pages}
         2) 리본 인쇄   : o.status >= 1 (리본출력완료 상태 이상)
         3) 인수증 인쇄 : !!o.receiptPrintedAt
         4) 제작완료    : !!o.storePhotoUrl (매장사진 업로드 시)
-        5) 배차대기    : !!o.assignedDriverId (기사 배차 시)
+        5) 배차대기/배차완료 : !!o.assignedDriverId 이면 '배차완료' 로 라벨 교체
         6) 배송완료    : !!o.deliveryPhotoUrl || o.status === 4 */
+    const isAssigned = !!o.assignedDriverId;
     const stepDefs = [
       { label: '주문접수',    done: true },
       { label: '리본 인쇄',   done: (o.status ?? 0) >= 1 },
       { label: '인수증 인쇄', done: !!o.receiptPrintedAt },
       { label: '제작완료',    done: !!o.storePhotoUrl },
-      { label: '배차대기',    done: !!o.assignedDriverId },
+      { label: isAssigned ? '배차완료' : '배차대기', done: isAssigned },
       { label: '배송완료',    done: !!o.deliveryPhotoUrl || o.status === 4 },
     ];
     const isCancelled = o.status === 5 || o.status === 6;

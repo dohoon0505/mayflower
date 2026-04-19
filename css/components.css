@@ -979,13 +979,13 @@ button.eo-title-chip:hover { background: #fff; border-color: var(--border-strong
 .eo-status-current.eo-status-void { color: var(--error, #dc2626); }
 .eo-stepper {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 0.375rem;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.3rem;
 }
 .eo-step {
   border: 1px solid var(--border);
   background: #fff;
-  padding: 0.5rem 0.625rem;
+  padding: 0.4rem 0.5rem;
   border-radius: var(--radius-sm);
   color: var(--text-muted);
   display: flex; flex-direction: column;
