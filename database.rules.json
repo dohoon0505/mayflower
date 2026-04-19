@@ -55,6 +55,14 @@
     "auditLog": {
       ".read": "root.child('users').child(auth.uid).child('role').val() === 'admin'",
       ".write": "auth != null"
+    },
+
+    "deliveryBoard": {
+      ".read": "auth != null",
+      ".indexOn": ["createdAt"],
+      "$itemId": {
+        ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'floor1' || root.child('users').child(auth.uid).child('role').val() === 'floor2' || root.child('users').child(auth.uid).child('role').val() === 'admin')"
+      }
     }
   }
 }

@@ -544,6 +544,120 @@
 .chat-input:focus { border-color: var(--primary); background: var(--bg-surface); }
 .chat-input::placeholder { color: var(--text-muted); }
 
+/* ── Delivery Board (배송현황판) — 채팅 패널 하단 ───────── */
+.delivery-board {
+  border-top: 1px solid var(--border);
+  background: var(--bg-surface);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  max-height: 38%;
+  overflow: hidden;
+}
+.db-header {
+  height: var(--header-h);
+  padding: 0 1rem;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.875rem; font-weight: 700;
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+  flex-shrink: 0;
+  letter-spacing: 0.01em;
+}
+.db-title { display: flex; align-items: center; gap: 0.35rem; }
+.db-add-btn {
+  background: var(--primary, #2563eb);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm, 5px);
+  padding: 4px 10px;
+  font-size: 0.78rem; font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.08s;
+}
+.db-add-btn:hover { background: var(--primary-dark, #1d4ed8); }
+.db-add-btn:active { transform: translateY(1px); }
+
+.db-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  background: var(--bg-base);
+}
+.db-empty {
+  padding: 0.9rem 0.25rem;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* 한 줄: [장소] [수량] [▲] [▼] [시:분] [출차완료] */
+.db-item {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto auto auto;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.55rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--primary, #2563eb);
+  border-radius: var(--radius-sm, 6px);
+  font-size: 0.82rem;
+}
+.db-loc {
+  font-weight: 600; color: var(--text-primary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  min-width: 0;
+}
+.db-qty {
+  font-weight: 700; color: var(--primary, #2563eb);
+  background: #eff6ff;
+  padding: 2px 8px; border-radius: 4px;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+.db-qty-btn {
+  width: 22px; height: 22px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  border-radius: 4px;
+  font-size: 0.7rem;
+  cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  padding: 0;
+  line-height: 1;
+}
+.db-qty-btn:hover:not(:disabled) { background: #eff6ff; color: var(--primary, #2563eb); border-color: var(--primary-light, #93c5fd); }
+.db-qty-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.db-qty-btn.db-up   { color: #059669; }
+.db-qty-btn.db-down { color: #dc2626; }
+.db-time {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  white-space: nowrap;
+  padding: 0 0.2rem;
+}
+.db-done-btn {
+  background: #fef2f2; color: #b91c1c;
+  border: 1px solid #fecaca;
+  border-radius: 5px;
+  padding: 3px 9px;
+  font-size: 0.74rem; font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s;
+}
+.db-done-btn:hover { background: #fee2e2; }
+.db-done-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
 /* ── Sidebar Overlay ─────────────────────────────────────── */
 .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 199; }
 .sidebar-overlay.show { display: block; }
