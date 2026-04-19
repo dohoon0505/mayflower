@@ -87,7 +87,6 @@ const Floor1View = {
             <button class="quick-date-btn" data-quick="last-month">지난 달</button>
             <button class="quick-date-btn" data-quick="future">예약건</button>
           </div>
-          <button class="btn btn-secondary btn-sm" id="f1-refresh" style="margin-left:auto">↻ 새로고침</button>
         </div>
 
         <!-- Row 3: Text search -->
@@ -168,7 +167,6 @@ const Floor1View = {
       });
     });
 
-    document.getElementById('f1-refresh').addEventListener('click', () => Floor1View._loadOrders());
   },
 
   _applyQuickDate(quick) {

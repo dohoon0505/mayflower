@@ -74,8 +74,7 @@ const DriverView = {
             <button class="quick-date-btn drv-quick" data-quick="this-month">이번 달</button>
             <button class="quick-date-btn drv-quick" data-quick="future">예약건</button>
           </div>
-          <button class="btn btn-ghost btn-sm" id="drv-clear-date" title="날짜 필터 해제">✕ 날짜 해제</button>
-          <button class="btn btn-secondary btn-sm" id="drv-refresh" style="margin-left:auto">↻ 새로고침</button>
+          <button class="btn btn-ghost btn-sm" id="drv-clear-date" style="margin-left:auto" title="날짜 필터 해제">✕ 날짜 해제</button>
         </div>
 
         <!-- Row 2: Text search -->
@@ -141,7 +140,6 @@ const DriverView = {
         }, 280);
       });
     });
-    document.getElementById('drv-refresh').addEventListener('click', () => DriverView._loadDeliveries());
   },
 
   _applyQuickDate(quick) {

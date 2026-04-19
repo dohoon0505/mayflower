@@ -88,7 +88,6 @@ const Floor2View = {
             <button class="status-tab-btn" data-sg="4">배송완료</button>
             <button class="status-tab-btn" data-sg="5,6">주문취소</button>
           </div>
-          <button class="btn btn-secondary btn-sm" id="f2-refresh" style="margin-left:auto">↻ 새로고침</button>
         </div>
 
         <!-- Row 2: Date range -->
@@ -183,8 +182,6 @@ const Floor2View = {
       });
     });
 
-    /* Refresh */
-    document.getElementById('f2-refresh').addEventListener('click', () => Floor2View._loadMyOrders());
   },
 
   _applyQuickDate(quick) {
