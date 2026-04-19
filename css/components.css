@@ -1233,6 +1233,7 @@ tr:hover td { background: var(--bg-elevated); }
 
 /* Photo drop zone — portrait 4:5 */
 .photo-drop-zone-portrait {
+  width: 100%;
   max-width: 280px;
   margin: 0 auto;
   aspect-ratio: 4 / 5;
