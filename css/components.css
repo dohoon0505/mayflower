@@ -869,10 +869,10 @@ tr:hover td { background: var(--bg-elevated); }
   padding: 1rem; text-align: center; pointer-events: none;
 }
 
-/* ── Edit modal 2-panel split ─────────────────────────────── */
+/* ── Edit modal 3-panel split (left · middle · right-far) ── */
 .eo-split {
   display: grid;
-  grid-template-columns: 1fr 0.9fr;
+  grid-template-columns: 1.15fr 0.95fr 0.75fr;
   gap: 1.25rem;
   align-items: stretch;
   min-height: 0;
@@ -885,6 +885,21 @@ tr:hover td { background: var(--bg-elevated); }
   padding-right: 1.25rem;
   border-right: 1px solid var(--border);
 }
+.eo-middle {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-right: 1.25rem;
+  border-right: 1px solid var(--border);
+}
+.eo-right-far {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+/* legacy alias */
 .eo-right {
   min-width: 0;
   display: flex;
@@ -893,7 +908,7 @@ tr:hover td { background: var(--bg-elevated); }
 }
 
 /* 주문서 수정 모달 — 헤더 타이틀 + 칩 */
-.modal-edit { max-width: 1060px; }
+.modal-edit { max-width: 1360px; }
 .modal-edit .modal-header h3 {
   display: flex;
   align-items: center;
@@ -1238,6 +1253,19 @@ button.eo-title-chip:hover { background: #fff; border-color: var(--border-strong
   overflow-y: auto;
   padding-right: 4px;
 }
+/* 세로 길이가 긴 전용 칼럼 버전 (3-column 레이아웃 우측) */
+.eo-act-list-tall {
+  max-height: none;
+  min-height: 420px;
+  flex: 1;
+  gap: 0.65rem;
+}
+.eo-activity-section {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
 .eo-act-list::-webkit-scrollbar { width: 6px; }
 .eo-act-list::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
 .eo-act-item { display: flex; gap: 0.625rem; align-items: flex-start; font-size: 0.78rem; color: var(--text-secondary); }
@@ -1249,6 +1277,91 @@ button.eo-title-chip:hover { background: #fff; border-color: var(--border-strong
 .eo-act-title { color: var(--text-primary); font-weight: 600; }
 .eo-act-meta { font-size: 0.7rem; color: var(--text-muted); font-family: 'Menlo','Consolas',monospace; margin-top: 1px; }
 .eo-act-empty { color: var(--text-muted); font-size: 0.78rem; padding: 0.5rem 0; }
+
+/* ── 메세지(담당자 메모) 영역 ── */
+.eo-memo-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.eo-memo-list {
+  list-style: none; padding: 0; margin: 0;
+  display: flex; flex-direction: column; gap: 0.5rem;
+  max-height: 200px;
+  overflow-y: auto;
+  padding-right: 4px;
+  background: var(--bg-subtle, #f8fafc);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.625rem;
+}
+.eo-memo-list::-webkit-scrollbar { width: 6px; }
+.eo-memo-list::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+.eo-memo-item {
+  padding: 0.5rem 0.625rem;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+.eo-memo-head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.25rem;
+  flex-wrap: wrap;
+}
+.eo-memo-author {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 0.78rem;
+}
+.eo-memo-role {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  background: var(--bg-subtle, #f1f5f9);
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+.eo-memo-role:empty { display: none; }
+.eo-memo-ts {
+  margin-left: auto;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  font-family: 'Menlo','Consolas',monospace;
+}
+.eo-memo-text {
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.eo-memo-empty {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  text-align: center;
+  padding: 0.75rem 0;
+}
+.eo-memo-compose {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+.eo-memo-textarea {
+  flex: 1;
+  min-height: 44px;
+  max-height: 120px;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  padding: 0.5rem 0.625rem;
+}
+.eo-memo-send {
+  align-self: stretch;
+  white-space: nowrap;
+  min-width: 64px;
+}
 
 /* ── Footer dirty status ── */
 .modal-edit .modal-footer { justify-content: space-between; }
@@ -1289,9 +1402,24 @@ button.eo-title-chip:hover { background: #fff; border-color: var(--border-strong
   margin: 0 1px;
 }
 
+@media (max-width: 1200px) {
+  .eo-split { grid-template-columns: 1fr 1fr; }
+  .eo-right-far {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--border);
+    padding-top: 1rem;
+  }
+  .eo-act-list-tall { min-height: 240px; }
+}
 @media (max-width: 960px) {
   .eo-split { grid-template-columns: 1fr; }
-  .eo-left { border-right: none; padding-right: 0; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
+  .eo-left, .eo-middle {
+    border-right: none;
+    padding-right: 0;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .eo-right-far { border-top: none; padding-top: 0; }
   .eo-stepper { grid-template-columns: repeat(3, 1fr); }
   .eo-kbd-hint { display: none; }
 }
