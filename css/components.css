@@ -1145,9 +1145,21 @@ button.eo-title-chip:hover { background: #fff; border-color: var(--border-strong
 
 .eo-photo-card .eo-photo-area {
   margin: 0.5rem;
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 4 / 5;
   border: 1.5px dashed var(--border-strong);
   border-radius: var(--radius-sm);
+}
+
+/* 배송 일시: 날짜 + 시간(24h) 2열 input row */
+.eo-dt-row {
+  display: grid;
+  grid-template-columns: 1fr 110px;
+  gap: 0.4rem;
+}
+.eo-dt-row input.eo-time-24 {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  text-align: center;
 }
 
 /* 기존 .eo-photo-area (분리형에서 사용되던 것) 베이스 유지 */
@@ -1185,7 +1197,15 @@ button.eo-title-chip:hover { background: #fff; border-color: var(--border-strong
 }
 
 /* ── Activity log ── */
-.eo-act-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.eo-act-list {
+  list-style: none; padding: 0; margin: 0;
+  display: flex; flex-direction: column; gap: 0.5rem;
+  max-height: 160px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.eo-act-list::-webkit-scrollbar { width: 6px; }
+.eo-act-list::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
 .eo-act-item { display: flex; gap: 0.625rem; align-items: flex-start; font-size: 0.78rem; color: var(--text-secondary); }
 .eo-act-dot { width: 7px; height: 7px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; }
 .eo-act-dot-ok { background: var(--success, #10b981); }

@@ -790,11 +790,16 @@ ${pages}
       `<option value="${p.id}" ${p.id === o.productId ? 'selected' : ''}>${UI.escHtml(p.name)}${p.isActive === false ? ' (비활성)' : ''}</option>`
     ).join('');
 
-    const toLocalDT = iso => {
+    const _pad2 = n => String(n).padStart(2,'0');
+    const toDateStr = iso => {
       if (!iso) return '';
       const d = new Date(iso);
-      const p = n => String(n).padStart(2,'0');
-      return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+      return `${d.getFullYear()}-${_pad2(d.getMonth()+1)}-${_pad2(d.getDate())}`;
+    };
+    const toTimeStr = iso => {
+      if (!iso) return '';
+      const d = new Date(iso);
+      return `${_pad2(d.getHours())}:${_pad2(d.getMinutes())}`;
     };
 
     let storeFile = null, delivFile = null;
@@ -959,10 +964,13 @@ ${pages}
               </div>
               <div class="eo-field">
                 <label>배송 일시 <span class="eo-req">*</span></label>
-                <input type="datetime-local" id="eo-datetime" class="form-control" value="${toLocalDT(o.deliveryDatetime)}" step="600" lang="en-GB" ${rdonly('조회 전용')}>
+                <div class="eo-dt-row">
+                  <input type="date" id="eo-date" class="form-control" value="${toDateStr(o.deliveryDatetime)}" ${rdonly('조회 전용')}>
+                  <input type="text" id="eo-time" class="form-control eo-time-24" value="${toTimeStr(o.deliveryDatetime)}" pattern="[0-2][0-9]:[0-5][0-9]" maxlength="5" placeholder="HH:MM" inputmode="numeric" ${rdonly('조회 전용')}>
+                </div>
               </div>
               <div class="eo-field">
-                <label>금액 <span class="eo-opt">선택</span></label>
+                <label>금액 <span class="eo-req">*</span></label>
                 <div class="eo-input-row eo-has-prefix eo-has-suffix">
                   <span class="eo-prefix">₩</span>
                   <input type="text" id="eo-price" class="form-control" inputmode="numeric" value="${UI.escHtml(initPrice)}" placeholder="80,000" ${rdonly('조회 전용')}>
@@ -996,11 +1004,11 @@ ${pages}
             <div class="eo-sec-head"><h3>문구</h3><span class="eo-sec-sep"></span></div>
             <div class="eo-grid eo-grid-2">
               <div class="eo-field">
-                <label>보내는분 문구 (리본) <span class="eo-opt">선택</span></label>
+                <label>보내는분 문구 (리본) <span class="eo-req">*</span></label>
                 <input type="text" id="eo-ribbon" class="form-control" value="${UI.escHtml(o.ribbonText || '')}" ${rdonly('조회 전용')}>
               </div>
               <div class="eo-field">
-                <label>경조사어 문구 <span class="eo-opt">선택</span></label>
+                <label>경조사어 문구 <span class="eo-req">*</span></label>
                 <input type="text" id="eo-occasion" class="form-control" value="${UI.escHtml(o.occasionText || '')}" ${rdonly('조회 전용')} placeholder="예: 근조, 축화환, 승진축하">
               </div>
             </div>
@@ -1066,7 +1074,7 @@ ${pages}
     /* ── Dirty tracking (non-driver only) ── */
     let footStatus = null, btnSaveRef = null;
     const initialSnap = {};
-    const trackedSel = ['#eo-chain','#eo-product','#eo-datetime','#eo-price','#eo-address','#eo-name','#eo-phone','#eo-ribbon','#eo-occasion'];
+    const trackedSel = ['#eo-chain','#eo-product','#eo-date','#eo-time','#eo-price','#eo-address','#eo-name','#eo-phone','#eo-ribbon','#eo-occasion'];
     if (!isDriver) {
       trackedSel.forEach(s => { const el = overlay.querySelector(s); if (el) initialSnap[s] = el.value; });
 
@@ -1205,7 +1213,8 @@ ${pages}
     confirmBtn.onclick = async () => {
       const chainName      = overlay.querySelector('#eo-chain').value.trim();
       const productId      = overlay.querySelector('#eo-product').value;
-      const rawDT          = overlay.querySelector('#eo-datetime').value;
+      const rawDate        = overlay.querySelector('#eo-date').value;
+      const rawTime        = (overlay.querySelector('#eo-time').value || '').trim();
       const deliveryAddress= overlay.querySelector('#eo-address').value.trim();
       const recipientName  = overlay.querySelector('#eo-name').value.trim();
       const recipientPhone = overlay.querySelector('#eo-phone').value.trim();
@@ -1215,11 +1224,20 @@ ${pages}
 
       if (!chainName)       { UI.toast('체인명을 입력해 주세요.', 'warning'); return; }
       if (!productId)       { UI.toast('상품을 선택해 주세요.', 'warning'); return; }
-      if (!rawDT)           { UI.toast('배송 일시를 선택해 주세요.', 'warning'); return; }
+      if (!rawDate)         { UI.toast('배송 날짜를 선택해 주세요.', 'warning'); return; }
+      if (!/^[0-2]\d:[0-5]\d$/.test(rawTime)) {
+        UI.toast('배송 시각을 HH:MM (24시간) 형식으로 입력해 주세요.', 'warning'); return;
+      }
       if (!deliveryAddress) { UI.toast('배송지를 입력해 주세요.', 'warning'); return; }
       if (!recipientName)   { UI.toast('받는 분 성함을 입력해 주세요.', 'warning'); return; }
+      if (!priceRaw)        { UI.toast('금액을 입력해 주세요.', 'warning'); return; }
+      if (!ribbonText)      { UI.toast('보내는분 문구(리본)를 입력해 주세요.', 'warning'); return; }
+      if (!occasionText)    { UI.toast('경조사어 문구를 입력해 주세요.', 'warning'); return; }
 
-      const d = new Date(rawDT);
+      const [hh, mm] = rawTime.split(':').map(Number);
+      if (hh > 23) { UI.toast('시간은 00~23 범위여야 합니다.', 'warning'); return; }
+      const d = new Date(`${rawDate}T${rawTime}:00`);
+      if (isNaN(d.getTime())) { UI.toast('배송 일시가 올바르지 않습니다.', 'warning'); return; }
       d.setMinutes(Math.round(d.getMinutes()/10)*10); d.setSeconds(0,0);
       const deliveryDatetime = d.toISOString();
 
