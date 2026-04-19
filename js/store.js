@@ -126,7 +126,7 @@
     getDriverById: (id) => cache.drivers.find(d => d.id === id) || null,
     getDriverByLinkedUserId: (uid) => cache.drivers.find(d => d.linkedUserId === uid) || null,
 
-    /* ── Ledger (수주 장부) ──────────────────────────────── */
+    /* ── Ledger (수바리 장부) ─────────────────────────────── */
     getLedger: () => cache.ledger.slice(),
     getLedgerById: (id) => cache.ledger.find(e => e.id === id) || null,
 

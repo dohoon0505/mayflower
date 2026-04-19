@@ -1,5 +1,5 @@
 /* ============================================================
-   LEDGER.JS — 수주 장부 (floor1 / admin)
+   LEDGER.JS — 수바리 장부 (floor1 / admin)
 
    RTDB 경로: /orderLedger/{id}
      - client    : 거래처
@@ -10,8 +10,8 @@
 
    UI:
      [필터] 날짜(전체/오늘/어제/이번달/저번달) · 상품(전체/근조화환/축하화환)
-     [간편추가] 거래처 | 상품 토글 | 장소 | 수량 | + 등록
-     [리스트] 날짜 / 거래처 / 상품 / 장소 / 수량 / 수정·삭제
+     [간편추가] 거래처 | 상품 세그먼트 | 장소 | 수량 스텝퍼 | 등록
+     [장부]   검색 + 행별 카드형 그리드 (일시/거래처/상품칩/장소/수량/작성자/관리)
 
    라우트:  'order-ledger'
    ============================================================ */
@@ -19,11 +19,11 @@
 const LedgerView = {
   _session: null,
   _inited:  false,
-  _bound:   false,
 
   _filter: {
     date:    'all',     /* 'all' | 'today' | 'yesterday' | 'this-month' | 'last-month' */
     product: 'all',     /* 'all' | 'funeral' | 'congrats' */
+    query:   '',        /* 자유 검색어 (거래처/장소) */
   },
 
   PRODUCT_LABEL: {
@@ -35,7 +35,7 @@ const LedgerView = {
     if (LedgerView._inited) return;
     LedgerView._session = session;
     Router.register('order-ledger', () => LedgerView.showLedger());
-    /* 수주 장부 변경 시 현재 뷰면 리렌더 */
+    /* 수바리 장부 변경 시 현재 뷰면 리렌더 */
     if (Store.onUpdate) {
       Store.onUpdate('ledger', () => {
         if (document.querySelector('[data-view="ledger"]')) LedgerView._renderList();
@@ -76,9 +76,11 @@ const LedgerView = {
   /* ── 필터링 ─────────────────────────────────────────────── */
   _getFiltered() {
     const all = (Store.getLedger ? Store.getLedger() : []) || [];
-    const { date, product } = LedgerView._filter;
+    const { date, product, query } = LedgerView._filter;
 
     const range = LedgerView._dateRange(date);
+    const q = String(query || '').trim().toLowerCase();
+
     return all.filter(e => {
       if (product !== 'all' && e.product !== product) return false;
       if (range) {
@@ -87,11 +89,15 @@ const LedgerView = {
         if (isNaN(t)) return false;
         if (t < range.from.getTime() || t > range.to.getTime()) return false;
       }
+      if (q) {
+        const hay = `${e.client || ''} ${e.location || ''} ${LedgerView.PRODUCT_LABEL[e.product] || ''}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
       return true;
     });
   },
 
-  /* ── Render: shell + filter + quick-add ────────────────── */
+  /* ── Render: filter + shell ────────────────────────────── */
   showLedger() {
     UI.setFilter(`
       <div class="filter-section">
@@ -117,72 +123,83 @@ const LedgerView = {
     UI.setMain(`
       <div data-view="ledger">
 
-        <div class="section-header">
+        <div class="lg-sec-head">
           <div>
-            <div class="section-title">간편 추가</div>
-            <div class="section-sub">거래처 · 상품 · 장소 · 수량을 입력하고 + 등록</div>
-          </div>
-        </div>
-        <div class="ledger-add-box">
-          <div class="ledger-add-grid">
-            <div class="ledger-add-field">
-              <label class="ledger-add-label">거래처</label>
-              <input type="text" class="inline-input" id="lg-in-client" placeholder="예: 우리꽃집" maxlength="40">
-            </div>
-            <div class="ledger-add-field">
-              <label class="ledger-add-label">상품</label>
-              <div class="ledger-radio-group" id="lg-in-product">
-                <label class="ledger-radio">
-                  <input type="radio" name="lg-product" value="funeral" checked>
-                  <span>근조화환</span>
-                </label>
-                <label class="ledger-radio">
-                  <input type="radio" name="lg-product" value="congrats">
-                  <span>축하화환</span>
-                </label>
-              </div>
-            </div>
-            <div class="ledger-add-field">
-              <label class="ledger-add-label">장소</label>
-              <input type="text" class="inline-input" id="lg-in-location" placeholder="예: 남대구장례식장" maxlength="60">
-            </div>
-            <div class="ledger-add-field ledger-add-qty">
-              <label class="ledger-add-label">수량</label>
-              <input type="number" class="inline-input" id="lg-in-qty" min="1" step="1" value="1">
-            </div>
-            <div class="ledger-add-field ledger-add-actions">
-              <button class="btn btn-primary" id="lg-add-btn">+ 등록</button>
-            </div>
+            <div class="lg-sec-title">간편 추가</div>
+            <div class="lg-sec-sub">거래처 · 상품 · 장소 · 수량을 입력하고 등록</div>
           </div>
         </div>
 
-        <div class="section-header" style="margin-top:1.25rem">
+        <section class="lg-quickadd" aria-label="간편 추가">
+          <div class="lg-qa-grid">
+            <div class="lg-qa-field">
+              <label for="lg-in-client" class="lg-qa-label">거래처 <span class="lg-req">*</span></label>
+              <input type="text" id="lg-in-client" class="lg-input" placeholder="예: 우리꽃집" maxlength="40" autocomplete="off">
+            </div>
+            <div class="lg-qa-field">
+              <span class="lg-qa-label">상품 <span class="lg-req">*</span></span>
+              <div class="lg-seg" id="lg-in-product" role="radiogroup" aria-label="상품 종류">
+                <button type="button" class="lg-seg-btn lg-seg-j on" data-product="funeral"  role="radio" aria-checked="true">근조화환</button>
+                <button type="button" class="lg-seg-btn lg-seg-c"    data-product="congrats" role="radio" aria-checked="false">축하화환</button>
+              </div>
+            </div>
+            <div class="lg-qa-field">
+              <label for="lg-in-location" class="lg-qa-label">장소 <span class="lg-req">*</span></label>
+              <input type="text" id="lg-in-location" class="lg-input" placeholder="예: 남대구장례식장" maxlength="60" autocomplete="off">
+            </div>
+            <div class="lg-qa-field">
+              <span class="lg-qa-label">수량</span>
+              <div class="lg-num">
+                <button type="button" id="lg-in-dec" class="lg-num-btn" aria-label="수량 감소">−</button>
+                <input type="text" id="lg-in-qty" class="lg-num-input" inputmode="numeric" value="1">
+                <button type="button" id="lg-in-inc" class="lg-num-btn" aria-label="수량 증가">+</button>
+              </div>
+            </div>
+            <div class="lg-qa-field lg-qa-action">
+              <button class="lg-submit-btn" id="lg-add-btn" type="button">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                등록
+              </button>
+            </div>
+          </div>
+          <div class="lg-qa-hint">
+            <span>각 입력창에서 <span class="lg-kbd">Enter</span> 로 빠르게 등록할 수 있습니다.</span>
+          </div>
+        </section>
+
+        <div class="lg-sec-head lg-sec-head-mt">
           <div>
-            <div class="section-title">수주 장부</div>
-            <div class="section-sub" id="lg-list-sub">0건</div>
+            <div class="lg-sec-title">수바리 장부</div>
+            <div class="lg-sec-sub">등록된 내역을 조회하고 수정 · 삭제할 수 있습니다.</div>
+          </div>
+          <span class="lg-count-badge"><b id="lg-count-n">0</b> 건</span>
+        </div>
+
+        <div class="lg-toolbar">
+          <div class="lg-search">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="lg-search-input" placeholder="거래처, 장소, 상품으로 검색" autocomplete="off" value="${UI.escHtml(LedgerView._filter.query || '')}">
           </div>
         </div>
-        <div class="table-wrapper">
-          <table class="ledger-table">
-            <thead>
-              <tr>
-                <th style="width:140px">일시</th>
-                <th>거래처</th>
-                <th style="width:120px">상품</th>
-                <th>장소</th>
-                <th style="width:80px;text-align:right">수량</th>
-                <th style="width:140px">작성자</th>
-                <th style="width:150px">관리</th>
-              </tr>
-            </thead>
-            <tbody id="lg-tbody"></tbody>
-          </table>
+
+        <div class="lg-table">
+          <div class="lg-row lg-row-head">
+            <div>일시</div>
+            <div>거래처</div>
+            <div>상품</div>
+            <div>장소</div>
+            <div class="lg-th-qty">수량</div>
+            <div>작성자</div>
+            <div></div>
+          </div>
+          <div id="lg-body"></div>
         </div>
 
       </div>`);
 
     LedgerView._bindFilters();
     LedgerView._bindAddForm();
+    LedgerView._bindSearch();
     LedgerView._renderList();
   },
 
@@ -212,30 +229,66 @@ const LedgerView = {
     }
   },
 
+  _bindSearch() {
+    const input = document.getElementById('lg-search-input');
+    if (!input) return;
+    input.addEventListener('input', (e) => {
+      LedgerView._filter.query = e.target.value || '';
+      LedgerView._renderList();
+    });
+  },
+
   /* ── Quick-add ─────────────────────────────────────────── */
   _bindAddForm() {
     const addBtn    = document.getElementById('lg-add-btn');
     const clientEl  = document.getElementById('lg-in-client');
     const locEl     = document.getElementById('lg-in-location');
     const qtyEl     = document.getElementById('lg-in-qty');
+    const decBtn    = document.getElementById('lg-in-dec');
+    const incBtn    = document.getElementById('lg-in-inc');
+    const segHost   = document.getElementById('lg-in-product');
     if (!addBtn) return;
+
+    /* 세그먼트 토글 */
+    segHost?.addEventListener('click', (e) => {
+      const btn = e.target.closest('.lg-seg-btn');
+      if (!btn) return;
+      segHost.querySelectorAll('.lg-seg-btn').forEach(b => {
+        b.classList.remove('on');
+        b.setAttribute('aria-checked', 'false');
+      });
+      btn.classList.add('on');
+      btn.setAttribute('aria-checked', 'true');
+    });
+
+    /* 수량 스텝퍼 */
+    const setQty = (v) => { qtyEl.value = String(Math.max(1, Math.min(9999, v | 0))); };
+    decBtn?.addEventListener('click', () => setQty((parseInt(qtyEl.value, 10) || 1) - 1));
+    incBtn?.addEventListener('click', () => setQty((parseInt(qtyEl.value, 10) || 0) + 1));
+    qtyEl?.addEventListener('input', () => {
+      qtyEl.value = qtyEl.value.replace(/[^\d]/g, '').slice(0, 4);
+    });
+    qtyEl?.addEventListener('blur', () => {
+      if (!qtyEl.value || parseInt(qtyEl.value, 10) < 1) qtyEl.value = '1';
+    });
 
     const submit = async () => {
       const client   = (clientEl?.value || '').trim();
       const location = (locEl?.value || '').trim();
       const quantity = parseInt(qtyEl?.value, 10) || 0;
-      const product  = document.querySelector('#lg-in-product input[name="lg-product"]:checked')?.value || 'funeral';
+      const activeSeg = segHost?.querySelector('.lg-seg-btn.on');
+      const product  = activeSeg?.dataset.product || 'funeral';
 
       if (!client)   { UI.toast('거래처를 입력해 주세요.', 'warning'); clientEl?.focus(); return; }
       if (!location) { UI.toast('장소를 입력해 주세요.',  'warning'); locEl?.focus();    return; }
       if (quantity <= 0) { UI.toast('수량을 1 이상으로 입력해 주세요.', 'warning'); qtyEl?.focus(); return; }
 
       addBtn.disabled = true;
-      const prevText = addBtn.textContent;
+      const prevHTML = addBtn.innerHTML;
       addBtn.textContent = '등록 중...';
       try {
         await Api.createLedgerEntry({ client, product, location, quantity });
-        UI.toast('수주 장부에 등록되었습니다.', 'success');
+        UI.toast('장부에 등록되었습니다.', 'success');
         /* 입력 초기화 (상품 선택은 유지) */
         if (clientEl) clientEl.value = '';
         if (locEl)    locEl.value    = '';
@@ -245,7 +298,7 @@ const LedgerView = {
         UI.toast(e.message || '등록 실패', 'error');
       } finally {
         addBtn.disabled = false;
-        addBtn.textContent = prevText;
+        addBtn.innerHTML = prevHTML;
       }
     };
     addBtn.addEventListener('click', submit);
@@ -261,39 +314,47 @@ const LedgerView = {
 
   /* ── List ──────────────────────────────────────────────── */
   _renderList() {
-    const tbody = document.getElementById('lg-tbody');
-    const sub   = document.getElementById('lg-list-sub');
-    if (!tbody) return;
+    const body  = document.getElementById('lg-body');
+    const badge = document.getElementById('lg-count-n');
+    if (!body) return;
 
     const list = LedgerView._getFiltered();
-    if (sub) sub.textContent = `${list.length}건`;
+    if (badge) badge.textContent = String(list.length);
 
     if (!list.length) {
-      tbody.innerHTML = `<tr><td colspan="7" class="ledger-empty">조회된 내역이 없습니다.</td></tr>`;
+      body.innerHTML = `
+        <div class="lg-empty">
+          <b>기록이 없습니다</b>
+          <span>필터 또는 검색 조건을 바꾸거나, 위에서 새로 등록해 주세요.</span>
+        </div>`;
       return;
     }
 
-    tbody.innerHTML = list.map(e => {
-      const ts       = UI.fmtDatetime(e.createdAt);
-      const prodCls  = e.product === 'funeral' ? 'badge-product-funeral' : 'badge-product-congrats';
-      const prodLbl  = LedgerView.PRODUCT_LABEL[e.product] || '-';
-      const qty      = Number(e.quantity || 0);
-      const creator  = e.createdByName || '-';
+    body.innerHTML = list.map(e => {
+      const ts      = UI.fmtDatetime(e.createdAt);
+      const chipCls = e.product === 'funeral' ? 'lg-chip-j' : 'lg-chip-c';
+      const prodLbl = LedgerView.PRODUCT_LABEL[e.product] || '-';
+      const qty     = Number(e.quantity || 0);
+      const creator = e.createdByName || '-';
       return `
-        <tr data-id="${UI.escHtml(e.id)}">
-          <td>${ts}</td>
-          <td class="td-client">${UI.escHtml(e.client || '')}</td>
-          <td class="td-product"><span class="badge ${prodCls}">${prodLbl}</span></td>
-          <td class="td-location">${UI.escHtml(e.location || '')}</td>
-          <td class="td-qty" style="text-align:right">${qty}개</td>
-          <td class="td-creator">${UI.escHtml(creator)}</td>
-          <td>
-            <div class="td-actions">
-              <button class="btn btn-secondary btn-xs lg-edit"   data-id="${UI.escHtml(e.id)}">수정</button>
-              <button class="btn btn-danger btn-xs lg-delete"    data-id="${UI.escHtml(e.id)}">삭제</button>
-            </div>
-          </td>
-        </tr>`;
+        <div class="lg-row" data-id="${UI.escHtml(e.id)}">
+          <div class="lg-c-date">${ts}</div>
+          <div class="lg-c-client">${UI.escHtml(e.client || '')}</div>
+          <div class="lg-c-product"><span class="lg-chip ${chipCls}">${prodLbl}</span></div>
+          <div class="lg-c-location" title="${UI.escHtml(e.location || '')}">${UI.escHtml(e.location || '')}</div>
+          <div class="lg-c-qty"><span class="lg-qty-n">${qty}</span><span class="lg-qty-u">개</span></div>
+          <div class="lg-c-author">${UI.escHtml(creator)}</div>
+          <div class="lg-c-act">
+            <button class="lg-iconbtn lg-edit" data-id="${UI.escHtml(e.id)}" title="수정">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              수정
+            </button>
+            <button class="lg-iconbtn lg-iconbtn-danger lg-delete" data-id="${UI.escHtml(e.id)}" title="삭제">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+              삭제
+            </button>
+          </div>
+        </div>`;
     }).join('');
 
     LedgerView._bindRowActions();
@@ -317,7 +378,7 @@ const LedgerView = {
         if (!e) return;
         const ok = await UI.confirm(
           `"${e.client || ''}" / ${LedgerView.PRODUCT_LABEL[e.product] || '-'} / ${e.location || ''} / ${e.quantity || 0}개\n삭제할까요?`,
-          '수주 장부 삭제'
+          '수바리 장부 삭제'
         );
         if (!ok) return;
         try {
@@ -338,15 +399,9 @@ const LedgerView = {
       </div>
       <div class="form-group">
         <label>상품</label>
-        <div class="ledger-radio-group" id="lg-ed-product">
-          <label class="ledger-radio">
-            <input type="radio" name="lg-ed-product" value="funeral" ${e.product === 'funeral' ? 'checked' : ''}>
-            <span>근조화환</span>
-          </label>
-          <label class="ledger-radio">
-            <input type="radio" name="lg-ed-product" value="congrats" ${e.product === 'congrats' ? 'checked' : ''}>
-            <span>축하화환</span>
-          </label>
+        <div class="lg-seg" id="lg-ed-product" role="radiogroup">
+          <button type="button" class="lg-seg-btn lg-seg-j ${e.product === 'funeral'  ? 'on' : ''}" data-product="funeral"  role="radio" aria-checked="${e.product === 'funeral'}">근조화환</button>
+          <button type="button" class="lg-seg-btn lg-seg-c ${e.product === 'congrats' ? 'on' : ''}" data-product="congrats" role="radio" aria-checked="${e.product === 'congrats'}">축하화환</button>
         </div>
       </div>
       <div class="form-group">
@@ -354,12 +409,16 @@ const LedgerView = {
         <input type="text" id="lg-ed-location" class="form-control" maxlength="60" value="${UI.escHtml(e.location || '')}">
       </div>
       <div class="form-group">
-        <label for="lg-ed-qty">수량</label>
-        <input type="number" id="lg-ed-qty" class="form-control" min="1" step="1" value="${Number(e.quantity || 1)}">
+        <label>수량</label>
+        <div class="lg-num">
+          <button type="button" id="lg-ed-dec" class="lg-num-btn" aria-label="수량 감소">−</button>
+          <input type="text" id="lg-ed-qty" class="lg-num-input" inputmode="numeric" value="${Number(e.quantity || 1)}">
+          <button type="button" id="lg-ed-inc" class="lg-num-btn" aria-label="수량 증가">+</button>
+        </div>
       </div>`;
 
     const overlay = UI.modal({
-      title: '✏️ 수주 장부 수정',
+      title: '✏️ 수바리 장부 수정',
       content,
       confirmText: '저장',
       cancelText: '닫기',
@@ -367,7 +426,8 @@ const LedgerView = {
         const client   = (ov.querySelector('#lg-ed-client')?.value || '').trim();
         const location = (ov.querySelector('#lg-ed-location')?.value || '').trim();
         const quantity = parseInt(ov.querySelector('#lg-ed-qty')?.value, 10) || 0;
-        const product  = ov.querySelector('#lg-ed-product input[name="lg-ed-product"]:checked')?.value || e.product;
+        const activeSeg = ov.querySelector('#lg-ed-product .lg-seg-btn.on');
+        const product  = activeSeg?.dataset.product || e.product;
 
         if (!client)   { UI.toast('거래처를 입력해 주세요.', 'warning'); return; }
         if (!location) { UI.toast('장소를 입력해 주세요.',  'warning'); return; }
@@ -381,6 +441,24 @@ const LedgerView = {
         }
       },
     });
+
+    /* 세그먼트 · 스텝퍼 바인딩 */
+    const segHost = overlay.querySelector('#lg-ed-product');
+    segHost?.addEventListener('click', (ev) => {
+      const btn = ev.target.closest('.lg-seg-btn');
+      if (!btn) return;
+      segHost.querySelectorAll('.lg-seg-btn').forEach(b => {
+        b.classList.remove('on');
+        b.setAttribute('aria-checked', 'false');
+      });
+      btn.classList.add('on');
+      btn.setAttribute('aria-checked', 'true');
+    });
+    const qtyEl = overlay.querySelector('#lg-ed-qty');
+    const setQty = (v) => { qtyEl.value = String(Math.max(1, Math.min(9999, v | 0))); };
+    overlay.querySelector('#lg-ed-dec')?.addEventListener('click', () => setQty((parseInt(qtyEl.value, 10) || 1) - 1));
+    overlay.querySelector('#lg-ed-inc')?.addEventListener('click', () => setQty((parseInt(qtyEl.value, 10) || 0) + 1));
+    qtyEl?.addEventListener('input', () => { qtyEl.value = qtyEl.value.replace(/[^\d]/g, '').slice(0, 4); });
 
     requestAnimationFrame(() => {
       overlay.querySelector('#lg-ed-client')?.focus();

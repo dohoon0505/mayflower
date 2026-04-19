@@ -397,7 +397,7 @@ const Api = {
     return true;
   },
 
-  /* ── Order Ledger (수주 장부) ──────────────────────────
+  /* ── Order Ledger (수바리 장부) ────────────────────────
      /orderLedger/{id}
        client    : string (거래처)
        product   : 'funeral' | 'congrats' (근조화환 | 축하화환)
