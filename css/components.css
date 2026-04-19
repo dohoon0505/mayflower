@@ -821,19 +821,17 @@ tr:hover td { background: var(--bg-elevated); }
 .dp-tl-modal-body .dp-tl-done { color: var(--text-primary); font-weight: 700; white-space: nowrap; }
 .dp-tl-modal-body .dp-tl-empty { color: var(--text-muted); font-style: italic; text-align: center; padding: 1.5rem 0; }
 
-/* 배송중 행: 한 문장("최종배송지에서 X 까지 Y분 예정") + 오른쪽 배송중 뱃지 */
+/* 배송중 행: 한 문장("X 까지 Y분 예정") — 주소는 배송완료 주소 스타일 재사용 */
 .dp-tl-modal-body .dp-tl-item-ing {
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr;
   align-items: center;
 }
 .dp-tl-modal-body .dp-tl-sentence {
   color: var(--text-primary);
   line-height: 1.5;
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   word-break: keep-all;
 }
-.dp-tl-modal-body .dp-tl-sentence b { color: var(--primary, #2563eb); font-weight: 700; }
-.dp-tl-modal-body .dp-tl-from { color: var(--text-muted); font-weight: 600; }
 .dp-tl-modal-body .dp-tl-ing-eta {
   font-weight: 700;
   color: var(--primary, #2563eb);

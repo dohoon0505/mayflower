@@ -114,20 +114,20 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-storage-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-functions-compat.js"></script>
-  <script src="js/firebase-config.js?v=33"></script>
+  <script src="js/firebase-config.js?v=34"></script>
 
-  <script src="js/store.js?v=33"></script>
-  <script src="js/auth.js?v=33"></script>
-  <script src="js/ui.js?v=33"></script>
-  <script src="js/api.js?v=33"></script>
-  <script src="js/router.js?v=33"></script>
-  <script src="js/chat.js?v=33"></script>
-  <script src="js/delivery-board.js?v=33"></script>
-  <script src="js/naver-maps.js?v=33"></script>
-  <script src="js/views/floor2.js?v=33"></script>
-  <script src="js/views/floor1.js?v=33"></script>
-  <script src="js/views/driver.js?v=33"></script>
-  <script src="js/views/admin.js?v=33"></script>
+  <script src="js/store.js?v=34"></script>
+  <script src="js/auth.js?v=34"></script>
+  <script src="js/ui.js?v=34"></script>
+  <script src="js/api.js?v=34"></script>
+  <script src="js/router.js?v=34"></script>
+  <script src="js/chat.js?v=34"></script>
+  <script src="js/delivery-board.js?v=34"></script>
+  <script src="js/naver-maps.js?v=34"></script>
+  <script src="js/views/floor2.js?v=34"></script>
+  <script src="js/views/floor1.js?v=34"></script>
+  <script src="js/views/driver.js?v=34"></script>
+  <script src="js/views/admin.js?v=34"></script>
 
   <script>
     /* ═══════════════════════════════════════════════════════
@@ -465,15 +465,13 @@
           ? completed[completed.length - 1].deliveryAddress
           : OFFICE_ADDR;
 
-        /* 배송중 행: "최종배송지에서 X 까지 Y분 예정" — Y 는 네이버 API 비동기 조회 */
+        /* 배송중 행: "X 까지 Y분 예정" — Y 는 네이버 API 비동기 조회 */
         const _rowIng = (o) => `
           <div class="dp-tl-item dp-tl-item-ing">
             <span class="dp-tl-sentence">
-              <span class="dp-tl-from">최종배송지</span>에서
-              <b>${UI.escHtml(o.deliveryAddress || '-')}</b> 까지
+              <span class="dp-tl-addr">${UI.escHtml(o.deliveryAddress || '-')}</span> 까지
               <span class="dp-tl-ing-eta" id="dp-tl-ing-eta-${UI.escHtml(o.id)}">계산 중…</span>
             </span>
-            <span class="dp-tl-ing">배송중</span>
           </div>`;
 
         const sectionDelivering = delivering.length
