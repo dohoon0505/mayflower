@@ -791,15 +791,16 @@ ${pages}
     ).join('');
 
     const _pad2 = n => String(n).padStart(2,'0');
-    const toDateStr = iso => {
+    const _DOW_KR = ['일','월','화','수','목','금','토'];
+    const toLocalDT = iso => {
       if (!iso) return '';
       const d = new Date(iso);
-      return `${d.getFullYear()}-${_pad2(d.getMonth()+1)}-${_pad2(d.getDate())}`;
+      return `${d.getFullYear()}-${_pad2(d.getMonth()+1)}-${_pad2(d.getDate())}T${_pad2(d.getHours())}:${_pad2(d.getMinutes())}`;
     };
-    const toTimeStr = iso => {
+    const fmtKorDT = iso => {
       if (!iso) return '';
       const d = new Date(iso);
-      return `${_pad2(d.getHours())}:${_pad2(d.getMinutes())}`;
+      return `${d.getFullYear()}년 ${_pad2(d.getMonth()+1)}월 ${_pad2(d.getDate())}일 ${_DOW_KR[d.getDay()]}요일 ${_pad2(d.getHours())}시 ${_pad2(d.getMinutes())}분`;
     };
 
     let storeFile = null, delivFile = null;
@@ -876,7 +877,7 @@ ${pages}
     /* ── Right panel: photos + activity ── */
     const rightPanel = isDriver ? `
       <section class="eo-section">
-        <div class="eo-sec-head"><h3>증빙 사진</h3><span class="eo-sec-sep"></span></div>
+        <div class="eo-sec-head"><h3>이미지 업로드</h3><span class="eo-sec-sep"></span></div>
         <div class="eo-photo-card" style="max-width:260px;margin:0 auto">
           <div class="eo-ph-head">
             <span class="eo-ph-title">📷 배송완료 사진</span>
@@ -895,7 +896,7 @@ ${pages}
         </div>
       </section>` : `
       <section class="eo-section">
-        <div class="eo-sec-head"><h3>증빙 사진</h3><span class="eo-sec-sep"></span><span class="eo-sec-meta">2장</span></div>
+        <div class="eo-sec-head"><h3>이미지 업로드</h3><span class="eo-sec-sep"></span><span class="eo-sec-meta">2장</span></div>
         <div class="eo-photos">
           <div class="eo-photo-card">
             <div class="eo-ph-head">
@@ -951,23 +952,26 @@ ${pages}
 
           <section class="eo-section">
             <div class="eo-sec-head"><h3>주문 정보</h3><span class="eo-sec-sep"></span></div>
-            <div class="eo-grid eo-grid-2">
+            <div class="eo-grid eo-grid-chain-dt">
               <div class="eo-field">
                 <label>체인명 <span class="eo-req">*</span></label>
-                <input type="text" id="eo-chain" class="form-control" value="${UI.escHtml(o.chainName || '')}" ${rdonly('조회 전용')}>
+                <input type="text" id="eo-chain" class="form-control" value="${UI.escHtml(o.chainName || '')}" maxlength="5" ${rdonly('조회 전용')}>
               </div>
+              <div class="eo-field">
+                <label>배송 일시 <span class="eo-req">*</span></label>
+                <div class="eo-dt-wrap">
+                  <input type="text" id="eo-dt-display" class="form-control eo-dt-display" readonly value="${UI.escHtml(fmtKorDT(o.deliveryDatetime))}" placeholder="클릭하여 날짜/시간 선택" ${isDriver?'':'tabindex="0"'}>
+                  <input type="datetime-local" id="eo-datetime" class="eo-dt-native" value="${toLocalDT(o.deliveryDatetime)}" step="600" lang="en-GB" ${isDriver?'disabled':''} aria-label="배송 일시">
+                  <span class="eo-dt-icon" aria-hidden="true">📅</span>
+                </div>
+              </div>
+            </div>
+            <div class="eo-grid eo-grid-2">
               <div class="eo-field">
                 <label>상품명 <span class="eo-req">*</span></label>
                 <select id="eo-product" class="form-control" ${isDriver?'disabled':''}>
                   ${productOpts}
                 </select>
-              </div>
-              <div class="eo-field">
-                <label>배송 일시 <span class="eo-req">*</span></label>
-                <div class="eo-dt-row">
-                  <input type="date" id="eo-date" class="form-control" value="${toDateStr(o.deliveryDatetime)}" ${rdonly('조회 전용')}>
-                  <input type="text" id="eo-time" class="form-control eo-time-24" value="${toTimeStr(o.deliveryDatetime)}" pattern="[0-2][0-9]:[0-5][0-9]" maxlength="5" placeholder="HH:MM" inputmode="numeric" ${rdonly('조회 전용')}>
-                </div>
               </div>
               <div class="eo-field">
                 <label>금액 <span class="eo-req">*</span></label>
@@ -1074,7 +1078,7 @@ ${pages}
     /* ── Dirty tracking (non-driver only) ── */
     let footStatus = null, btnSaveRef = null;
     const initialSnap = {};
-    const trackedSel = ['#eo-chain','#eo-product','#eo-date','#eo-time','#eo-price','#eo-address','#eo-name','#eo-phone','#eo-ribbon','#eo-occasion'];
+    const trackedSel = ['#eo-chain','#eo-product','#eo-datetime','#eo-price','#eo-address','#eo-name','#eo-phone','#eo-ribbon','#eo-occasion'];
     if (!isDriver) {
       trackedSel.forEach(s => { const el = overlay.querySelector(s); if (el) initialSnap[s] = el.value; });
 
@@ -1108,6 +1112,34 @@ ${pages}
       });
       refreshFoot();
     }
+
+    /* ── 배송일시: native datetime-local change → Korean 형식 display 동기화 ── */
+    (function syncDateTimeDisplay() {
+      const nat = overlay.querySelector('#eo-datetime');
+      const disp = overlay.querySelector('#eo-dt-display');
+      if (!nat || !disp) return;
+      const update = () => {
+        if (!nat.value) { disp.value = ''; return; }
+        const d = new Date(nat.value);
+        if (isNaN(d.getTime())) { disp.value = ''; return; }
+        disp.value = fmtKorDT(d.toISOString());
+      };
+      nat.addEventListener('input', update);
+      nat.addEventListener('change', update);
+      /* 디스플레이 포커스/클릭 → 네이티브 피커 호출 (Chrome 99+) */
+      if (!isDriver) {
+        const openPicker = (e) => {
+          e.preventDefault();
+          if (typeof nat.showPicker === 'function') {
+            try { nat.showPicker(); } catch (_) { nat.focus(); nat.click(); }
+          } else {
+            nat.focus(); nat.click();
+          }
+        };
+        disp.addEventListener('click', openPicker);
+        disp.addEventListener('focus', openPicker);
+      }
+    })();
 
     /* ── Keyboard shortcuts: Ctrl+S save / Esc close ── */
     const onKeydown = (e) => {
@@ -1213,8 +1245,7 @@ ${pages}
     confirmBtn.onclick = async () => {
       const chainName      = overlay.querySelector('#eo-chain').value.trim();
       const productId      = overlay.querySelector('#eo-product').value;
-      const rawDate        = overlay.querySelector('#eo-date').value;
-      const rawTime        = (overlay.querySelector('#eo-time').value || '').trim();
+      const rawDT          = overlay.querySelector('#eo-datetime').value;
       const deliveryAddress= overlay.querySelector('#eo-address').value.trim();
       const recipientName  = overlay.querySelector('#eo-name').value.trim();
       const recipientPhone = overlay.querySelector('#eo-phone').value.trim();
@@ -1223,20 +1254,16 @@ ${pages}
       const priceRaw       = (overlay.querySelector('#eo-price')?.value || '').replace(/[^\d]/g, '');
 
       if (!chainName)       { UI.toast('체인명을 입력해 주세요.', 'warning'); return; }
+      if (chainName.length > 5) { UI.toast('체인명은 최대 5자까지 입력 가능합니다.', 'warning'); return; }
       if (!productId)       { UI.toast('상품을 선택해 주세요.', 'warning'); return; }
-      if (!rawDate)         { UI.toast('배송 날짜를 선택해 주세요.', 'warning'); return; }
-      if (!/^[0-2]\d:[0-5]\d$/.test(rawTime)) {
-        UI.toast('배송 시각을 HH:MM (24시간) 형식으로 입력해 주세요.', 'warning'); return;
-      }
+      if (!rawDT)           { UI.toast('배송 일시를 선택해 주세요.', 'warning'); return; }
       if (!deliveryAddress) { UI.toast('배송지를 입력해 주세요.', 'warning'); return; }
       if (!recipientName)   { UI.toast('받는 분 성함을 입력해 주세요.', 'warning'); return; }
       if (!priceRaw)        { UI.toast('금액을 입력해 주세요.', 'warning'); return; }
       if (!ribbonText)      { UI.toast('보내는분 문구(리본)를 입력해 주세요.', 'warning'); return; }
       if (!occasionText)    { UI.toast('경조사어 문구를 입력해 주세요.', 'warning'); return; }
 
-      const [hh, mm] = rawTime.split(':').map(Number);
-      if (hh > 23) { UI.toast('시간은 00~23 범위여야 합니다.', 'warning'); return; }
-      const d = new Date(`${rawDate}T${rawTime}:00`);
+      const d = new Date(rawDT);
       if (isNaN(d.getTime())) { UI.toast('배송 일시가 올바르지 않습니다.', 'warning'); return; }
       d.setMinutes(Math.round(d.getMinutes()/10)*10); d.setSeconds(0,0);
       const deliveryDatetime = d.toISOString();
