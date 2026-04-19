@@ -474,21 +474,48 @@ const Floor1View = {
       return;
     }
 
-    const statusLabels = ['접수대기','리본출력완료','제작완료','배송중','배송완료','취소','반품'];
-    const statusLabel  = statusLabels[o.status] || '-';
-    const dt = UI.fmtDatetime(o.deliveryDatetime);
-    const printDate = new Date().toLocaleString('ko-KR');
+    Floor1View._openBulkReceiptPrint([orderId]);
+  },
 
-    const printWin = window.open('', '_blank', 'width=620,height=780');
+  /* ── Bulk receipt print (one order per page) ─────────────
+     각 주문을 한 장씩 분리 출력 — 추후 Chrome Kiosk / Local Print Agent 연동 대비. */
+  _openBulkReceiptPrint(orderIds) {
+    if (!Array.isArray(orderIds) || !orderIds.length) {
+      UI.toast('선택된 주문이 없습니다.', 'warning'); return;
+    }
+
+    const orders = orderIds
+      .map(id => Store.getOrderById(id))
+      .filter(Boolean);
+
+    if (!orders.length) { UI.toast('선택 주문 정보를 찾을 수 없습니다.', 'error'); return; }
+
+    const printWin = window.open('', '_blank', 'width=720,height=900');
     if (!printWin) { UI.toast('팝업 창 허용 후 다시 시도해 주세요.', 'warning'); return; }
+
+    const printDate = new Date().toLocaleString('ko-KR');
+    const pages = orders.map((o, idx) => Floor1View._buildReceiptPageHtml(o, idx === orders.length - 1, printDate)).join('');
+
     printWin.document.write(`<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>배송 인수증 #${o.id}</title>
+  <title>배송 인수증 — ${orders.length}건</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; padding: 40px; color: #1e293b; font-size: 14px; }
+    html, body { background: #f1f5f9; }
+    body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; color: #1e293b; font-size: 14px; }
+    .page {
+      position: relative;
+      width: 210mm;
+      min-height: 297mm;
+      margin: 10px auto;
+      padding: 40px;
+      background: #fff;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      page-break-after: always;
+    }
+    .page:last-child { page-break-after: auto; }
     h1  { font-size: 1.4rem; text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 0.75rem; margin-bottom: 1.25rem; }
     .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 700; background: #eff6ff; color: #2563eb; }
     table { width: 100%; border-collapse: collapse; margin-top: 0.75rem; }
@@ -498,32 +525,54 @@ const Floor1View = {
     .sign-area { margin-top: 2rem; display: flex; justify-content: flex-end; gap: 3rem; font-size: 13px; }
     .sign-box  { text-align: center; }
     .sign-line { border-bottom: 1px solid #1e293b; width: 120px; margin-top: 2rem; }
-    @media print { body { padding: 20px; } button { display:none; } }
+    @media print {
+      html, body { background: #fff; }
+      .page {
+        margin: 0;
+        box-shadow: none;
+        width: auto;
+        min-height: auto;
+        padding: 20mm 15mm;
+      }
+    }
+    @page { size: A4; margin: 0; }
   </style>
 </head>
 <body>
+${pages}
+  <script>window.onload = () => { window.print(); }<\/script>
+</body>
+</html>`);
+    printWin.document.close();
+  },
+
+  _buildReceiptPageHtml(o, _isLast, printDate) {
+    const statusLabels = ['접수대기','리본출력완료','제작완료','배송중','배송완료','취소','반품'];
+    const statusLabel  = statusLabels[o.status] || '-';
+    const dt = UI.fmtDatetime(o.deliveryDatetime);
+    const esc = (s) => UI.escHtml(String(s ?? ''));
+
+    return `
+<section class="page">
   <h1>🌸 배송 인수증</h1>
   <table>
-    <tr><th>주문번호</th><td>#${o.id} &nbsp; <span class="badge">${statusLabel}</span></td></tr>
-    <tr><th>체인명</th><td>${o.chainName || '-'}</td></tr>
-    <tr><th>상품</th><td>${o.productName}</td></tr>
-    <tr><th>배송 일시</th><td>${dt}</td></tr>
-    <tr><th>배송지</th><td>${o.deliveryAddress}</td></tr>
-    <tr><th>받는 분</th><td>${o.recipientName}${o.recipientPhone ? ' / ' + o.recipientPhone : ''}</td></tr>
-    <tr><th>보내는분 문구</th><td>${o.ribbonText || '-'}</td></tr>
-    <tr><th>경조사어</th><td>${o.occasionText || '-'}</td></tr>
-    <tr><th>배송기사</th><td>${o.assignedDriverName || '-'}</td></tr>
-    <tr><th>접수자</th><td>${o.createdByName}</td></tr>
+    <tr><th>주문번호</th><td>#${esc(o.id)} &nbsp; <span class="badge">${esc(statusLabel)}</span></td></tr>
+    <tr><th>체인명</th><td>${esc(o.chainName || '-')}</td></tr>
+    <tr><th>상품</th><td>${esc(o.productName || '-')}</td></tr>
+    <tr><th>배송 일시</th><td>${esc(dt)}</td></tr>
+    <tr><th>배송지</th><td>${esc(o.deliveryAddress || '-')}</td></tr>
+    <tr><th>받는 분</th><td>${esc(o.recipientName || '-')}${o.recipientPhone ? ' / ' + esc(o.recipientPhone) : ''}</td></tr>
+    <tr><th>보내는분 문구</th><td>${esc(o.ribbonText || '-')}</td></tr>
+    <tr><th>경조사어</th><td>${esc(o.occasionText || '-')}</td></tr>
+    <tr><th>배송기사</th><td>${esc(o.assignedDriverName || '-')}</td></tr>
+    <tr><th>접수자</th><td>${esc(o.createdByName || '-')}</td></tr>
   </table>
   <div class="sign-area">
     <div class="sign-box"><div class="sign-line"></div><div style="margin-top:6px">배송기사 서명</div></div>
     <div class="sign-box"><div class="sign-line"></div><div style="margin-top:6px">수령인 서명</div></div>
   </div>
-  <div class="footer">메이대구 &nbsp;|&nbsp; ${printDate}</div>
-  <script>window.onload = () => { window.print(); }<\/script>
-</body>
-</html>`);
-    printWin.document.close();
+  <div class="footer">메이대구 &nbsp;|&nbsp; ${esc(printDate)}</div>
+</section>`;
   },
 
   /* ── Action handler ──────────────────────────────────────── */
@@ -955,9 +1004,11 @@ const Floor1View = {
     bar.innerHTML = `
       <span class="bulk-count-text">${ids.length}건 선택됨</span>
       <button class="btn btn-primary btn-sm" id="bulk-assign-btn">기사 배정</button>
+      <button class="btn btn-secondary btn-sm" id="bulk-print-btn">🧾 인수증 출력</button>
       <button class="btn btn-ghost btn-sm" id="bulk-clear-btn" style="color:#fff;border-color:rgba(255,255,255,0.25)">선택 해제</button>`;
 
     document.getElementById('bulk-assign-btn').onclick = () => Floor1View._openAssignModal(Floor1View._getCheckedIds());
+    document.getElementById('bulk-print-btn').onclick  = () => Floor1View._openBulkReceiptPrint(Floor1View._getCheckedIds());
     document.getElementById('bulk-clear-btn').onclick  = () => {
       document.querySelectorAll('.order-checkbox:checked').forEach(cb => { cb.checked = false; });
       Floor1View._updateBulkBar();
