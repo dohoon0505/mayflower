@@ -1598,6 +1598,16 @@ ${pages}
     let drivers = [];
     try { drivers = await Api.getDrivers(); } catch(e) { UI.toast('기사 목록 로드 실패', 'error'); return; }
 
+    /* 휴무(off-duty) 기사는 배차 대상에서 제외 — DeliveryPanel._computeBadge 결과 기준. */
+    const _allOrders = (typeof Store !== 'undefined' && Store.getOrders) ? Store.getOrders() : [];
+    const _isOff = (d) => {
+      if (typeof DeliveryPanel === 'undefined' || !DeliveryPanel._computeBadge) return false;
+      try { return DeliveryPanel._computeBadge(d, _allOrders).badge === 'off'; }
+      catch (_) { return false; }
+    };
+    const offCount = drivers.filter(_isOff).length;
+    drivers = drivers.filter(d => !_isOff(d));
+
     const plural = orderIds.length > 1 ? `${orderIds.length}건의 주문` : `주문 #${orderIds[0]}`;
     const items = drivers.length
       ? drivers.map(d => `
@@ -1609,7 +1619,7 @@ ${pages}
             <button class="btn btn-primary btn-sm" data-assign="${d.id}">배정</button>
           </div>`)
           .join('')
-      : '<p style="color:var(--text-muted);text-align:center">등록된 기사가 없습니다.</p>';
+      : `<p style="color:var(--text-muted);text-align:center">${offCount > 0 ? `배차 가능한 기사가 없습니다. (휴무 ${offCount}명 제외)` : '등록된 기사가 없습니다.'}</p>`;
 
     const overlay = UI.modal({
       title: `기사 배정 — ${plural}`,
