@@ -1274,10 +1274,17 @@ ${pages}
       document.body.appendChild(bar);
     }
 
+    const session = Auth.getSession();
+    const isAdmin = session && session.role === 'admin';
+    const deleteBtnHtml = isAdmin
+      ? `<button class="btn btn-danger btn-sm" id="bulk-delete-btn">삭제</button>`
+      : '';
+
     bar.innerHTML = `
       <span class="bulk-count-text">${ids.length}건 선택됨</span>
       <button class="btn btn-primary btn-sm" id="bulk-assign-btn">기사 배정</button>
-      <button class="btn btn-secondary btn-sm" id="bulk-print-btn">🧾 인수증 출력</button>
+      <button class="btn btn-secondary btn-sm" id="bulk-print-btn">인수증 출력</button>
+      ${deleteBtnHtml}
       <button class="btn btn-ghost btn-sm" id="bulk-clear-btn" style="color:#fff;border-color:rgba(255,255,255,0.25)">선택 해제</button>`;
 
     document.getElementById('bulk-assign-btn').onclick = () => Floor1View._openAssignModal(Floor1View._getCheckedIds());
@@ -1286,6 +1293,27 @@ ${pages}
       document.querySelectorAll('.order-checkbox:checked').forEach(cb => { cb.checked = false; });
       Floor1View._updateBulkBar();
     };
+    if (isAdmin) {
+      document.getElementById('bulk-delete-btn').onclick = () => Floor1View._confirmBulkDelete(Floor1View._getCheckedIds());
+    }
+  },
+
+  /* 선택된 주문 일괄 삭제 (admin 전용). Storage 사진도 함께 정리. */
+  async _confirmBulkDelete(ids) {
+    if (!ids || !ids.length) return;
+    const msg = `선택한 <b>${ids.length}건</b>의 주문을 삭제하시겠습니까?<br>
+      <small style="color:var(--text-muted)">이 작업은 되돌릴 수 없으며, 매장/배송 사진도 함께 삭제됩니다.</small>`;
+    const ok = await UI.confirm(msg, '주문 삭제');
+    if (!ok) return;
+
+    try {
+      await Api.deleteOrders(ids);
+      UI.toast(`${ids.length}건 삭제 완료`, 'success');
+      Floor1View._removeBulkBar();
+    } catch (e) {
+      console.warn('[bulk-delete] 실패', e);
+      UI.toast(e?.message || '삭제 중 오류가 발생했습니다.', 'error');
+    }
   },
 
   _removeBulkBar() {

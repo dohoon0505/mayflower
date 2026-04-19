@@ -220,6 +220,36 @@ const Api = {
     return true;
   },
 
+  /* 주문 삭제 (admin 전용) — 연결된 Storage 사진도 best-effort 로 함께 정리 */
+  async deleteOrder(id) {
+    const s = _requireSession();
+    if (!Auth.can('deleteOrder', s.role)) throw { status: 403, message: '권한이 없습니다.' };
+    if (!id) throw { status: 400, message: 'orderId 가 필요합니다.' };
+
+    /* Storage 사진 cleanup (실패해도 DB 삭제는 진행) */
+    if (window.FirebaseStorage) {
+      const files = ['store-photo.jpg', 'delivery-photo.jpg'];
+      await Promise.all(files.map(async (fn) => {
+        try { await window.FirebaseStorage.ref(`orders/${id}/${fn}`).delete(); }
+        catch (e) { /* object-not-found 등 무시 */ }
+      }));
+    }
+    await _db().ref(`orders/${id}`).remove();
+    return true;
+  },
+
+  async deleteOrders(ids) {
+    const list = Array.isArray(ids) ? ids.filter(Boolean) : [];
+    if (!list.length) return 0;
+    const s = _requireSession();
+    if (!Auth.can('deleteOrder', s.role)) throw { status: 403, message: '권한이 없습니다.' };
+    for (const id of list) {
+      try { await Api.deleteOrder(id); }
+      catch (e) { console.warn('[deleteOrders] 실패', id, e); }
+    }
+    return list.length;
+  },
+
   /* ── Photo uploads ─────────────────────────────────────── */
   async uploadStorePhoto(file, orderId) {
     _requireSession();

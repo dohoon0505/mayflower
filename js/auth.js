@@ -222,6 +222,7 @@ const Auth = {
       statistics:       ['admin'],
       viewProducts:     ['floor2', 'floor1', 'admin'],
       viewDrivers:      ['floor1', 'admin'],
+      deleteOrder:      ['admin'],
     };
     return (rules[feature] || []).includes(role);
   },
