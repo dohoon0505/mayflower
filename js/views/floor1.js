@@ -874,24 +874,8 @@ ${pages}
         </div>
       </li>`).join('') : `<li class="eo-act-empty">활동 내역 없음</li>`;
 
-    /* ── Memo (담당자 메세지) 데이터 준비 ── */
-    const memosRaw = o.memos || {};
-    const memoList = Object.entries(memosRaw).map(([id, m]) => ({ id, ...m }))
-      .sort((a, b) => String(a.ts || '').localeCompare(String(b.ts || '')));
-    const fmtMemoTs = iso => {
-      try { const d = new Date(iso); const p = n => String(n).padStart(2,'0');
-        return `${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
-      } catch (_) { return ''; }
-    };
-    const memoHtml = memoList.length ? memoList.map(m => `
-      <li class="eo-memo-item">
-        <div class="eo-memo-head">
-          <span class="eo-memo-author">${UI.escHtml(m.name || '담당자')}</span>
-          <span class="eo-memo-role">${UI.escHtml(m.role || '')}</span>
-          <span class="eo-memo-ts">${fmtMemoTs(m.ts)}</span>
-        </div>
-        <div class="eo-memo-text">${UI.escHtml(m.text || '')}</div>
-      </li>`).join('') : `<li class="eo-memo-empty">남겨진 메세지가 없습니다.</li>`;
+    /* ── 메모 (담당자 작성용 — 단일 문자열 필드, 저장 시 함께 반영) ── */
+    const memoInit = typeof o.memo === 'string' ? o.memo : '';
 
     /* ── Middle panel: 이미지 업로드 + 메세지 ── */
     const middlePanel = isDriver ? `
@@ -951,14 +935,13 @@ ${pages}
       </section>
       <section class="eo-section eo-memo-section">
         <div class="eo-sec-head">
-          <h3>메세지</h3>
+          <h3>메모</h3>
           <span class="eo-sec-sep"></span>
-          <span class="eo-sec-meta" id="eo-memo-count">${memoList.length}건</span>
         </div>
-        <ul class="eo-memo-list" id="eo-memo-list">${memoHtml}</ul>
-        <div class="eo-memo-compose">
-          <textarea id="eo-memo-input" class="form-control eo-memo-textarea" rows="2" maxlength="500" placeholder="주문에 대한 메세지를 입력하세요 (최대 500자)"></textarea>
-          <button type="button" class="btn btn-primary btn-sm eo-memo-send" id="eo-memo-send">전송</button>
+        <textarea id="eo-memo" class="eo-memo-textarea" maxlength="1000" placeholder="주문과 관련한 메모를 자유롭게 적어두세요. 저장 버튼을 누르면 함께 반영됩니다.">${UI.escHtml(memoInit)}</textarea>
+        <div class="eo-memo-foot">
+          <span class="eo-memo-hint">저장 시 함께 반영됩니다</span>
+          <span class="eo-memo-count"><span id="eo-memo-len">${memoInit.length}</span> / 1000</span>
         </div>
       </section>`;
 
@@ -1115,7 +1098,7 @@ ${pages}
     /* ── Dirty tracking (non-driver only) ── */
     let footStatus = null, btnSaveRef = null;
     const initialSnap = {};
-    const trackedSel = ['#eo-chain','#eo-product','#eo-datetime','#eo-price','#eo-address','#eo-name','#eo-phone','#eo-ribbon','#eo-occasion'];
+    const trackedSel = ['#eo-chain','#eo-product','#eo-datetime','#eo-price','#eo-address','#eo-name','#eo-phone','#eo-ribbon','#eo-occasion','#eo-memo'];
     if (!isDriver) {
       trackedSel.forEach(s => { const el = overlay.querySelector(s); if (el) initialSnap[s] = el.value; });
 
@@ -1278,60 +1261,13 @@ ${pages}
       box.addEventListener('drop', e => { e.preventDefault(); box.classList.remove('drag-over'); handlePhotoFile(e.dataTransfer.files[0], prevId, phId, which); });
     });
 
-    /* ── 메세지(담당자 메모) 전송 ── */
-    (function wireMemoCompose() {
-      const sendBtn = overlay.querySelector('#eo-memo-send');
-      const input   = overlay.querySelector('#eo-memo-input');
-      const listEl  = overlay.querySelector('#eo-memo-list');
-      const countEl = overlay.querySelector('#eo-memo-count');
-      if (!sendBtn || !input || !listEl) return;
-
-      const fmtTs = iso => {
-        try { const d = new Date(iso); const p = n => String(n).padStart(2,'0');
-          return `${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
-        } catch (_) { return ''; }
-      };
-
-      const doSend = async () => {
-        const text = input.value.trim();
-        if (!text) { UI.toast('메세지를 입력해 주세요.', 'warning'); return; }
-        sendBtn.disabled = true; sendBtn.textContent = '전송 중...';
-        try {
-          const memo = await Api.addOrderMemo(orderId, text);
-          /* 빈 상태 항목 제거 */
-          const empty = listEl.querySelector('.eo-memo-empty');
-          if (empty) empty.remove();
-          const li = document.createElement('li');
-          li.className = 'eo-memo-item';
-          li.innerHTML = `
-            <div class="eo-memo-head">
-              <span class="eo-memo-author">${UI.escHtml(memo.name || '담당자')}</span>
-              <span class="eo-memo-role">${UI.escHtml(memo.role || '')}</span>
-              <span class="eo-memo-ts">${fmtTs(memo.ts)}</span>
-            </div>
-            <div class="eo-memo-text">${UI.escHtml(memo.text || '')}</div>`;
-          listEl.appendChild(li);
-          listEl.scrollTop = listEl.scrollHeight;
-          if (countEl) {
-            const n = listEl.querySelectorAll('.eo-memo-item').length;
-            countEl.textContent = `${n}건`;
-          }
-          input.value = '';
-          UI.toast('메세지가 등록되었습니다.', 'success');
-        } catch (e) {
-          UI.toast(e?.message || '메세지 전송 실패', 'error');
-        } finally {
-          sendBtn.disabled = false; sendBtn.textContent = '전송';
-        }
-      };
-
-      sendBtn.addEventListener('click', doSend);
-      /* Ctrl/Cmd + Enter 로 전송 */
-      input.addEventListener('keydown', (e) => {
-        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-          e.preventDefault(); doSend();
-        }
-      });
+    /* ── 메모 글자수 카운터 ── */
+    (function wireMemoCounter() {
+      const input  = overlay.querySelector('#eo-memo');
+      const lenEl  = overlay.querySelector('#eo-memo-len');
+      if (!input || !lenEl) return;
+      const update = () => { lenEl.textContent = String(input.value.length); };
+      input.addEventListener('input', update);
     })();
 
     const confirmBtn = overlay.querySelector('.modal-confirm');
@@ -1345,6 +1281,7 @@ ${pages}
       const ribbonText     = overlay.querySelector('#eo-ribbon').value.trim();
       const occasionText   = overlay.querySelector('#eo-occasion').value.trim();
       const priceRaw       = (overlay.querySelector('#eo-price')?.value || '').replace(/[^\d]/g, '');
+      const memoText       = (overlay.querySelector('#eo-memo')?.value || '').slice(0, 1000);
 
       if (!chainName)       { UI.toast('체인명을 입력해 주세요.', 'warning'); return; }
       if (chainName.length > 5) { UI.toast('체인명은 최대 5자까지 입력 가능합니다.', 'warning'); return; }
@@ -1375,6 +1312,7 @@ ${pages}
           storePhotoUrl:    newStoreUrl,
           deliveryPhotoUrl: newDelivUrl,
           price: priceRaw ? Number(priceRaw) : null,
+          memo: memoText || null,
         });
 
         UI.toast('주문서가 수정되었습니다.', 'success');

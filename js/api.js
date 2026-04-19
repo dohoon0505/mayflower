@@ -255,28 +255,6 @@ const Api = {
     return { ok, failed };
   },
 
-  /* ── Order memos (담당자 메세지) ────────────────────────── */
-  async addOrderMemo(orderId, text) {
-    const s = _requireSession();
-    if (!orderId) throw { status: 400, message: 'orderId 가 필요합니다.' };
-    const body = String(text || '').trim();
-    if (!body) throw { status: 400, message: '메세지를 입력해 주세요.' };
-    if (body.length > 500) throw { status: 400, message: '메세지는 500자 이내로 입력해 주세요.' };
-
-    const ref = _db().ref(`orders/${orderId}/memos`).push();
-    const payload = {
-      userId: s.userId,
-      name: s.displayName || s.username || '담당자',
-      role: s.role || '',
-      text: body,
-      ts: _now(),
-    };
-    await ref.set(payload);
-    /* updatedAt 도 함께 갱신 (목록 재정렬 트리거) */
-    await _db().ref(`orders/${orderId}`).update({ updatedAt: _now() });
-    return { id: ref.key, ...payload };
-  },
-
   /* ── Photo uploads ─────────────────────────────────────── */
   async uploadStorePhoto(file, orderId) {
     _requireSession();

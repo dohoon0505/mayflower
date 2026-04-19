@@ -872,7 +872,7 @@ tr:hover td { background: var(--bg-elevated); }
 /* ── Edit modal 3-panel split (left · middle · right-far) ── */
 .eo-split {
   display: grid;
-  grid-template-columns: 1.15fr 0.95fr 0.75fr;
+  grid-template-columns: 1.15fr 1.2fr 0.6fr;
   gap: 1.25rem;
   align-items: stretch;
   min-height: 0;
@@ -1072,6 +1072,8 @@ button.eo-title-chip:hover { background: #fff; border-color: var(--border-strong
 .eo-grid { display: grid; gap: 0.75rem; }
 .eo-grid.eo-grid-1 { grid-template-columns: 1fr; margin-bottom: 0.75rem; }
 .eo-grid.eo-grid-2 { grid-template-columns: 1fr 1fr; }
+/* 같은 섹션 내 연속되는 grid 행 간 세로 간격 */
+.eo-section .eo-grid + .eo-grid { margin-top: 0.875rem; }
 .eo-field { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
 .eo-field > label {
   display: flex;
@@ -1180,14 +1182,29 @@ button.eo-title-chip:hover { background: #fff; border-color: var(--border-strong
 .eo-dt-wrap {
   position: relative;
 }
-.eo-dt-display {
+/* readonly 이지만 "클릭해서 여는" 인터랙티브 필드 — disabled 처럼 보이지 않게 강한 override */
+.eo-field .form-control.eo-dt-display,
+.eo-field .form-control.eo-dt-display[readonly] {
   width: 100%;
   padding-right: 2.25rem;      /* 아이콘 공간 */
-  cursor: pointer;
   background: #fff;
+  color: var(--text-primary);
+  cursor: pointer;
   font-variant-numeric: tabular-nums;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
-.eo-dt-display:read-only:hover { border-color: var(--primary); }
+.eo-field .form-control.eo-dt-display::placeholder { color: var(--text-muted); }
+.eo-field .form-control.eo-dt-display:hover,
+.eo-dt-wrap:hover .eo-dt-display {
+  border-color: var(--primary);
+  background: #f8fafc;
+}
+.eo-dt-wrap:focus-within .eo-dt-display {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+  background: #fff;
+}
+.eo-dt-wrap:hover .eo-dt-icon { opacity: 1; color: var(--primary); }
 .eo-dt-native {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
@@ -1278,89 +1295,49 @@ button.eo-title-chip:hover { background: #fff; border-color: var(--border-strong
 .eo-act-meta { font-size: 0.7rem; color: var(--text-muted); font-family: 'Menlo','Consolas',monospace; margin-top: 1px; }
 .eo-act-empty { color: var(--text-muted); font-size: 0.78rem; padding: 0.5rem 0; }
 
-/* ── 메세지(담당자 메모) 영역 ── */
+/* ── 메모 영역 (담당자 작성용 — 저장 시 함께 반영) ── */
 .eo-memo-section {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
-.eo-memo-list {
-  list-style: none; padding: 0; margin: 0;
-  display: flex; flex-direction: column; gap: 0.5rem;
-  max-height: 200px;
-  overflow-y: auto;
-  padding-right: 4px;
-  background: var(--bg-subtle, #f8fafc);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 0.5rem 0.625rem;
-}
-.eo-memo-list::-webkit-scrollbar { width: 6px; }
-.eo-memo-list::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
-.eo-memo-item {
-  padding: 0.5rem 0.625rem;
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  font-size: 0.8rem;
-  line-height: 1.4;
-}
-.eo-memo-head {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin-bottom: 0.25rem;
-  flex-wrap: wrap;
-}
-.eo-memo-author {
-  font-weight: 700;
-  color: var(--text-primary);
-  font-size: 0.78rem;
-}
-.eo-memo-role {
-  font-size: 0.68rem;
-  color: var(--text-muted);
-  background: var(--bg-subtle, #f1f5f9);
-  padding: 1px 6px;
-  border-radius: 10px;
-}
-.eo-memo-role:empty { display: none; }
-.eo-memo-ts {
-  margin-left: auto;
-  font-size: 0.68rem;
-  color: var(--text-muted);
-  font-family: 'Menlo','Consolas',monospace;
-}
-.eo-memo-text {
-  color: var(--text-secondary);
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-.eo-memo-empty {
-  color: var(--text-muted);
-  font-size: 0.78rem;
-  text-align: center;
-  padding: 0.75rem 0;
-}
-.eo-memo-compose {
-  display: flex;
-  gap: 0.5rem;
-  align-items: stretch;
-}
 .eo-memo-textarea {
-  flex: 1;
-  min-height: 44px;
-  max-height: 120px;
+  width: 100%;
+  min-height: 160px;
+  max-height: 320px;
   resize: vertical;
   font-family: inherit;
-  font-size: 0.82rem;
-  line-height: 1.35;
-  padding: 0.5rem 0.625rem;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fffef7;          /* 살짝 노란빛 — 포스트잇 느낌 */
+  color: var(--text-primary);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
-.eo-memo-send {
-  align-self: stretch;
-  white-space: nowrap;
-  min-width: 64px;
+.eo-memo-textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+  background: #fff;
+}
+.eo-memo-textarea::placeholder { color: var(--text-muted); }
+.eo-memo-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+.eo-memo-hint {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+.eo-memo-count {
+  font-family: 'Menlo','Consolas',monospace;
+  color: var(--text-muted);
 }
 
 /* ── Footer dirty status ── */
