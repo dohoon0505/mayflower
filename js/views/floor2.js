@@ -50,7 +50,14 @@ const Floor2View = {
         const o = Store.getOrderById(id);
         if (o?.storePhotoUrl) window.open(o.storePhotoUrl);
       }
-      else if (action === 'receipt')     { Floor1View._openReceiptModal(id); }
+      else if (action === 'receipt' || action === 'print-receipt') {
+        Floor1View._openReceiptModal(id);
+        Api.markReceiptPrinted(id).catch(err => console.warn('[Floor2] markReceiptPrinted:', err));
+      }
+      else if (action === 'assign') {
+        try { await Floor1View._openAssignModal([id]); }
+        catch(e) { UI.toast(e.message || '배정 실패', 'error'); }
+      }
       else if (action === 'force-complete') {
         try { await Floor1View._forceComplete(id); }
         catch(e) { UI.toast(e.message || '처리 실패', 'error'); }
@@ -287,10 +294,11 @@ const Floor2View = {
       ? `<span class="ocard-field-icon">📝</span><span data-copy="${UI.escHtml(o.occasionText)}" class="ocard-field-copy" title="클릭 시 클립보드 복사">${UI.escHtml(o.occasionText)}</span>`
       : `<span class="ocard-field-icon">📝</span><span style="color:var(--text-muted);font-style:italic">경조사어 없음</span>`;
 
-    const driverHtml = o.assignedDriverName
-      ? `<span class="ocard-field-icon">🚚</span><span class="ocard-driver-tag">${UI.escHtml(o.assignedDriverName)}</span>${o.assignedAt ? `<span class="ocard-assign-time">(${UI.fmtDatetime(o.assignedAt)} 배차)</span>` : ''}`
-      : `<span class="ocard-field-icon">🚚</span><span class="ocard-driver-none">배차 전</span>`;
-    const driverFieldCls = o.assignedDriverName ? 'ocard-field--assigned' : '';
+    /* 받는 분 정보 (row3 좌측) */
+    const recipientHtml = o.recipientName
+      ? `<span class="ocard-field-icon">👤</span><span>${UI.escHtml(o.recipientName)}</span>${o.recipientPhone ? `<span class="ocard-recipient-phone" data-copy="${UI.escHtml(o.recipientPhone)}" title="클릭 시 연락처 복사">${UI.escHtml(o.recipientPhone)}</span>` : ''}`
+      : `<span class="ocard-field-icon">👤</span><span style="color:var(--text-muted);font-style:italic">받는 분 미입력</span>`;
+    const recipientFieldCls = o.recipientName ? 'ocard-field--recipient' : '';
 
     const _n = new Date(), _pad = n => String(n).padStart(2, '0');
     const _today = `${_n.getFullYear()}-${_pad(_n.getMonth()+1)}-${_pad(_n.getDate())}`;
@@ -327,9 +335,30 @@ const Floor2View = {
       timeText = UI.timeRemaining(o.deliveryDatetime);
     }
 
-    const storePhotoAction = o.storePhotoUrl ? 'view-store-photo' : 'store-photo';
-    const storePhotoCls    = o.storePhotoUrl ? 'oa-success' : 'oa-muted';
-    const storePhotoLabel  = o.storePhotoUrl ? '매장사진<br>보기' : '매장사진<br>없음';
+    /* ── 업무 흐름도 3단계 상태 계산 ── */
+    const step1Done = !!o.receiptPrintedAt;
+    const step2Done = !!o.storePhotoUrl;
+    const step3Done = !!o.assignedDriverId;
+    const step1State = step1Done ? 'fs-done' : 'fs-active';
+    const step2State = step2Done ? 'fs-done' : (step1Done ? 'fs-active' : 'fs-locked');
+    const step3State = step3Done ? 'fs-done' : (step2Done ? 'fs-active' : 'fs-locked');
+    const step1Label = step1Done ? '인수증 인쇄 완료' : '인수증 인쇄';
+    const step2Label = step2Done ? '매장사진 업로드 완료' : '매장사진 업로드';
+    const step2Action = step2Done ? 'view-store-photo' : 'store-photo';
+    const step3Label = step3Done
+      ? `${UI.escHtml(o.assignedDriverName || '기사')} 배차 완료`
+      : '배송기사 배차';
+    const step2Disabled = step2State === 'fs-locked' ? 'disabled' : '';
+    const step3Disabled = step3State === 'fs-locked' ? 'disabled' : '';
+    const step1Sub = step1Done && o.receiptPrintedAt
+      ? `<div class="fs-sub">${UI.fmtDatetime(o.receiptPrintedAt)}</div>` : '';
+    const step3Sub = step3Done && o.assignedAt
+      ? `<div class="fs-sub">${UI.fmtDatetime(o.assignedAt)}</div>` : '';
+
+    const terminated = o.status === 4 || o.status >= 5;
+    const forceCompleteBtn = !terminated
+      ? `<button type="button" class="ocard-flow-mini-btn" data-id="${o.id}" data-action="force-complete" title="강제 배송완료">✓ 강제완료</button>`
+      : '';
 
     return `
       <div class="order-card" data-id="${o.id}" data-status="${o.status}">
@@ -340,6 +369,7 @@ const Floor2View = {
             <span class="ocard-product">${UI.escHtml(categoryName)}</span>
             <span class="ocard-chain">${chainCode}</span>
             ${priceBadge}
+            <button type="button" class="ocard-header-edit" data-id="${o.id}" data-action="edit" title="주문서 수정">✏️</button>
           </div>
           <div class="ocard-1col">
             <div class="ocard-field">
@@ -356,18 +386,42 @@ const Floor2View = {
             </div>
           </div>
           <div class="ocard-2col">
-            <div class="ocard-field ${driverFieldCls}">${driverHtml}</div>
+            <div class="ocard-field ${recipientFieldCls}">${recipientHtml}</div>
             <div class="ocard-field ${timeFieldCls}">
               <span class="ocard-field-icon">⏱</span>
               <span>${timeText}</span>
             </div>
           </div>
         </div>
-        <div class="ocard-actions">
-          <button class="ocard-action oa-edit" data-id="${o.id}" data-action="edit">주문서<br>수정</button>
-          <button class="ocard-action ${storePhotoCls}" data-id="${o.id}" data-action="${storePhotoAction}">${storePhotoLabel}</button>
-          <button class="ocard-action oa-receipt" data-id="${o.id}" data-action="receipt">인수증<br>출력</button>
-          <button class="ocard-action oa-complete" data-id="${o.id}" data-action="force-complete" ${o.status === 4 || o.status >= 5 ? 'disabled' : ''}>강제<br>배송완료</button>
+        <div class="ocard-flow">
+          <div class="ocard-flow-topbar">
+            <span class="ocard-flow-title">업무 흐름도</span>
+            ${forceCompleteBtn}
+          </div>
+          <button type="button" class="ocard-flow-step ${step1State}" data-id="${o.id}" data-action="print-receipt">
+            <span class="fs-num">01</span>
+            <div class="fs-body">
+              <div class="fs-label">${step1Label}</div>
+              ${step1Sub}
+            </div>
+            <span class="fs-state">${step1Done ? '✓' : '→'}</span>
+          </button>
+          <button type="button" class="ocard-flow-step ${step2State}" data-id="${o.id}" data-action="${step2Action}" ${step2Disabled}>
+            <span class="fs-num">02</span>
+            <div class="fs-body">
+              <div class="fs-label">${step2Label}</div>
+              ${step2Done ? '<div class="fs-sub">클릭해서 보기</div>' : ''}
+            </div>
+            <span class="fs-state">${step2Done ? '✓' : (step2State === 'fs-active' ? '→' : '🔒')}</span>
+          </button>
+          <div class="ocard-flow-step ${step3State} fs-readonly">
+            <span class="fs-num">03</span>
+            <div class="fs-body">
+              <div class="fs-label">${step3Label}</div>
+              ${step3Sub}
+            </div>
+            <span class="fs-state">${step3Done ? '✓' : (step3State === 'fs-active' ? '⋯' : '🔒')}</span>
+          </div>
         </div>
       </div>`;
   },

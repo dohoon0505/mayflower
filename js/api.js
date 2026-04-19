@@ -163,6 +163,15 @@ const Api = {
     return true;
   },
 
+  /* 인수증 인쇄 기록 (업무 흐름도 1단계) */
+  async markReceiptPrinted(id) {
+    _requireSession();
+    if (!id) throw { status: 400, message: 'orderId 가 필요합니다.' };
+    const now = _now();
+    await _db().ref(`orders/${id}`).update({ receiptPrintedAt: now, updatedAt: now });
+    return true;
+  },
+
   async completeOrder(id, photoUrl) {
     const s = _requireSession();
     if (!Auth.can('completeDelivery', s.role)) throw { status: 403, message: '권한이 없습니다.' };

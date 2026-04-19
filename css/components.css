@@ -217,7 +217,7 @@
 /* ── Order Card — wireframe design ───────────────────────── */
 .order-card {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 2fr 1.2fr;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-left: 4px solid var(--border-strong);
@@ -373,6 +373,123 @@
   width: 54px; height: 38px; object-fit: cover;
   border-radius: 3px; border: 1px solid var(--border);
 }
+
+/* ── 업무 흐름도 (.ocard-flow) — 우측 컬럼 신규 디자인 ──────── */
+.ocard-flow {
+  display: flex; flex-direction: column;
+  border-left: 1px solid var(--border);
+  padding: 0.55rem 0.55rem 0.6rem;
+  background: #fafbfc;
+  gap: 0.4rem;
+  min-width: 0;
+}
+.ocard-flow-topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 0.4rem;
+  padding: 0 0.1rem 0.15rem;
+  border-bottom: 1px dashed #e2e8f0;
+}
+.ocard-flow-title {
+  font-size: 0.78rem; font-weight: 800; color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+.ocard-flow-mini-btn {
+  background: #fef2f2; color: #b91c1c;
+  border: 1px solid #fecaca; border-radius: 5px;
+  padding: 2px 7px; font-size: 0.72rem; font-weight: 700;
+  cursor: pointer; line-height: 1.4;
+}
+.ocard-flow-mini-btn:hover { background: #fee2e2; }
+.ocard-flow-mini-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.ocard-flow-step {
+  all: unset; box-sizing: border-box;
+  display: grid; grid-template-columns: 28px 1fr 18px;
+  align-items: center; gap: 0.45rem;
+  padding: 0.5rem 0.55rem; border-radius: 7px;
+  border: 1.5px solid transparent;
+  cursor: pointer; transition: background 0.15s, border-color 0.15s, transform 0.08s;
+  min-height: 44px;
+  font-family: inherit;
+}
+.ocard-flow-step:hover:not(:disabled):not(.fs-readonly) { transform: translateY(-1px); }
+.ocard-flow-step:active:not(:disabled):not(.fs-readonly) { transform: translateY(0); }
+.ocard-flow-step:disabled { cursor: not-allowed; }
+.ocard-flow-step.fs-readonly { cursor: default; }
+
+/* 단계 번호 뱃지 */
+.ocard-flow-step .fs-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: 50%;
+  font-size: 0.72rem; font-weight: 800; letter-spacing: 0.02em;
+}
+.ocard-flow-step .fs-body { min-width: 0; }
+.ocard-flow-step .fs-label {
+  font-size: 0.82rem; font-weight: 700;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ocard-flow-step .fs-sub {
+  font-size: 0.68rem; color: var(--text-muted); margin-top: 1px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ocard-flow-step .fs-state {
+  font-size: 0.95rem; font-weight: 800; text-align: center;
+}
+
+/* === 상태별 색상 === */
+/* fs-done: 완료 (초록) */
+.ocard-flow-step.fs-done {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+}
+.ocard-flow-step.fs-done .fs-num    { background: #10b981; color: #fff; }
+.ocard-flow-step.fs-done .fs-label  { color: #047857; }
+.ocard-flow-step.fs-done .fs-state  { color: #10b981; }
+.ocard-flow-step.fs-done:hover:not(:disabled) { background: #d1fae5; }
+
+/* fs-active: 현재 수행 가능 (파랑, 점선 강조) */
+.ocard-flow-step.fs-active {
+  background: #eff6ff;
+  border: 1.5px dashed #60a5fa;
+}
+.ocard-flow-step.fs-active .fs-num    { background: #2563eb; color: #fff; }
+.ocard-flow-step.fs-active .fs-label  { color: #1e3a8a; }
+.ocard-flow-step.fs-active .fs-state  { color: #2563eb; }
+.ocard-flow-step.fs-active:hover:not(:disabled) { background: #dbeafe; border-color: #3b82f6; }
+
+/* fs-locked: 이전 단계 미완료로 잠김 (회색) */
+.ocard-flow-step.fs-locked {
+  background: #f9fafb;
+  border-color: #e5e7eb;
+  opacity: 0.72;
+}
+.ocard-flow-step.fs-locked .fs-num    { background: #e5e7eb; color: #9ca3af; }
+.ocard-flow-step.fs-locked .fs-label  { color: #9ca3af; }
+.ocard-flow-step.fs-locked .fs-state  { color: #cbd5e1; }
+
+/* 헤더의 작은 수정 아이콘 버튼 */
+.ocard-header-edit {
+  margin-left: auto;
+  background: transparent; border: 1px solid var(--border);
+  border-radius: 5px; padding: 2px 6px; font-size: 0.85rem;
+  cursor: pointer; line-height: 1.2; color: var(--text-secondary);
+}
+.ocard-header-edit:hover { background: #eff6ff; border-color: #bfdbfe; }
+
+/* 받는 분 필드 스타일 */
+.ocard-field--recipient {
+  background: #fefce8;
+  border-color: #fde68a;
+}
+.ocard-field--recipient .ocard-field-icon { color: #a16207; }
+.ocard-recipient-phone {
+  margin-left: 0.4rem; font-size: 0.78rem;
+  color: #0f766e; background: #ccfbf1;
+  padding: 1px 6px; border-radius: 3px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ocard-recipient-phone:hover { background: #99f6e4; }
 
 /* legacy aliases kept for driver view */
 .order-checkbox { width: 17px; height: 17px; accent-color: var(--primary); cursor: pointer; flex-shrink: 0; }
@@ -800,4 +917,5 @@ tr:hover td { background: var(--bg-elevated); }
   .ocard-actions { flex-direction: row; width: 100%; border-left: none; border-top: 1px solid var(--border); }
   .ocard-action { border-bottom: none; border-right: 1px dashed var(--border); min-height: 40px; }
   .ocard-action:last-child { border-right: none; }
+  .ocard-flow { border-left: none; border-top: 1px solid var(--border); }
 }
