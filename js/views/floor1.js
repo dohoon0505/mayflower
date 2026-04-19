@@ -1086,7 +1086,7 @@ ${pages}
         const cancelOrderBtn = document.createElement('button');
         cancelOrderBtn.type = 'button';
         cancelOrderBtn.className = 'btn btn-danger eo-footer-cancel-order';
-        cancelOrderBtn.textContent = '🚫 주문취소';
+        cancelOrderBtn.textContent = '주문취소';
         cancelOrderBtn.title = '이 주문을 "주문취소" 상태로 전환';
         /* [닫기] <여기> [저장] */
         footer.insertBefore(cancelOrderBtn, confirmBtn);
