@@ -1460,22 +1460,6 @@ button.eo-title-chip:hover { background: #fff; border-color: var(--border-strong
   background: #fff;
 }
 .eo-memo-textarea::placeholder { color: var(--text-muted); }
-.eo-memo-foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  font-size: 0.7rem;
-  color: var(--text-muted);
-}
-.eo-memo-hint {
-  color: var(--text-muted);
-  font-size: 0.72rem;
-}
-.eo-memo-count {
-  font-family: 'Menlo','Consolas',monospace;
-  color: var(--text-muted);
-}
 
 /* ── Footer dirty status ── */
 .modal-edit .modal-footer { justify-content: space-between; }

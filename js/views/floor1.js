@@ -943,10 +943,6 @@ ${pages}
           <span class="eo-sec-sep"></span>
         </div>
         <textarea id="eo-memo" class="eo-memo-textarea" maxlength="1000" placeholder="주문과 관련한 메모를 자유롭게 적어두세요. 저장 버튼을 누르면 함께 반영됩니다.">${UI.escHtml(memoInit)}</textarea>
-        <div class="eo-memo-foot">
-          <span class="eo-memo-hint">저장 시 함께 반영됩니다</span>
-          <span class="eo-memo-count"><span id="eo-memo-len">${memoInit.length}</span> / 1000</span>
-        </div>
       </section>`;
 
     /* ── Right-far panel: 최근 활동 (세로 길이 길게) ── */
@@ -1241,15 +1237,6 @@ ${pages}
       box.addEventListener('dragleave', () => box.classList.remove('drag-over'));
       box.addEventListener('drop', e => { e.preventDefault(); box.classList.remove('drag-over'); handlePhotoFile(e.dataTransfer.files[0], prevId, phId, which); });
     });
-
-    /* ── 메모 글자수 카운터 ── */
-    (function wireMemoCounter() {
-      const input  = overlay.querySelector('#eo-memo');
-      const lenEl  = overlay.querySelector('#eo-memo-len');
-      if (!input || !lenEl) return;
-      const update = () => { lenEl.textContent = String(input.value.length); };
-      input.addEventListener('input', update);
-    })();
 
     const confirmBtn = overlay.querySelector('.modal-confirm');
     confirmBtn.onclick = async () => {
