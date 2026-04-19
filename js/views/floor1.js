@@ -1073,21 +1073,23 @@ ${pages}
       title: titleHtml,
       content,
       confirmText: isDriver ? '닫기' : '저장',
-      cancelText: isDriver ? '' : '취소',
+      cancelText: isDriver ? '' : '닫기',
       size: 'modal-edit',
     });
 
-    /* ── 모달 헤더: 주문취소 버튼 (1층 / 2층 / admin, 미완료·미취소 건만) ── */
+    /* ── 모달 푸터: [닫기] [주문취소] [저장] 순서로 배치
+     * (1층 / 2층 / admin, 미완료·미취소 건만 주문취소 버튼 노출) ── */
     if (!isDriver && o.status < 4) {
-      const header = overlay.querySelector('.modal-header');
-      const closeBtn = header?.querySelector('.modal-close');
-      if (header && closeBtn) {
+      const footer = overlay.querySelector('.modal-footer');
+      const confirmBtn = footer?.querySelector('.modal-confirm');
+      if (footer && confirmBtn) {
         const cancelOrderBtn = document.createElement('button');
         cancelOrderBtn.type = 'button';
-        cancelOrderBtn.className = 'btn btn-sm btn-danger eo-header-cancel';
+        cancelOrderBtn.className = 'btn btn-danger eo-footer-cancel-order';
         cancelOrderBtn.textContent = '🚫 주문취소';
         cancelOrderBtn.title = '이 주문을 "주문취소" 상태로 전환';
-        header.insertBefore(cancelOrderBtn, closeBtn);
+        /* [닫기] <여기> [저장] */
+        footer.insertBefore(cancelOrderBtn, confirmBtn);
 
         cancelOrderBtn.addEventListener('click', async () => {
           const ok = await UI.confirm(
