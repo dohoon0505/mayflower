@@ -4,10 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>메이대구</title>
-  <link rel="stylesheet" href="css/base.css?v=46">
-  <link rel="stylesheet" href="css/layout.css?v=46">
-  <link rel="stylesheet" href="css/components.css?v=46">
-  <link rel="stylesheet" href="css/views.css?v=46">
+  <link rel="stylesheet" href="css/base.css?v=47">
+  <link rel="stylesheet" href="css/layout.css?v=47">
+  <link rel="stylesheet" href="css/components.css?v=47">
+  <link rel="stylesheet" href="css/views.css?v=47">
   <script>
     /* 큰글씨모드 조기 적용 — CSS 파싱 직후 즉시 반영해 깜빡임 방지 */
     (function () {
@@ -114,20 +114,20 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-storage-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-functions-compat.js"></script>
-  <script src="js/firebase-config.js?v=46"></script>
+  <script src="js/firebase-config.js?v=47"></script>
 
-  <script src="js/store.js?v=46"></script>
-  <script src="js/auth.js?v=46"></script>
-  <script src="js/ui.js?v=46"></script>
-  <script src="js/api.js?v=46"></script>
-  <script src="js/router.js?v=46"></script>
-  <script src="js/chat.js?v=46"></script>
-  <script src="js/delivery-board.js?v=46"></script>
-  <script src="js/naver-maps.js?v=46"></script>
-  <script src="js/views/floor2.js?v=46"></script>
-  <script src="js/views/floor1.js?v=46"></script>
-  <script src="js/views/driver.js?v=46"></script>
-  <script src="js/views/admin.js?v=46"></script>
+  <script src="js/store.js?v=47"></script>
+  <script src="js/auth.js?v=47"></script>
+  <script src="js/ui.js?v=47"></script>
+  <script src="js/api.js?v=47"></script>
+  <script src="js/router.js?v=47"></script>
+  <script src="js/chat.js?v=47"></script>
+  <script src="js/delivery-board.js?v=47"></script>
+  <script src="js/naver-maps.js?v=47"></script>
+  <script src="js/views/floor2.js?v=47"></script>
+  <script src="js/views/floor1.js?v=47"></script>
+  <script src="js/views/driver.js?v=47"></script>
+  <script src="js/views/admin.js?v=47"></script>
 
   <script>
     /* ═══════════════════════════════════════════════════════
@@ -580,10 +580,28 @@
           footer.insertBefore(wrap, footer.firstChild);
 
           wrap.querySelector('#dp-btn-reset').addEventListener('click', async () => {
-            const ok = await UI.confirm(`${d.name} 기사의 배송 타임라인을 초기화하고 배송대기 상태로 전환합니다.`, '배송대기로 리셋');
+            const ok = await UI.confirm(
+              `${d.name} 기사의 배송 타임라인을 초기화하고 배송대기 상태로 전환합니다.\n현재 배차된 진행중 주문은 모두 배차 전 상태로 되돌립니다.`,
+              '배송대기로 리셋'
+            );
             if (!ok) return;
-            DeliveryPanel._setResetTs(driverId, new Date().toISOString());
-            close(); DeliveryPanel.render();
+            const btn = wrap.querySelector('#dp-btn-reset');
+            if (btn) { btn.disabled = true; btn.textContent = '리셋 중...'; }
+            try {
+              const { count } = await Api.resetDriverAssignments(driverId);
+              DeliveryPanel._setResetTs(driverId, new Date().toISOString());
+              close();
+              DeliveryPanel.render();
+              UI.toast(
+                count > 0
+                  ? `${d.name} 기사 배송대기로 리셋 (주문 ${count}건 배차 해제)`
+                  : `${d.name} 기사 배송대기로 리셋`,
+                'success'
+              );
+            } catch (e) {
+              UI.toast(e.message || '리셋 실패', 'error');
+              if (btn) { btn.disabled = false; btn.textContent = '🔄 배송대기로 리셋'; }
+            }
           });
         }
       },

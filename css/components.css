@@ -1425,6 +1425,7 @@ button.eo-title-chip:hover { background: #fff; border-color: var(--border-strong
 .eo-act-dot-ok { background: var(--success, #10b981); }
 .eo-act-dot-acc { background: var(--primary, #2563eb); }
 .eo-act-dot-ink { background: var(--text-muted); }
+.eo-act-dot-warn { background: var(--warning, #f59e0b); }
 .eo-act-body { flex: 1; min-width: 0; }
 .eo-act-title { color: var(--text-primary); font-weight: 600; }
 .eo-act-meta { font-size: 0.7rem; color: var(--text-muted); font-family: 'Menlo','Consolas',monospace; margin-top: 1px; }

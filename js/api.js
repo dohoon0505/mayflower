@@ -163,6 +163,45 @@ const Api = {
     return true;
   },
 
+  /* 기사 배송대기 리셋: 해당 기사에게 배차된 "진행중" 주문을
+   * 배차 전 상태로 되돌림 (assigned* → null, status 3 → 2 제작중).
+   * 완료(4)·취소(5)·반품(6) 건은 건드리지 않음. */
+  async resetDriverAssignments(driverId) {
+    const s = _requireSession();
+    if (!Auth.can('assignDriver', s.role)) throw { status: 403, message: '권한이 없습니다.' };
+    if (!driverId) throw { status: 400, message: 'driverId 가 필요합니다.' };
+
+    const all = Store.getOrders();
+    const targets = all.filter(o =>
+      o.assignedDriverId === driverId &&
+      o.status !== 4 && o.status !== 5 && o.status !== 6
+    );
+    if (!targets.length) return { count: 0 };
+
+    const now   = _now();
+    const actor = s.displayName || s.username || '담당자';
+    const updates = {};
+    targets.forEach(o => {
+      updates[`orders/${o.id}/assignedDriverId`]   = null;
+      updates[`orders/${o.id}/assignedDriverName`] = null;
+      updates[`orders/${o.id}/assignedAt`]         = null;
+      updates[`orders/${o.id}/updatedAt`]          = now;
+      /* 배송중(3) → 제작중(2) 로 롤백. 2 이하는 상태 유지. */
+      if (o.status === 3) updates[`orders/${o.id}/status`] = 2;
+
+      const key = _db().ref().push().key;
+      updates[`orders/${o.id}/activityLog/${key}`] = {
+        action: 'change',
+        label:  '배차 해제 (배송대기 리셋)',
+        actor,
+        ts:    now,
+        dot:   'warn',
+      };
+    });
+    await _db().ref().update(updates);
+    return { count: targets.length };
+  },
+
   /* 인수증 인쇄 기록 (업무 흐름도 1단계) */
   async markReceiptPrinted(id) {
     _requireSession();
