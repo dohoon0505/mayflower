@@ -780,7 +780,7 @@ ${pages}
     const role    = session?.role || '';
     const isFloor1Admin = role === 'floor1' || role === 'admin';
     const isDriver      = role === 'driver';
-    const rdonly = s => isDriver ? `readonly style="opacity:0.6;background:var(--bg-elevated)" title="${s}"` : '';
+    const rdonly = s => isDriver ? `readonly title="${s}"` : '';
 
     let products = [], drivers = [];
     try { [products, drivers] = await Promise.all([Api.getProducts(true), Api.getDrivers()]); }
@@ -789,10 +789,6 @@ ${pages}
     const productOpts = products.map(p =>
       `<option value="${p.id}" ${p.id === o.productId ? 'selected' : ''}>${UI.escHtml(p.name)}${p.isActive === false ? ' (비활성)' : ''}</option>`
     ).join('');
-    const driverOpts = `<option value="0" ${!o.assignedDriverId ? 'selected' : ''}>— 미배정 —</option>` +
-      drivers.map(d =>
-        `<option value="${d.id}" ${d.id === o.assignedDriverId ? 'selected' : ''}>${UI.escHtml(d.name)}</option>`
-      ).join('');
 
     const toLocalDT = iso => {
       if (!iso) return '';
@@ -801,111 +797,247 @@ ${pages}
       return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
     };
 
+    const fmtSumDate = iso => {
+      if (!iso) return '—';
+      try {
+        const d = new Date(iso);
+        const p = n => String(n).padStart(2,'0');
+        let hh = d.getHours(); const mm = p(d.getMinutes());
+        const ap = hh < 12 ? '오전' : '오후';
+        hh = hh % 12; if (hh === 0) hh = 12;
+        return `${d.getFullYear()}. ${p(d.getMonth()+1)}. ${p(d.getDate())} · ${ap} ${hh}:${mm}`;
+      } catch (_) { return iso; }
+    };
+    const fmtKRW = v => {
+      const n = Number(String(v ?? '').replace(/[^\d]/g,''));
+      return n ? n.toLocaleString('ko-KR') : '';
+    };
+
     let storeFile = null, delivFile = null;
     let storeObjectUrl = o.storePhotoUrl || null;
     let delivObjectUrl = o.deliveryPhotoUrl || null;
 
-    /* ── Right panel: photo columns ── */
-    const rightPanel = isDriver ? `
-      <div class="eo-photo-col" style="max-width:220px;margin:0 auto;flex:none">
-        <label class="form-label" style="font-weight:700;color:var(--primary)">📷 배송완료 사진</label>
-        <label class="eo-photo-area" id="drv-drop-zone" for="drv-complete-input">
-          <input type="file" id="drv-complete-input" accept="image/jpeg,image/png">
-          <div class="eo-photo-placeholder" id="drv-drop-msg">
-            <div style="font-size:2rem">📷</div>
-            <div>클릭 또는<br>드래그</div>
-            <div style="font-size:0.75rem">jpg, png / 최대 5MB</div>
-          </div>
-          <img id="drv-complete-preview" style="display:none" alt="미리보기">
-        </label>
-        <div id="drv-complete-info" style="font-size:0.78rem;color:var(--text-muted);margin-top:0.35rem;text-align:center"></div>
-      </div>` : `
-      <div class="eo-photo-col">
-        <label class="form-label">🏪 매장사진</label>
-        <label class="eo-photo-area" id="eo-store-box" for="eo-store-file">
-          <input type="file" id="eo-store-file" accept="image/jpeg,image/png">
-          <div class="eo-photo-placeholder" id="eo-store-ph" ${storeObjectUrl ? 'style="display:none"' : ''}>
-            <div style="font-size:1.75rem">🏪</div>
-            <div>클릭 또는<br>드래그</div>
-          </div>
-          <img id="eo-store-preview" ${storeObjectUrl ? `src="${storeObjectUrl}"` : 'style="display:none"'} alt="매장사진">
-        </label>
-      </div>
-      <div class="eo-photo-col">
-        <label class="form-label">📷 현장사진</label>
-        <label class="eo-photo-area" id="eo-deliv-box" for="eo-deliv-file">
-          <input type="file" id="eo-deliv-file" accept="image/jpeg,image/png">
-          <div class="eo-photo-placeholder" id="eo-deliv-ph" ${delivObjectUrl ? 'style="display:none"' : ''}>
-            <div style="font-size:1.75rem">📷</div>
-            <div>클릭 또는<br>드래그</div>
-          </div>
-          <img id="eo-deliv-preview" ${delivObjectUrl ? `src="${delivObjectUrl}"` : 'style="display:none"'} alt="현장사진">
-        </label>
+    /* ── Status stepper data (read-only indicator) ──
+       status codes: 0=주문접수, 1=리본출력완료, 2=제작완료, 3=배송중, 4=배송완료, 5=취소, 6=반품 */
+    const stepDefs = [
+      { code: 0, label: '주문접수' },
+      { code: 1, label: '리본출력' },
+      { code: 2, label: '제작완료' },
+      { code: 3, label: '배송중' },
+      { code: 4, label: '배송완료' },
+    ];
+    const isCancelled = o.status === 5 || o.status === 6;
+    const cancelLabel = o.status === 5 ? '주문취소' : o.status === 6 ? '반품' : '';
+    const stepsHtml = stepDefs.map((s, i) => {
+      let cls = '';
+      if (isCancelled) cls = 'eo-step-void';
+      else if (s.code < o.status) cls = 'eo-step-done';
+      else if (s.code === o.status) cls = 'eo-step-current';
+      return `
+        <div class="eo-step ${cls}" aria-label="${s.label}">
+          <span class="eo-step-num">${String(i+1).padStart(2,'0')}</span>
+          <span class="eo-step-nm">${s.label}</span>
+        </div>`;
+    }).join('');
+    const currentStatusLabel = isCancelled ? cancelLabel
+      : (stepDefs.find(s => s.code === o.status)?.label || '-');
+
+    /* ── Summary cells (live updated on form input) ── */
+    const initChain = o.chainName || '';
+    const initProdName = (products.find(p => p.id === o.productId)?.name) || o.productName || '';
+    const initRecv = o.recipientName || '';
+    const initPhone = o.recipientPhone || '';
+    const initPrice = o.price != null ? Number(o.price).toLocaleString('ko-KR') : '';
+
+    const summaryHtml = `
+      <div class="eo-summary" aria-label="주문 요약">
+        <div class="eo-sum-cell">
+          <div class="eo-sum-lbl">체인 · 상품</div>
+          <div class="eo-sum-val" id="eo-sum-product">${UI.escHtml(initChain || '—')} · ${UI.escHtml(initProdName || '—')}</div>
+        </div>
+        <div class="eo-sum-cell">
+          <div class="eo-sum-lbl">배송 일시</div>
+          <div class="eo-sum-val" id="eo-sum-date">${UI.escHtml(fmtSumDate(o.deliveryDatetime))}</div>
+        </div>
+        <div class="eo-sum-cell">
+          <div class="eo-sum-lbl">받는 분</div>
+          <div class="eo-sum-val" id="eo-sum-recv">${UI.escHtml(initRecv || '—')}${initPhone ? ' · ' + UI.escHtml(initPhone) : ''}</div>
+        </div>
+        <div class="eo-sum-cell">
+          <div class="eo-sum-lbl">금액</div>
+          <div class="eo-sum-val ${initPrice ? '' : 'eo-sum-muted'}" id="eo-sum-amt">${initPrice ? initPrice + '<span class="eo-sum-unit">원</span>' : '미입력'}</div>
+        </div>
       </div>`;
+
+    const stepperHtml = `
+      <div class="eo-status-wrap">
+        <div class="eo-status-head">
+          <span class="eo-status-lbl">현재 상태</span>
+          <span class="eo-status-current ${isCancelled ? 'eo-status-void' : ''}">${UI.escHtml(currentStatusLabel)}</span>
+        </div>
+        <div class="eo-stepper">${stepsHtml}</div>
+      </div>`;
+
+    /* ── Activity log (compact, derived from timestamps) ── */
+    const activityItems = [];
+    if (o.createdAt) activityItems.push({ dot: 'ink', title: '주문 접수', by: o.createdByName || '시스템', ts: o.createdAt });
+    if (o.storePhotoUrl && o.updatedAt) activityItems.push({ dot: 'acc', title: '매장사진 업로드', by: '담당자', ts: o.updatedAt });
+    if (o.assignedAt) activityItems.push({ dot: 'acc', title: `${UI.escHtml(o.assignedDriverName || '기사')} 배차`, by: '담당자', ts: o.assignedAt });
+    if (o.status === 4 && o.deliveryPhotoUrl && o.updatedAt) activityItems.push({ dot: 'ok', title: '배송 완료', by: o.assignedDriverName || '기사', ts: o.updatedAt });
+    const fmtActTs = iso => {
+      try { const d = new Date(iso); const p = n => String(n).padStart(2,'0');
+        return `${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+      } catch (_) { return ''; }
+    };
+    const actHtml = activityItems.length ? activityItems.slice(-4).reverse().map(a => `
+      <li class="eo-act-item">
+        <span class="eo-act-dot eo-act-dot-${a.dot}"></span>
+        <div class="eo-act-body">
+          <div class="eo-act-title">${a.title}</div>
+          <div class="eo-act-meta">${UI.escHtml(a.by)} · ${fmtActTs(a.ts)}</div>
+        </div>
+      </li>`).join('') : `<li class="eo-act-empty">활동 내역 없음</li>`;
+
+    /* ── Right panel: photos + activity ── */
+    const rightPanel = isDriver ? `
+      <section class="eo-section">
+        <div class="eo-sec-head"><h3>증빙 사진</h3><span class="eo-sec-sep"></span></div>
+        <div class="eo-photo-card" style="max-width:260px;margin:0 auto">
+          <div class="eo-ph-head">
+            <span class="eo-ph-title">📷 배송완료 사진</span>
+            <span class="eo-timebadge eo-tb-post">배송 후</span>
+          </div>
+          <label class="eo-photo-area" id="drv-drop-zone" for="drv-complete-input">
+            <input type="file" id="drv-complete-input" accept="image/jpeg,image/png">
+            <div class="eo-photo-placeholder" id="drv-drop-msg">
+              <div style="font-size:1.75rem">📷</div>
+              <div>클릭 또는 드래그</div>
+              <div style="font-size:0.72rem;color:var(--text-muted)">jpg · png · 최대 5MB</div>
+            </div>
+            <img id="drv-complete-preview" style="display:none" alt="미리보기">
+          </label>
+          <div id="drv-complete-info" class="eo-ph-note"></div>
+        </div>
+      </section>` : `
+      <section class="eo-section">
+        <div class="eo-sec-head"><h3>증빙 사진</h3><span class="eo-sec-sep"></span><span class="eo-sec-meta">2장</span></div>
+        <div class="eo-photos">
+          <div class="eo-photo-card">
+            <div class="eo-ph-head">
+              <span class="eo-ph-title">🏪 매장사진</span>
+              <span class="eo-timebadge eo-tb-pre">배송 전</span>
+            </div>
+            <label class="eo-photo-area" id="eo-store-box" for="eo-store-file">
+              <input type="file" id="eo-store-file" accept="image/jpeg,image/png">
+              <div class="eo-photo-placeholder" id="eo-store-ph" ${storeObjectUrl ? 'style="display:none"' : ''}>
+                <div style="font-size:1.5rem">🏪</div>
+                <div>클릭 또는 드래그</div>
+                <div style="font-size:0.72rem;color:var(--text-muted)">jpg · png · 5MB</div>
+              </div>
+              <img id="eo-store-preview" ${storeObjectUrl ? `src="${storeObjectUrl}"` : 'style="display:none"'} alt="매장사진">
+            </label>
+          </div>
+          <div class="eo-photo-card">
+            <div class="eo-ph-head">
+              <span class="eo-ph-title">📷 현장사진</span>
+              <span class="eo-timebadge eo-tb-post">배송 후</span>
+            </div>
+            <label class="eo-photo-area" id="eo-deliv-box" for="eo-deliv-file">
+              <input type="file" id="eo-deliv-file" accept="image/jpeg,image/png">
+              <div class="eo-photo-placeholder" id="eo-deliv-ph" ${delivObjectUrl ? 'style="display:none"' : ''}>
+                <div style="font-size:1.5rem">📷</div>
+                <div>클릭 또는 드래그</div>
+                <div style="font-size:0.72rem;color:var(--text-muted)">jpg · png · 5MB</div>
+              </div>
+              <img id="eo-deliv-preview" ${delivObjectUrl ? `src="${delivObjectUrl}"` : 'style="display:none"'} alt="현장사진">
+            </label>
+          </div>
+        </div>
+      </section>
+      <section class="eo-section">
+        <div class="eo-sec-head"><h3>최근 활동</h3><span class="eo-sec-sep"></span></div>
+        <ul class="eo-act-list">${actHtml}</ul>
+      </section>`;
 
     /* ── Driver view photo link buttons (read-only) ── */
     const driverPhotoLinks = isDriver ? `
-      <div class="form-group" style="margin-bottom:0.5rem">
-        <label class="form-label">기존 사진</label>
+      <section class="eo-section">
+        <div class="eo-sec-head"><h3>기존 사진</h3><span class="eo-sec-sep"></span></div>
         <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
           ${storeObjectUrl ? `<button class="btn btn-ghost btn-sm" onclick="window.open('${storeObjectUrl}')">🏪 매장사진 보기</button>` : '<span style="color:var(--text-muted);font-size:0.85rem">매장사진 없음</span>'}
           ${delivObjectUrl ? `<button class="btn btn-ghost btn-sm" onclick="window.open('${delivObjectUrl}')">📷 현장사진 보기</button>` : ''}
         </div>
-      </div>` : '';
+      </section>` : '';
 
     const content = `
+      ${summaryHtml}
+      ${stepperHtml}
       <div class="eo-split">
         <div class="eo-left">
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">체인명 <span class="form-required">*</span></label>
-              <input type="text" id="eo-chain" class="form-control" value="${UI.escHtml(o.chainName || '')}" ${rdonly('조회 전용')}>
-            </div>
-            <div class="form-group">
-              <label class="form-label">상품명 <span class="form-required">*</span></label>
-              <select id="eo-product" class="form-control" ${isDriver?'disabled style="opacity:0.6"':''}>
-                ${productOpts}
-              </select>
-            </div>
-          </div>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">배송 일시 <span class="form-required">*</span></label>
-              <input type="datetime-local" id="eo-datetime" class="form-control" value="${toLocalDT(o.deliveryDatetime)}" step="600" ${rdonly('조회 전용')}>
+          <section class="eo-section">
+            <div class="eo-sec-head"><h3>주문 정보</h3><span class="eo-sec-sep"></span></div>
+            <div class="eo-grid eo-grid-2">
+              <div class="eo-field">
+                <label>체인명 <span class="eo-req">*</span></label>
+                <input type="text" id="eo-chain" class="form-control" value="${UI.escHtml(o.chainName || '')}" ${rdonly('조회 전용')}>
+              </div>
+              <div class="eo-field">
+                <label>상품명 <span class="eo-req">*</span></label>
+                <select id="eo-product" class="form-control" ${isDriver?'disabled':''}>
+                  ${productOpts}
+                </select>
+              </div>
+              <div class="eo-field">
+                <label>배송 일시 <span class="eo-req">*</span></label>
+                <input type="datetime-local" id="eo-datetime" class="form-control" value="${toLocalDT(o.deliveryDatetime)}" step="600" ${rdonly('조회 전용')}>
+              </div>
+              <div class="eo-field">
+                <label>금액 <span class="eo-opt">선택</span></label>
+                <div class="eo-input-row eo-has-prefix eo-has-suffix">
+                  <span class="eo-prefix">₩</span>
+                  <input type="text" id="eo-price" class="form-control" inputmode="numeric" value="${UI.escHtml(initPrice)}" placeholder="80,000" ${rdonly('조회 전용')}>
+                  <span class="eo-suffix" id="eo-price-suffix">${initPrice ? '원' : ''}</span>
+                </div>
+              </div>
             </div>
-            <div class="form-group">
-              <label class="form-label">금액 (원)</label>
-              <input type="number" id="eo-price" class="form-control" value="${o.price ?? ''}" placeholder="예: 80000" min="0" step="1000" ${rdonly('조회 전용')}>
-            </div>
-          </div>
+          </section>
 
-          <div class="form-group eo-addr-group">
-            <label class="form-label">배송지 주소 <span class="form-required">*</span></label>
-            <input type="text" id="eo-address" class="form-control" value="${UI.escHtml(o.deliveryAddress || '')}" ${rdonly('조회 전용')}>
-          </div>
+          <section class="eo-section">
+            <div class="eo-sec-head"><h3>배송</h3><span class="eo-sec-sep"></span></div>
+            <div class="eo-grid eo-grid-1">
+              <div class="eo-field">
+                <label>배송지 주소 <span class="eo-req">*</span></label>
+                <input type="text" id="eo-address" class="form-control" value="${UI.escHtml(o.deliveryAddress || '')}" ${rdonly('조회 전용')}>
+              </div>
+            </div>
+            <div class="eo-grid eo-grid-2">
+              <div class="eo-field">
+                <label>받는 분 성함 <span class="eo-req">*</span></label>
+                <input type="text" id="eo-name" class="form-control" value="${UI.escHtml(o.recipientName || '')}" ${rdonly('조회 전용')}>
+              </div>
+              <div class="eo-field">
+                <label>받는 분 연락처 <span class="eo-opt">선택</span></label>
+                <input type="tel" id="eo-phone" class="form-control" value="${UI.escHtml(o.recipientPhone || '')}" placeholder="010-0000-0000" ${rdonly('조회 전용')}>
+              </div>
+            </div>
+          </section>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">받는 분 성함 <span class="form-required">*</span></label>
-              <input type="text" id="eo-name" class="form-control" value="${UI.escHtml(o.recipientName || '')}" ${rdonly('조회 전용')}>
+          <section class="eo-section">
+            <div class="eo-sec-head"><h3>문구</h3><span class="eo-sec-sep"></span></div>
+            <div class="eo-grid eo-grid-2">
+              <div class="eo-field">
+                <label>보내는분 문구 (리본) <span class="eo-opt">선택</span></label>
+                <input type="text" id="eo-ribbon" class="form-control" maxlength="40" value="${UI.escHtml(o.ribbonText || '')}" ${rdonly('조회 전용')}>
+                <div class="eo-char-count"><span id="eo-ribbon-cnt">${(o.ribbonText||'').length}</span> / 40</div>
+              </div>
+              <div class="eo-field">
+                <label>경조사어 문구 <span class="eo-opt">선택</span></label>
+                <input type="text" id="eo-occasion" class="form-control" value="${UI.escHtml(o.occasionText || '')}" ${rdonly('조회 전용')} placeholder="예: 근조, 축화환, 승진축하">
+                <div class="eo-help">예: 근조 · 축화환 · 개업축하 · 승진축하</div>
+              </div>
             </div>
-            <div class="form-group">
-              <label class="form-label">받는 분 연락처</label>
-              <input type="tel" id="eo-phone" class="form-control" value="${UI.escHtml(o.recipientPhone || '')}" ${rdonly('조회 전용')}>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">보내는분 문구 (리본)</label>
-              <input type="text" id="eo-ribbon" class="form-control" value="${UI.escHtml(o.ribbonText || '')}" ${rdonly('조회 전용')}>
-            </div>
-            <div class="form-group">
-              <label class="form-label">경조사어 문구</label>
-              <input type="text" id="eo-occasion" class="form-control" value="${UI.escHtml(o.occasionText || '')}" ${rdonly('조회 전용')} placeholder="예: 삼가 고인의 명복을 빕니다">
-            </div>
-          </div>
+          </section>
 
           ${driverPhotoLinks}
         </div>
@@ -916,9 +1048,13 @@ ${pages}
 
     /* 헤더 제목: 주문서 수정 + 주문번호 · 접수자 chip */
     const titleHtml = `
+      <span class="eo-title-dot" aria-hidden="true"></span>
       <span class="eo-title-main">주문서 ${isDriver ? '조회' : '수정'}</span>
       <span class="eo-title-meta">
-        <span class="eo-title-chip eo-chip-id">#${UI.escHtml(String(orderId))}</span>
+        <button type="button" class="eo-title-chip eo-chip-id" id="eo-idchip" title="주문 ID 복사">
+          <span id="eo-idtext">#${UI.escHtml(String(orderId))}</span>
+          <span class="eo-chip-copy">⧉</span>
+        </button>
         <span class="eo-title-chip eo-chip-user" title="접수자">
           <span class="eo-chip-label">접수자</span>
           <span class="eo-chip-value">${UI.escHtml(o.createdByName || '-')}</span>
@@ -932,6 +1068,123 @@ ${pages}
       cancelText: isDriver ? '' : '취소',
       size: 'modal-edit',
     });
+
+    /* ── ID chip copy ── */
+    const idChip = overlay.querySelector('#eo-idchip');
+    if (idChip) {
+      idChip.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(String(orderId));
+          idChip.classList.add('eo-chip-copied');
+          const t = overlay.querySelector('#eo-idtext');
+          const orig = t.textContent;
+          t.textContent = '복사됨 ✓';
+          setTimeout(() => { t.textContent = orig; idChip.classList.remove('eo-chip-copied'); }, 1200);
+        } catch (_) { UI.toast('복사 실패', 'error'); }
+      });
+    }
+
+    /* ── Summary live-update + amount format + ribbon counter ── */
+    const selGet = sel => overlay.querySelector(sel);
+    const updateSummary = () => {
+      const chain = (selGet('#eo-chain')?.value || '').trim();
+      const prodEl = selGet('#eo-product');
+      const prodName = prodEl?.options[prodEl.selectedIndex]?.text?.replace(/\s*\(비활성\)\s*$/, '') || '—';
+      const recv = (selGet('#eo-name')?.value || '').trim();
+      const phone = (selGet('#eo-phone')?.value || '').trim();
+      const dt = selGet('#eo-datetime')?.value;
+      const amtRaw = selGet('#eo-price')?.value || '';
+
+      const sp = overlay.querySelector('#eo-sum-product');
+      if (sp) sp.textContent = `${chain || '—'} · ${prodName || '—'}`;
+      const sd = overlay.querySelector('#eo-sum-date');
+      if (sd) sd.textContent = dt ? fmtSumDate(new Date(dt).toISOString()) : '—';
+      const sr = overlay.querySelector('#eo-sum-recv');
+      if (sr) sr.textContent = (recv || '—') + (phone ? ' · ' + phone : '');
+      const sa = overlay.querySelector('#eo-sum-amt');
+      if (sa) {
+        const fmt = fmtKRW(amtRaw);
+        if (fmt) { sa.innerHTML = `${fmt}<span class="eo-sum-unit">원</span>`; sa.classList.remove('eo-sum-muted'); }
+        else { sa.textContent = '미입력'; sa.classList.add('eo-sum-muted'); }
+      }
+    };
+
+    /* Amount live KRW formatting + suffix toggle */
+    const priceEl = overlay.querySelector('#eo-price');
+    if (priceEl && !isDriver) {
+      priceEl.addEventListener('input', e => {
+        const raw = e.target.value.replace(/[^\d]/g,'');
+        const formatted = raw ? Number(raw).toLocaleString('ko-KR') : '';
+        e.target.value = formatted;
+        const sfx = overlay.querySelector('#eo-price-suffix');
+        if (sfx) sfx.textContent = formatted ? '원' : '';
+      });
+    }
+
+    /* Ribbon char counter */
+    const ribbonEl = overlay.querySelector('#eo-ribbon');
+    const ribbonCnt = overlay.querySelector('#eo-ribbon-cnt');
+    if (ribbonEl && ribbonCnt) {
+      ribbonEl.addEventListener('input', () => {
+        const n = ribbonEl.value.length;
+        ribbonCnt.textContent = n;
+        ribbonCnt.parentElement.classList.toggle('eo-warn', n > 32);
+      });
+    }
+
+    /* ── Dirty tracking (non-driver only) ── */
+    let footStatus = null, btnSaveRef = null;
+    const initialSnap = {};
+    const trackedSel = ['#eo-chain','#eo-product','#eo-datetime','#eo-price','#eo-address','#eo-name','#eo-phone','#eo-ribbon','#eo-occasion'];
+    if (!isDriver) {
+      trackedSel.forEach(s => { const el = overlay.querySelector(s); if (el) initialSnap[s] = el.value; });
+
+      /* Footer status indicator (insert before confirm button) */
+      const footer = overlay.querySelector('.modal-footer');
+      if (footer) {
+        footStatus = document.createElement('div');
+        footStatus.className = 'eo-foot-status';
+        footStatus.innerHTML = `<span class="eo-foot-dot"></span><span class="eo-foot-text">모든 변경 사항 저장됨</span><span class="eo-kbd-hint"><span class="eo-kbd">Ctrl</span>+<span class="eo-kbd">S</span> 저장 · <span class="eo-kbd">Esc</span> 닫기</span>`;
+        footer.insertBefore(footStatus, footer.firstChild);
+      }
+      btnSaveRef = overlay.querySelector('.modal-confirm');
+
+      const isDirty = () => trackedSel.some(s => { const el = overlay.querySelector(s); return el && el.value !== initialSnap[s]; });
+      const refreshFoot = () => {
+        if (!footStatus) return;
+        const dirty = isDirty();
+        footStatus.classList.toggle('eo-foot-dirty', dirty);
+        const txt = footStatus.querySelector('.eo-foot-text');
+        if (txt) txt.textContent = dirty ? '저장되지 않은 변경 사항' : '모든 변경 사항 저장됨';
+      };
+      overlay._eoRefreshFoot = refreshFoot;
+      overlay._eoSnapshotReset = () => { trackedSel.forEach(s => { const el = overlay.querySelector(s); if (el) initialSnap[s] = el.value; }); refreshFoot(); };
+
+      trackedSel.forEach(s => {
+        const el = overlay.querySelector(s);
+        if (!el) return;
+        const ev = (el.tagName === 'SELECT') ? 'change' : 'input';
+        el.addEventListener(ev, () => { updateSummary(); refreshFoot(); });
+        el.addEventListener('change', () => { updateSummary(); refreshFoot(); });
+      });
+      refreshFoot();
+    }
+
+    /* ── Keyboard shortcuts: Ctrl+S save / Esc close ── */
+    const onKeydown = (e) => {
+      if (!document.body.contains(overlay)) return;
+      if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault();
+        const btn = overlay.querySelector('.modal-confirm');
+        if (btn && !btn.disabled) btn.click();
+      } else if (e.key === 'Escape') {
+        const btn = overlay.querySelector('.modal-cancel') || overlay.querySelector('.modal-close');
+        if (btn) btn.click();
+      }
+    };
+    document.addEventListener('keydown', onKeydown);
+    const _origRemove = overlay.remove.bind(overlay);
+    overlay.remove = function () { document.removeEventListener('keydown', onKeydown); return _origRemove(); };
 
     if (isDriver) {
       /* For driver: confirm btn = close; set up photo upload for completion */
@@ -1027,10 +1280,7 @@ ${pages}
       const recipientPhone = overlay.querySelector('#eo-phone').value.trim();
       const ribbonText     = overlay.querySelector('#eo-ribbon').value.trim();
       const occasionText   = overlay.querySelector('#eo-occasion').value.trim();
-      const priceRaw       = overlay.querySelector('#eo-price')?.value;
-      const driverIdRaw    = overlay.querySelector('#eo-driver')?.value ?? (o.assignedDriverId || '');
-      /* 현재 상태는 모달에서 편집 불가 — 변경은 상태 전환 전용 버튼/액션으로만 수행 */
-      const newStatus      = o.status;
+      const priceRaw       = (overlay.querySelector('#eo-price')?.value || '').replace(/[^\d]/g, '');
 
       if (!chainName)       { UI.toast('체인명을 입력해 주세요.', 'warning'); return; }
       if (!productId)       { UI.toast('상품을 선택해 주세요.', 'warning'); return; }
@@ -1053,18 +1303,14 @@ ${pages}
           chainName, productId, deliveryDatetime,
           deliveryAddress, recipientName, recipientPhone,
           ribbonText, occasionText,
-          assignedDriverId: driverIdRaw,
           storePhotoUrl:    newStoreUrl,
           deliveryPhotoUrl: newDelivUrl,
-          price: priceRaw != null && priceRaw !== '' ? Number(priceRaw) : null,
+          price: priceRaw ? Number(priceRaw) : null,
         });
 
-        /* Status change (floor1/admin only) */
-        if (isFloor1Admin && newStatus !== o.status) {
-          await Api.updateOrderStatus(orderId, newStatus);
-        }
-
         UI.toast('주문서가 수정되었습니다.', 'success');
+        /* Snapshot reset: 저장 성공 후 "저장됨" 상태로 복귀 */
+        if (overlay._eoSnapshotReset) overlay._eoSnapshotReset();
         overlay.classList.remove('show');
         setTimeout(() => overlay.remove(), 300);
         /* Reload the appropriate view */
