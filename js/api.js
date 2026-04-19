@@ -181,7 +181,7 @@ const Api = {
     return true;
   },
 
-  async updateOrder(id, data) {
+  async updateOrder(id, data, opts = {}) {
     const s = _requireSession();
     const o = Store.getOrderById(id);
     if (!o) throw { status: 404, message: '주문을 찾을 수 없습니다.' };
@@ -216,7 +216,20 @@ const Api = {
     patch.updatedAt = _now();
     /* Firebase는 undefined 값을 거부하므로 제거 */
     Object.keys(patch).forEach(k => { if (patch[k] === undefined) delete patch[k]; });
-    await _db().ref(`orders/${id}`).update(patch);
+
+    /* activityEntries 가 있으면 field 업데이트 + activityLog push 를 원자적으로 묶어서 1회 write */
+    const entries = Array.isArray(opts.activityEntries) ? opts.activityEntries.filter(Boolean) : [];
+    if (entries.length) {
+      const updates = {};
+      Object.keys(patch).forEach(k => { updates[`orders/${id}/${k}`] = patch[k]; });
+      entries.forEach(entry => {
+        const key = _db().ref().push().key;
+        updates[`orders/${id}/activityLog/${key}`] = entry;
+      });
+      await _db().ref().update(updates);
+    } else {
+      await _db().ref(`orders/${id}`).update(patch);
+    }
     return true;
   },
 

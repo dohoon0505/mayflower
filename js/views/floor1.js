@@ -854,14 +854,23 @@ ${pages}
         <div class="eo-stepper">${stepsHtml}</div>
       </div>`;
 
-    /* ── Activity log (compact, derived from timestamps) ── */
+    /* ── Activity log (저장된 activityLog + 기본 파생 이벤트) ── */
     const activityItems = [];
-    if (o.createdAt) activityItems.push({ dot: 'ink', title: '주문 접수', by: o.createdByName || '시스템', ts: o.createdAt });
-    if (o.storePhotoUrl && o.updatedAt) activityItems.push({ dot: 'acc', title: '매장사진 업로드', by: '담당자', ts: o.updatedAt });
+    if (o.createdAt)  activityItems.push({ dot: 'ink', title: '주문 접수', by: o.createdByName || '시스템', ts: o.createdAt });
     if (o.assignedAt) activityItems.push({ dot: 'acc', title: `${UI.escHtml(o.assignedDriverName || '기사')} 배차`, by: '담당자', ts: o.assignedAt });
-    if (o.memoCreatedAt) activityItems.push({ dot: 'acc', title: '메모 작성', by: o.memoCreatedBy || '담당자', ts: o.memoCreatedAt });
-    if (o.memoUpdatedAt && o.memoUpdatedAt !== o.memoCreatedAt) activityItems.push({ dot: 'acc', title: '메모 변경', by: o.memoUpdatedBy || '담당자', ts: o.memoUpdatedAt });
-    if (o.status === 4 && o.deliveryPhotoUrl && o.updatedAt) activityItems.push({ dot: 'ok', title: '배송 완료', by: o.assignedDriverName || '기사', ts: o.updatedAt });
+    if (o.status === 4 && o.deliveryPhotoUrl) activityItems.push({ dot: 'ok', title: '배송 완료', by: o.assignedDriverName || '기사', ts: o.updatedAt || '' });
+    /* 저장된 필드별 활동 로그 병합 */
+    if (o.activityLog && typeof o.activityLog === 'object') {
+      Object.values(o.activityLog).forEach(entry => {
+        if (!entry || !entry.label) return;
+        activityItems.push({
+          dot:   entry.dot || 'acc',
+          title: entry.label,
+          by:    entry.actor || '담당자',
+          ts:    entry.ts || '',
+        });
+      });
+    }
     /* 타임스탬프 순 정렬 */
     activityItems.sort((a,b) => String(a.ts || '').localeCompare(String(b.ts || '')));
     const fmtActTs = iso => {
@@ -1273,31 +1282,49 @@ ${pages}
         if (storeFile) { const r = await Api.uploadStorePhoto(storeFile, orderId);   newStoreUrl = r.url; }
         if (delivFile) { const r = await Api.uploadDeliveryPhoto(delivFile, orderId); newDelivUrl = r.url; }
 
-        /* 메모 변경 감지 → 활동 로그용 타임스탬프 + 작성자 기록 */
-        const prevMemo = (o.memo || '').trim();
+        /* 필드별 개별 변경 감지 → 각 변경마다 최근 활동에 등재 */
         const nextMemo = (memoText || '').trim();
-        const memoChanged = prevMemo !== nextMemo;
-        const session = Auth.getSession();
-        const author  = session?.displayName || session?.username || '담당자';
+        const session  = Auth.getSession();
+        const author   = session?.displayName || session?.username || '담당자';
+        const nowIso   = new Date().toISOString();
+        const nextPrice = priceRaw ? Number(priceRaw) : null;
         const patch = {
           chainName, productId, deliveryDatetime,
           deliveryAddress, recipientName, recipientPhone,
           ribbonText, occasionText,
           storePhotoUrl:    newStoreUrl,
           deliveryPhotoUrl: newDelivUrl,
-          price: priceRaw ? Number(priceRaw) : null,
+          price: nextPrice,
           memo: nextMemo || null,
         };
-        if (memoChanged) {
-          const nowIso = new Date().toISOString();
-          if (!o.memoCreatedAt && nextMemo) {
-            patch.memoCreatedAt = nowIso;
-            patch.memoCreatedBy = author;
-          }
-          patch.memoUpdatedAt = nowIso;
-          patch.memoUpdatedBy = author;
-        }
-        await Api.updateOrder(orderId, patch);
+
+        const diffs = [];
+        const norm = v => (v == null ? '' : String(v));
+        const cmp  = (prev, next, addLabel, changeLabel, dot='acc') => {
+          const p = norm(prev), n = norm(next);
+          if (p === n) return;
+          diffs.push({
+            action: p ? 'change' : 'add',
+            label:  p ? changeLabel : addLabel,
+            actor:  author,
+            ts:     nowIso,
+            dot,
+          });
+        };
+        cmp(o.storePhotoUrl,    newStoreUrl,       '매장사진 업로드', '매장사진 변경');
+        cmp(o.deliveryPhotoUrl, newDelivUrl,       '현장사진 업로드', '현장사진 변경');
+        cmp((o.memo||'').trim(), nextMemo,         '메모 작성',     '메모 변경');
+        cmp(o.price ?? '',       nextPrice ?? '',  '금액 입력',     '금액 변경');
+        cmp(o.chainName,         chainName,        '체인명 입력',   '체인명 변경');
+        cmp(o.productId,         productId,        '상품 선택',     '상품 변경');
+        cmp(o.deliveryDatetime,  deliveryDatetime, '배송일시 설정', '배송일시 변경');
+        cmp(o.deliveryAddress,   deliveryAddress,  '배송지 입력',   '배송지 변경');
+        cmp(o.recipientName,     recipientName,    '받는 분 성함 입력', '받는 분 성함 변경');
+        cmp(o.recipientPhone,    recipientPhone,   '받는 분 연락처 입력','받는 분 연락처 변경');
+        cmp(o.ribbonText,        ribbonText,       '리본 문구 입력', '리본 문구 변경');
+        cmp(o.occasionText,      occasionText,     '경조사어 입력', '경조사어 변경');
+
+        await Api.updateOrder(orderId, patch, { activityEntries: diffs });
 
         UI.toast('주문서가 수정되었습니다.', 'success');
         /* Snapshot reset: 저장 성공 후 "저장됨" 상태로 복귀 */
