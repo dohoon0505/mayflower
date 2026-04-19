@@ -63,6 +63,14 @@
       "$itemId": {
         ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'floor1' || root.child('users').child(auth.uid).child('role').val() === 'floor2' || root.child('users').child(auth.uid).child('role').val() === 'admin')"
       }
+    },
+
+    "orderLedger": {
+      ".read": "auth != null",
+      ".indexOn": ["createdAt", "product", "client"],
+      "$entryId": {
+        ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'floor1' || root.child('users').child(auth.uid).child('role').val() === 'admin')"
+      }
     }
   }
 }

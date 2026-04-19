@@ -14,8 +14,9 @@
     products: [],
     drivers: [],
     categories: [],   // [{ id, name, order }] 정렬됨
+    ledger: [],       // [{ id, client, product, location, quantity, createdAt, ... }] createdAt 내림차순
     ready: {
-      users: false, orders: false, products: false, drivers: false, categories: false,
+      users: false, orders: false, products: false, drivers: false, categories: false, ledger: false,
     },
   };
 
@@ -60,6 +61,10 @@
       /* order 오름차순 정렬 */
       return [...list].sort((a, b) => (a.order ?? 9999) - (b.order ?? 9999));
     });
+    _subscribe('orderLedger', 'ledger', (list) => {
+      /* createdAt 내림차순 (최신이 위) */
+      return [...list].sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+    });
   }
 
   /* 모든 컬렉션이 첫 데이터(또는 빈값)를 수신할 때까지 대기 */
@@ -68,7 +73,7 @@
       const t0 = Date.now();
       const check = () => {
         const r = cache.ready;
-        if (r.users && r.orders && r.products && r.drivers && r.categories) return resolve(true);
+        if (r.users && r.orders && r.products && r.drivers && r.categories && r.ledger) return resolve(true);
         if (Date.now() - t0 > timeoutMs) return resolve(false);
         setTimeout(check, 80);
       };
@@ -120,6 +125,10 @@
     },
     getDriverById: (id) => cache.drivers.find(d => d.id === id) || null,
     getDriverByLinkedUserId: (uid) => cache.drivers.find(d => d.linkedUserId === uid) || null,
+
+    /* ── Ledger (수주 장부) ──────────────────────────────── */
+    getLedger: () => cache.ledger.slice(),
+    getLedgerById: (id) => cache.ledger.find(e => e.id === id) || null,
 
     /* ── Orders ──────────────────────────────────────────── */
     getOrders(filters = {}) {

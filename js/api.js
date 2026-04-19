@@ -397,6 +397,92 @@ const Api = {
     return true;
   },
 
+  /* ── Order Ledger (수주 장부) ──────────────────────────
+     /orderLedger/{id}
+       client    : string (거래처)
+       product   : 'funeral' | 'congrats' (근조화환 | 축하화환)
+       location  : string (장소)
+       quantity  : number
+       createdAt : ISO8601
+       createdBy : auth.uid
+       createdByName : string
+       updatedAt : ISO8601
+     쓰기 권한: floor1 / admin */
+
+  async createLedgerEntry(data) {
+    const s = _requireSession();
+    if (!(s.role === 'floor1' || s.role === 'admin')) {
+      throw { status: 403, message: '권한이 없습니다.' };
+    }
+    const client   = String(data.client || '').trim();
+    const product  = String(data.product || '').trim();
+    const location = String(data.location || '').trim();
+    const quantity = Math.max(0, parseInt(data.quantity, 10) || 0);
+
+    if (!client)   throw { status: 400, message: '거래처를 입력해 주세요.' };
+    if (product !== 'funeral' && product !== 'congrats') {
+      throw { status: 400, message: '상품을 선택해 주세요.' };
+    }
+    if (!location) throw { status: 400, message: '장소를 입력해 주세요.' };
+    if (quantity <= 0) throw { status: 400, message: '수량을 1 이상으로 입력해 주세요.' };
+
+    const now = _now();
+    const payload = {
+      client, product, location, quantity,
+      createdAt: now,
+      createdBy: s.userId,
+      createdByName: s.displayName || s.username || '',
+      updatedAt: now,
+    };
+    const ref = _db().ref('orderLedger').push();
+    await ref.set(payload);
+    return { id: ref.key, ...payload };
+  },
+
+  async updateLedgerEntry(id, data) {
+    const s = _requireSession();
+    if (!(s.role === 'floor1' || s.role === 'admin')) {
+      throw { status: 403, message: '권한이 없습니다.' };
+    }
+    const existing = Store.getLedgerById(id);
+    if (!existing) throw { status: 404, message: '항목을 찾을 수 없습니다.' };
+
+    const patch = { updatedAt: _now() };
+    if (data.client !== undefined) {
+      const v = String(data.client).trim();
+      if (!v) throw { status: 400, message: '거래처를 입력해 주세요.' };
+      patch.client = v;
+    }
+    if (data.product !== undefined) {
+      if (data.product !== 'funeral' && data.product !== 'congrats') {
+        throw { status: 400, message: '상품을 선택해 주세요.' };
+      }
+      patch.product = data.product;
+    }
+    if (data.location !== undefined) {
+      const v = String(data.location).trim();
+      if (!v) throw { status: 400, message: '장소를 입력해 주세요.' };
+      patch.location = v;
+    }
+    if (data.quantity !== undefined) {
+      const q = Math.max(0, parseInt(data.quantity, 10) || 0);
+      if (q <= 0) throw { status: 400, message: '수량을 1 이상으로 입력해 주세요.' };
+      patch.quantity = q;
+    }
+    // Merge required fields (Firebase .update keeps others)
+    await _db().ref(`orderLedger/${id}`).update(patch);
+    return true;
+  },
+
+  async deleteLedgerEntry(id) {
+    const s = _requireSession();
+    if (!(s.role === 'floor1' || s.role === 'admin')) {
+      throw { status: 403, message: '권한이 없습니다.' };
+    }
+    await _db().ref(`orderLedger/${id}`).remove();
+    return true;
+  },
+
   /* ── Drivers (admin) ───────────────────────────────────── */
   async getDrivers(includeInactive = false) {
     return Store.getDrivers(!includeInactive);
