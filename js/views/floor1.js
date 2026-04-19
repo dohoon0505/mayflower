@@ -797,82 +797,51 @@ ${pages}
       return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
     };
 
-    const fmtSumDate = iso => {
-      if (!iso) return '—';
-      try {
-        const d = new Date(iso);
-        const p = n => String(n).padStart(2,'0');
-        let hh = d.getHours(); const mm = p(d.getMinutes());
-        const ap = hh < 12 ? '오전' : '오후';
-        hh = hh % 12; if (hh === 0) hh = 12;
-        return `${d.getFullYear()}. ${p(d.getMonth()+1)}. ${p(d.getDate())} · ${ap} ${hh}:${mm}`;
-      } catch (_) { return iso; }
-    };
-    const fmtKRW = v => {
-      const n = Number(String(v ?? '').replace(/[^\d]/g,''));
-      return n ? n.toLocaleString('ko-KR') : '';
-    };
-
     let storeFile = null, delivFile = null;
     let storeObjectUrl = o.storePhotoUrl || null;
     let delivObjectUrl = o.deliveryPhotoUrl || null;
 
-    /* ── Status stepper data (read-only indicator) ──
-       status codes: 0=주문접수, 1=리본출력완료, 2=제작완료, 3=배송중, 4=배송완료, 5=취소, 6=반품 */
+    /* ── Status stepper (auto-derived from data; read-only) ──
+       단계별 활성 조건은 DB 필드로 자동 판정 — 사용자 편집 불가.
+        1) 주문접수    : 항상 완료 (주문이 존재)
+        2) 리본 인쇄   : o.status >= 1 (리본출력완료 상태 이상)
+        3) 인수증 인쇄 : !!o.receiptPrintedAt
+        4) 제작완료    : !!o.storePhotoUrl (매장사진 업로드 시)
+        5) 배차대기    : !!o.assignedDriverId (기사 배차 시)
+        6) 배송완료    : !!o.deliveryPhotoUrl || o.status === 4 */
     const stepDefs = [
-      { code: 0, label: '주문접수' },
-      { code: 1, label: '리본출력' },
-      { code: 2, label: '제작완료' },
-      { code: 3, label: '배송중' },
-      { code: 4, label: '배송완료' },
+      { label: '주문접수',    done: true },
+      { label: '리본 인쇄',   done: (o.status ?? 0) >= 1 },
+      { label: '인수증 인쇄', done: !!o.receiptPrintedAt },
+      { label: '제작완료',    done: !!o.storePhotoUrl },
+      { label: '배차대기',    done: !!o.assignedDriverId },
+      { label: '배송완료',    done: !!o.deliveryPhotoUrl || o.status === 4 },
     ];
     const isCancelled = o.status === 5 || o.status === 6;
     const cancelLabel = o.status === 5 ? '주문취소' : o.status === 6 ? '반품' : '';
+    const firstUndoneIdx = stepDefs.findIndex(s => !s.done);
     const stepsHtml = stepDefs.map((s, i) => {
       let cls = '';
       if (isCancelled) cls = 'eo-step-void';
-      else if (s.code < o.status) cls = 'eo-step-done';
-      else if (s.code === o.status) cls = 'eo-step-current';
+      else if (s.done) cls = 'eo-step-done';
+      else if (i === firstUndoneIdx) cls = 'eo-step-current';
       return `
         <div class="eo-step ${cls}" aria-label="${s.label}">
           <span class="eo-step-num">${String(i+1).padStart(2,'0')}</span>
           <span class="eo-step-nm">${s.label}</span>
         </div>`;
     }).join('');
-    const currentStatusLabel = isCancelled ? cancelLabel
-      : (stepDefs.find(s => s.code === o.status)?.label || '-');
+    const currentStatusLabel = isCancelled
+      ? cancelLabel
+      : (firstUndoneIdx === -1 ? '배송완료' : stepDefs[firstUndoneIdx].label);
 
-    /* ── Summary cells (live updated on form input) ── */
-    const initChain = o.chainName || '';
-    const initProdName = (products.find(p => p.id === o.productId)?.name) || o.productName || '';
-    const initRecv = o.recipientName || '';
-    const initPhone = o.recipientPhone || '';
+    /* 가격 초기값 (금액 input value 에 사용) */
     const initPrice = o.price != null ? Number(o.price).toLocaleString('ko-KR') : '';
-
-    const summaryHtml = `
-      <div class="eo-summary" aria-label="주문 요약">
-        <div class="eo-sum-cell">
-          <div class="eo-sum-lbl">체인 · 상품</div>
-          <div class="eo-sum-val" id="eo-sum-product">${UI.escHtml(initChain || '—')} · ${UI.escHtml(initProdName || '—')}</div>
-        </div>
-        <div class="eo-sum-cell">
-          <div class="eo-sum-lbl">배송 일시</div>
-          <div class="eo-sum-val" id="eo-sum-date">${UI.escHtml(fmtSumDate(o.deliveryDatetime))}</div>
-        </div>
-        <div class="eo-sum-cell">
-          <div class="eo-sum-lbl">받는 분</div>
-          <div class="eo-sum-val" id="eo-sum-recv">${UI.escHtml(initRecv || '—')}${initPhone ? ' · ' + UI.escHtml(initPhone) : ''}</div>
-        </div>
-        <div class="eo-sum-cell">
-          <div class="eo-sum-lbl">금액</div>
-          <div class="eo-sum-val ${initPrice ? '' : 'eo-sum-muted'}" id="eo-sum-amt">${initPrice ? initPrice + '<span class="eo-sum-unit">원</span>' : '미입력'}</div>
-        </div>
-      </div>`;
 
     const stepperHtml = `
       <div class="eo-status-wrap">
         <div class="eo-status-head">
-          <span class="eo-status-lbl">현재 상태</span>
+          <span class="eo-status-lbl">현재 상태 <span class="eo-status-auto">· 자동 반영</span></span>
           <span class="eo-status-current ${isCancelled ? 'eo-status-void' : ''}">${UI.escHtml(currentStatusLabel)}</span>
         </div>
         <div class="eo-stepper">${stepsHtml}</div>
@@ -970,7 +939,6 @@ ${pages}
       </section>` : '';
 
     const content = `
-      ${summaryHtml}
       ${stepperHtml}
       <div class="eo-split">
         <div class="eo-left">
@@ -990,7 +958,7 @@ ${pages}
               </div>
               <div class="eo-field">
                 <label>배송 일시 <span class="eo-req">*</span></label>
-                <input type="datetime-local" id="eo-datetime" class="form-control" value="${toLocalDT(o.deliveryDatetime)}" step="600" ${rdonly('조회 전용')}>
+                <input type="datetime-local" id="eo-datetime" class="form-control" value="${toLocalDT(o.deliveryDatetime)}" step="600" lang="en-GB" ${rdonly('조회 전용')}>
               </div>
               <div class="eo-field">
                 <label>금액 <span class="eo-opt">선택</span></label>
@@ -1028,13 +996,11 @@ ${pages}
             <div class="eo-grid eo-grid-2">
               <div class="eo-field">
                 <label>보내는분 문구 (리본) <span class="eo-opt">선택</span></label>
-                <input type="text" id="eo-ribbon" class="form-control" maxlength="40" value="${UI.escHtml(o.ribbonText || '')}" ${rdonly('조회 전용')}>
-                <div class="eo-char-count"><span id="eo-ribbon-cnt">${(o.ribbonText||'').length}</span> / 40</div>
+                <input type="text" id="eo-ribbon" class="form-control" value="${UI.escHtml(o.ribbonText || '')}" ${rdonly('조회 전용')}>
               </div>
               <div class="eo-field">
                 <label>경조사어 문구 <span class="eo-opt">선택</span></label>
                 <input type="text" id="eo-occasion" class="form-control" value="${UI.escHtml(o.occasionText || '')}" ${rdonly('조회 전용')} placeholder="예: 근조, 축화환, 승진축하">
-                <div class="eo-help">예: 근조 · 축화환 · 개업축하 · 승진축하</div>
               </div>
             </div>
           </section>
@@ -1084,32 +1050,7 @@ ${pages}
       });
     }
 
-    /* ── Summary live-update + amount format + ribbon counter ── */
-    const selGet = sel => overlay.querySelector(sel);
-    const updateSummary = () => {
-      const chain = (selGet('#eo-chain')?.value || '').trim();
-      const prodEl = selGet('#eo-product');
-      const prodName = prodEl?.options[prodEl.selectedIndex]?.text?.replace(/\s*\(비활성\)\s*$/, '') || '—';
-      const recv = (selGet('#eo-name')?.value || '').trim();
-      const phone = (selGet('#eo-phone')?.value || '').trim();
-      const dt = selGet('#eo-datetime')?.value;
-      const amtRaw = selGet('#eo-price')?.value || '';
-
-      const sp = overlay.querySelector('#eo-sum-product');
-      if (sp) sp.textContent = `${chain || '—'} · ${prodName || '—'}`;
-      const sd = overlay.querySelector('#eo-sum-date');
-      if (sd) sd.textContent = dt ? fmtSumDate(new Date(dt).toISOString()) : '—';
-      const sr = overlay.querySelector('#eo-sum-recv');
-      if (sr) sr.textContent = (recv || '—') + (phone ? ' · ' + phone : '');
-      const sa = overlay.querySelector('#eo-sum-amt');
-      if (sa) {
-        const fmt = fmtKRW(amtRaw);
-        if (fmt) { sa.innerHTML = `${fmt}<span class="eo-sum-unit">원</span>`; sa.classList.remove('eo-sum-muted'); }
-        else { sa.textContent = '미입력'; sa.classList.add('eo-sum-muted'); }
-      }
-    };
-
-    /* Amount live KRW formatting + suffix toggle */
+    /* ── Amount live KRW formatting + suffix toggle ── */
     const priceEl = overlay.querySelector('#eo-price');
     if (priceEl && !isDriver) {
       priceEl.addEventListener('input', e => {
@@ -1118,17 +1059,6 @@ ${pages}
         e.target.value = formatted;
         const sfx = overlay.querySelector('#eo-price-suffix');
         if (sfx) sfx.textContent = formatted ? '원' : '';
-      });
-    }
-
-    /* Ribbon char counter */
-    const ribbonEl = overlay.querySelector('#eo-ribbon');
-    const ribbonCnt = overlay.querySelector('#eo-ribbon-cnt');
-    if (ribbonEl && ribbonCnt) {
-      ribbonEl.addEventListener('input', () => {
-        const n = ribbonEl.value.length;
-        ribbonCnt.textContent = n;
-        ribbonCnt.parentElement.classList.toggle('eo-warn', n > 32);
       });
     }
 
@@ -1164,8 +1094,8 @@ ${pages}
         const el = overlay.querySelector(s);
         if (!el) return;
         const ev = (el.tagName === 'SELECT') ? 'change' : 'input';
-        el.addEventListener(ev, () => { updateSummary(); refreshFoot(); });
-        el.addEventListener('change', () => { updateSummary(); refreshFoot(); });
+        el.addEventListener(ev, refreshFoot);
+        el.addEventListener('change', refreshFoot);
       });
       refreshFoot();
     }
