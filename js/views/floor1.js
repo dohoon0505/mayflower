@@ -859,13 +859,17 @@ ${pages}
     if (o.createdAt) activityItems.push({ dot: 'ink', title: '주문 접수', by: o.createdByName || '시스템', ts: o.createdAt });
     if (o.storePhotoUrl && o.updatedAt) activityItems.push({ dot: 'acc', title: '매장사진 업로드', by: '담당자', ts: o.updatedAt });
     if (o.assignedAt) activityItems.push({ dot: 'acc', title: `${UI.escHtml(o.assignedDriverName || '기사')} 배차`, by: '담당자', ts: o.assignedAt });
+    if (o.memoCreatedAt) activityItems.push({ dot: 'acc', title: '메모 작성', by: o.memoCreatedBy || '담당자', ts: o.memoCreatedAt });
+    if (o.memoUpdatedAt && o.memoUpdatedAt !== o.memoCreatedAt) activityItems.push({ dot: 'acc', title: '메모 변경', by: o.memoUpdatedBy || '담당자', ts: o.memoUpdatedAt });
     if (o.status === 4 && o.deliveryPhotoUrl && o.updatedAt) activityItems.push({ dot: 'ok', title: '배송 완료', by: o.assignedDriverName || '기사', ts: o.updatedAt });
+    /* 타임스탬프 순 정렬 */
+    activityItems.sort((a,b) => String(a.ts || '').localeCompare(String(b.ts || '')));
     const fmtActTs = iso => {
       try { const d = new Date(iso); const p = n => String(n).padStart(2,'0');
         return `${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
       } catch (_) { return ''; }
     };
-    const actHtml = activityItems.length ? activityItems.slice(-4).reverse().map(a => `
+    const actHtml = activityItems.length ? activityItems.slice(-12).reverse().map(a => `
       <li class="eo-act-item">
         <span class="eo-act-dot eo-act-dot-${a.dot}"></span>
         <div class="eo-act-body">
@@ -976,9 +980,9 @@ ${pages}
               </div>
               <div class="eo-field">
                 <label>배송 일시 <span class="eo-req">*</span></label>
-                <div class="eo-dt-wrap">
-                  <input type="text" id="eo-dt-display" class="form-control eo-dt-display" readonly value="${UI.escHtml(fmtKorDT(o.deliveryDatetime))}" placeholder="클릭하여 날짜/시간 선택" ${isDriver?'':'tabindex="0"'}>
-                  <input type="datetime-local" id="eo-datetime" class="eo-dt-native" value="${toLocalDT(o.deliveryDatetime)}" step="600" lang="en-GB" ${isDriver?'disabled':''} aria-label="배송 일시">
+                <div class="eo-dt-wrap" id="eo-dt-wrap">
+                  <input type="text" id="eo-dt-display" class="form-control eo-dt-display" readonly value="${UI.escHtml(fmtKorDT(o.deliveryDatetime))}" placeholder="클릭하여 날짜/시간 선택" ${isDriver?'disabled':'tabindex="0"'}>
+                  <input type="hidden" id="eo-datetime" value="${toLocalDT(o.deliveryDatetime)}">
                   <span class="eo-dt-icon" aria-hidden="true">📅</span>
                 </div>
               </div>
@@ -1133,33 +1137,10 @@ ${pages}
       refreshFoot();
     }
 
-    /* ── 배송일시: native datetime-local change → Korean 형식 display 동기화 ── */
-    (function syncDateTimeDisplay() {
-      const nat = overlay.querySelector('#eo-datetime');
-      const disp = overlay.querySelector('#eo-dt-display');
-      if (!nat || !disp) return;
-      const update = () => {
-        if (!nat.value) { disp.value = ''; return; }
-        const d = new Date(nat.value);
-        if (isNaN(d.getTime())) { disp.value = ''; return; }
-        disp.value = fmtKorDT(d.toISOString());
-      };
-      nat.addEventListener('input', update);
-      nat.addEventListener('change', update);
-      /* 디스플레이 포커스/클릭 → 네이티브 피커 호출 (Chrome 99+) */
-      if (!isDriver) {
-        const openPicker = (e) => {
-          e.preventDefault();
-          if (typeof nat.showPicker === 'function') {
-            try { nat.showPicker(); } catch (_) { nat.focus(); nat.click(); }
-          } else {
-            nat.focus(); nat.click();
-          }
-        };
-        disp.addEventListener('click', openPicker);
-        disp.addEventListener('focus', openPicker);
-      }
-    })();
+    /* ── 배송일시: 커스텀 datepicker (월 달력 + 시/분 select) ── */
+    if (!isDriver) {
+      Floor1View._mountDatePicker(overlay);
+    }
 
     /* ── Keyboard shortcuts: Ctrl+S save / Esc close ── */
     const onKeydown = (e) => {
@@ -1305,15 +1286,31 @@ ${pages}
         if (storeFile) { const r = await Api.uploadStorePhoto(storeFile, orderId);   newStoreUrl = r.url; }
         if (delivFile) { const r = await Api.uploadDeliveryPhoto(delivFile, orderId); newDelivUrl = r.url; }
 
-        await Api.updateOrder(orderId, {
+        /* 메모 변경 감지 → 활동 로그용 타임스탬프 + 작성자 기록 */
+        const prevMemo = (o.memo || '').trim();
+        const nextMemo = (memoText || '').trim();
+        const memoChanged = prevMemo !== nextMemo;
+        const session = Auth.getSession();
+        const author  = session?.displayName || session?.username || '담당자';
+        const patch = {
           chainName, productId, deliveryDatetime,
           deliveryAddress, recipientName, recipientPhone,
           ribbonText, occasionText,
           storePhotoUrl:    newStoreUrl,
           deliveryPhotoUrl: newDelivUrl,
           price: priceRaw ? Number(priceRaw) : null,
-          memo: memoText || null,
-        });
+          memo: nextMemo || null,
+        };
+        if (memoChanged) {
+          const nowIso = new Date().toISOString();
+          if (!o.memoCreatedAt && nextMemo) {
+            patch.memoCreatedAt = nowIso;
+            patch.memoCreatedBy = author;
+          }
+          patch.memoUpdatedAt = nowIso;
+          patch.memoUpdatedBy = author;
+        }
+        await Api.updateOrder(orderId, patch);
 
         UI.toast('주문서가 수정되었습니다.', 'success');
         /* Snapshot reset: 저장 성공 후 "저장됨" 상태로 복귀 */
@@ -1409,6 +1406,176 @@ ${pages}
   _removeBulkBar() {
     const bar = document.getElementById('bulk-action-bar');
     if (bar) bar.remove();
+  },
+
+  /* ── 커스텀 날짜/시간 피커 (네이티브 datepicker 대체) ───── */
+  _mountDatePicker(overlay) {
+    const wrap    = overlay.querySelector('#eo-dt-wrap');
+    const disp    = overlay.querySelector('#eo-dt-display');
+    const hidden  = overlay.querySelector('#eo-datetime');
+    if (!wrap || !disp || !hidden) return;
+
+    const WEEKDAYS = ['일','월','화','수','목','금','토'];
+    const pad = n => String(n).padStart(2, '0');
+    const toLocalISO = (d) => {
+      const y = d.getFullYear(), m = pad(d.getMonth()+1), day = pad(d.getDate());
+      const h = pad(d.getHours()), mm = pad(d.getMinutes());
+      return `${y}-${m}-${day}T${h}:${mm}`;
+    };
+    const parseLocal = (s) => {
+      if (!s) return null;
+      /* "YYYY-MM-DDTHH:MM" format */
+      const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(s);
+      if (!m) return null;
+      return new Date(+m[1], +m[2]-1, +m[3], +m[4], +m[5], 0, 0);
+    };
+    const fmtKorDT = (iso) => {
+      if (!iso) return '';
+      try {
+        const d = (iso instanceof Date) ? iso : new Date(iso);
+        if (isNaN(d.getTime())) return '';
+        return `${d.getFullYear()}년 ${pad(d.getMonth()+1)}월 ${pad(d.getDate())}일 ${WEEKDAYS[d.getDay()]}요일 ${pad(d.getHours())}시 ${pad(d.getMinutes())}분`;
+      } catch (_) { return ''; }
+    };
+
+    /* 현재 값 */
+    let current = parseLocal(hidden.value) || new Date();
+    let viewY = current.getFullYear(), viewM = current.getMonth();
+
+    let popup = null;
+
+    const close = () => {
+      if (!popup) return;
+      popup.remove();
+      popup = null;
+      document.removeEventListener('mousedown', outsideClick, true);
+      document.removeEventListener('keydown', onEsc, true);
+    };
+    const outsideClick = (e) => {
+      if (!popup) return;
+      if (popup.contains(e.target) || wrap.contains(e.target)) return;
+      close();
+    };
+    const onEsc = (e) => { if (e.key === 'Escape') { e.preventDefault(); close(); } };
+
+    const apply = () => {
+      hidden.value = toLocalISO(current);
+      disp.value = fmtKorDT(current);
+      /* 저장 상태 추적 업데이트 */
+      if (overlay._eoRefreshFoot) overlay._eoRefreshFoot();
+      close();
+    };
+
+    const buildGrid = () => {
+      const first = new Date(viewY, viewM, 1);
+      const startDow = first.getDay();
+      const lastDay = new Date(viewY, viewM + 1, 0).getDate();
+      const prevLast = new Date(viewY, viewM, 0).getDate();
+      const cells = [];
+      /* 앞쪽 여백: 이전달 날짜 (비활성) */
+      for (let i = startDow - 1; i >= 0; i--) {
+        cells.push({ day: prevLast - i, muted: true, disabled: true });
+      }
+      for (let d = 1; d <= lastDay; d++) cells.push({ day: d, muted: false });
+      while (cells.length < 42) cells.push({ day: cells.length - (startDow + lastDay) + 1, muted: true, disabled: true });
+
+      const today = new Date();
+      return cells.map((c, idx) => {
+        const dow = idx % 7;
+        const isToday = !c.muted && viewY === today.getFullYear() && viewM === today.getMonth() && c.day === today.getDate();
+        const isSel   = !c.muted && viewY === current.getFullYear() && viewM === current.getMonth() && c.day === current.getDate();
+        const cls = ['eo-dp-day'];
+        if (c.muted) cls.push('eo-dp-day-muted');
+        if (isSel)   cls.push('eo-dp-day-sel');
+        if (isToday) cls.push('eo-dp-day-today');
+        if (dow === 0) cls.push('eo-dp-day-sun');
+        if (dow === 6) cls.push('eo-dp-day-sat');
+        const attr = c.disabled ? '' : `data-day="${c.day}"`;
+        return `<button type="button" class="${cls.join(' ')}" ${attr} ${c.disabled?'tabindex="-1"':''}>${c.day}</button>`;
+      }).join('');
+    };
+
+    const hourOpts = Array.from({length:24}, (_,h) => `<option value="${h}" ${h===current.getHours()?'selected':''}>${pad(h)}</option>`).join('');
+    const minOpts  = Array.from({length:6},  (_,i) => { const m=i*10; return `<option value="${m}" ${m===Math.floor(current.getMinutes()/10)*10?'selected':''}>${pad(m)}</option>`; }).join('');
+
+    const render = () => {
+      if (!popup) return;
+      popup.querySelector('.eo-dp-title').textContent = `${viewY}년 ${pad(viewM+1)}월`;
+      popup.querySelector('.eo-dp-grid').innerHTML = buildGrid();
+      /* cell 클릭 바인딩 */
+      popup.querySelectorAll('.eo-dp-day[data-day]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          current = new Date(viewY, viewM, +btn.dataset.day, current.getHours(), current.getMinutes(), 0, 0);
+          render();
+        });
+      });
+    };
+
+    const open = () => {
+      if (popup) return;
+      /* 현재 값 재동기화 (외부 업데이트 대응) */
+      current = parseLocal(hidden.value) || new Date();
+      viewY = current.getFullYear(); viewM = current.getMonth();
+
+      popup = document.createElement('div');
+      popup.className = 'eo-dp-popup';
+      popup.innerHTML = `
+        <div class="eo-dp-head">
+          <button type="button" class="eo-dp-nav" data-nav="prev" aria-label="이전 달">‹</button>
+          <span class="eo-dp-title">${viewY}년 ${pad(viewM+1)}월</span>
+          <button type="button" class="eo-dp-nav" data-nav="next" aria-label="다음 달">›</button>
+        </div>
+        <div class="eo-dp-dow">
+          ${WEEKDAYS.map((w,i)=>`<span class="eo-dp-dow-cell ${i===0?'eo-dp-dow-sun':''} ${i===6?'eo-dp-dow-sat':''}">${w}</span>`).join('')}
+        </div>
+        <div class="eo-dp-grid">${buildGrid()}</div>
+        <div class="eo-dp-time">
+          <label>시간</label>
+          <select class="eo-dp-hour">${hourOpts}</select>
+          <span>시</span>
+          <select class="eo-dp-min">${minOpts}</select>
+          <span>분</span>
+        </div>
+        <div class="eo-dp-foot">
+          <button type="button" class="btn btn-ghost btn-sm eo-dp-today">오늘</button>
+          <div style="flex:1"></div>
+          <button type="button" class="btn btn-ghost btn-sm eo-dp-cancel">취소</button>
+          <button type="button" class="btn btn-primary btn-sm eo-dp-apply">적용</button>
+        </div>`;
+      wrap.appendChild(popup);
+
+      popup.querySelector('[data-nav="prev"]').addEventListener('click', () => { viewM--; if (viewM<0) { viewM=11; viewY--; } render(); });
+      popup.querySelector('[data-nav="next"]').addEventListener('click', () => { viewM++; if (viewM>11) { viewM=0; viewY++; } render(); });
+      popup.querySelector('.eo-dp-hour').addEventListener('change', e => {
+        current = new Date(current.getFullYear(), current.getMonth(), current.getDate(), +e.target.value, current.getMinutes(), 0, 0);
+      });
+      popup.querySelector('.eo-dp-min').addEventListener('change', e => {
+        current = new Date(current.getFullYear(), current.getMonth(), current.getDate(), current.getHours(), +e.target.value, 0, 0);
+      });
+      popup.querySelector('.eo-dp-today').addEventListener('click', () => {
+        const t = new Date();
+        current = new Date(t.getFullYear(), t.getMonth(), t.getDate(), current.getHours(), current.getMinutes(), 0, 0);
+        viewY = current.getFullYear(); viewM = current.getMonth();
+        render();
+      });
+      popup.querySelector('.eo-dp-cancel').addEventListener('click', close);
+      popup.querySelector('.eo-dp-apply').addEventListener('click', apply);
+
+      render();
+
+      /* 바깥 클릭 / ESC 닫기 — 다음 틱에 등록 (현재 클릭 이벤트 충돌 방지) */
+      setTimeout(() => {
+        document.addEventListener('mousedown', outsideClick, true);
+        document.addEventListener('keydown', onEsc, true);
+      }, 0);
+    };
+
+    const openClick = (e) => { e.preventDefault(); open(); };
+    disp.addEventListener('click', openClick);
+    disp.addEventListener('focus', openClick);
+    /* icon 영역 클릭 시에도 열기 */
+    const icon = wrap.querySelector('.eo-dt-icon');
+    if (icon) icon.addEventListener('click', openClick);
   },
 
   /* ── Driver assign modal ─────────────────────────────────── */
