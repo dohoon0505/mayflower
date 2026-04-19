@@ -1077,6 +1077,41 @@ ${pages}
       size: 'modal-edit',
     });
 
+    /* ── 모달 헤더: 주문취소 버튼 (1층 / 2층 / admin, 미완료·미취소 건만) ── */
+    if (!isDriver && o.status < 4) {
+      const header = overlay.querySelector('.modal-header');
+      const closeBtn = header?.querySelector('.modal-close');
+      if (header && closeBtn) {
+        const cancelOrderBtn = document.createElement('button');
+        cancelOrderBtn.type = 'button';
+        cancelOrderBtn.className = 'btn btn-sm btn-danger eo-header-cancel';
+        cancelOrderBtn.textContent = '🚫 주문취소';
+        cancelOrderBtn.title = '이 주문을 "주문취소" 상태로 전환';
+        header.insertBefore(cancelOrderBtn, closeBtn);
+
+        cancelOrderBtn.addEventListener('click', async () => {
+          const ok = await UI.confirm(
+            `주문 #${orderId} 을(를) 취소하시겠습니까?\n취소된 주문은 더 이상 수정할 수 없습니다.`,
+            '주문취소'
+          );
+          if (!ok) return;
+          cancelOrderBtn.disabled = true;
+          const orig = cancelOrderBtn.textContent;
+          cancelOrderBtn.textContent = '취소 중...';
+          try {
+            await Api.updateOrderStatus(orderId, 5);
+            UI.toast('주문이 취소되었습니다.', 'success');
+            overlay.classList.remove('show');
+            setTimeout(() => overlay.remove(), 300);
+          } catch (e) {
+            UI.toast(e.message || '주문취소 실패', 'error');
+            cancelOrderBtn.disabled = false;
+            cancelOrderBtn.textContent = orig;
+          }
+        });
+      }
+    }
+
     /* ── ID chip copy ── */
     const idChip = overlay.querySelector('#eo-idchip');
     if (idChip) {
