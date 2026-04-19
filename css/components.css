@@ -1435,17 +1435,19 @@ button.eo-title-chip:hover { background: #fff; border-color: var(--border-strong
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  /* 중간 칼럼 내 하단 정렬 → 왼쪽 칼럼(문구 섹션) 하단 라인과 일치 */
+  margin-top: auto;
 }
 .eo-memo-textarea {
   width: 100%;
-  min-height: 72px;
-  max-height: 110px;
-  height: 96px;
+  min-height: 48px;
+  max-height: 72px;
+  height: 56px;
   resize: none;
   font-family: inherit;
   font-size: 0.85rem;
   line-height: 1.4;
-  padding: 0.5rem 0.625rem;
+  padding: 0.45rem 0.625rem;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: #fffef7;          /* 살짝 노란빛 — 포스트잇 느낌 */
