@@ -217,7 +217,7 @@
 /* ── Order Card — wireframe design ───────────────────────── */
 .order-card {
   display: grid;
-  grid-template-columns: 2fr 1.2fr;
+  grid-template-columns: 2fr 0.8fr;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-left: 4px solid var(--border-strong);
@@ -438,7 +438,10 @@
   font-size: 0.82rem; font-weight: 700;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+/* fs-sub (단계별 시각/부가정보) 는 카드 높이 안정성을 위해 기본 숨김.
+   필요 시 JS 에서 렌더를 제거하거나, 이 규칙을 풀면 다시 표시됨. */
 .ocard-flow-step .fs-sub {
+  display: none;
   font-size: 0.68rem; color: var(--text-muted); margin-top: 1px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
