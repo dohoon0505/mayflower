@@ -794,11 +794,6 @@ ${pages}
         `<option value="${d.id}" ${d.id === o.assignedDriverId ? 'selected' : ''}>${UI.escHtml(d.name)}</option>`
       ).join('');
 
-    const statusLabels = ['접수대기','리본출력완료','제작완료','배송중','배송완료','취소','반품'];
-    const statusOpts   = statusLabels.map((l, i) =>
-      `<option value="${i}" ${o.status===i?'selected':''}>${l}</option>`
-    ).join('');
-
     const toLocalDT = iso => {
       if (!iso) return '';
       const d = new Date(iso);
@@ -809,18 +804,6 @@ ${pages}
     let storeFile = null, delivFile = null;
     let storeObjectUrl = o.storePhotoUrl || null;
     let delivObjectUrl = o.deliveryPhotoUrl || null;
-
-    /* ── Status & driver row ── */
-    const statusRow = isFloor1Admin
-      ? `<div class="form-group">
-          <label class="form-label">현재 상태</label>
-          <select id="eo-status" class="form-control">${statusOpts}</select>
-        </div>`
-      : `<div class="form-group">
-          <label class="form-label">현재 상태</label>
-          <div style="padding:0.5rem 0">${UI.statusBadge(o.status)}</div>
-        </div>`;
-
 
     /* ── Right panel: photo columns ── */
     const rightPanel = isDriver ? `
@@ -873,14 +856,7 @@ ${pages}
     const content = `
       <div class="eo-split">
         <div class="eo-left">
-          <div class="form-row" style="margin-bottom:0.75rem">
-            ${statusRow}
-            <div class="form-group">
-              <label class="form-label">접수자</label>
-              <input type="text" class="form-control" value="${UI.escHtml(o.createdByName)}" readonly style="opacity:0.6">
-            </div>
-          </div>
-          <div class="form-row" style="margin-bottom:0.75rem">
+          <div class="form-row">
             <div class="form-group">
               <label class="form-label">체인명 <span class="form-required">*</span></label>
               <input type="text" id="eo-chain" class="form-control" value="${UI.escHtml(o.chainName || '')}" ${rdonly('조회 전용')}>
@@ -892,17 +868,24 @@ ${pages}
               </select>
             </div>
           </div>
-          <div class="form-row" style="margin-bottom:0.75rem">
+
+          <div class="form-row">
             <div class="form-group">
               <label class="form-label">배송 일시 <span class="form-required">*</span></label>
               <input type="datetime-local" id="eo-datetime" class="form-control" value="${toLocalDT(o.deliveryDatetime)}" step="600" ${rdonly('조회 전용')}>
             </div>
             <div class="form-group">
-              <label class="form-label">배송지 주소 <span class="form-required">*</span></label>
-              <input type="text" id="eo-address" class="form-control" value="${UI.escHtml(o.deliveryAddress || '')}" ${rdonly('조회 전용')}>
+              <label class="form-label">금액 (원)</label>
+              <input type="number" id="eo-price" class="form-control" value="${o.price ?? ''}" placeholder="예: 80000" min="0" step="1000" ${rdonly('조회 전용')}>
             </div>
           </div>
-          <div class="form-row" style="margin-bottom:0.75rem">
+
+          <div class="form-group eo-addr-group">
+            <label class="form-label">배송지 주소 <span class="form-required">*</span></label>
+            <input type="text" id="eo-address" class="form-control" value="${UI.escHtml(o.deliveryAddress || '')}" ${rdonly('조회 전용')}>
+          </div>
+
+          <div class="form-row">
             <div class="form-group">
               <label class="form-label">받는 분 성함 <span class="form-required">*</span></label>
               <input type="text" id="eo-name" class="form-control" value="${UI.escHtml(o.recipientName || '')}" ${rdonly('조회 전용')}>
@@ -912,7 +895,8 @@ ${pages}
               <input type="tel" id="eo-phone" class="form-control" value="${UI.escHtml(o.recipientPhone || '')}" ${rdonly('조회 전용')}>
             </div>
           </div>
-          <div class="form-row" style="margin-bottom:0.75rem">
+
+          <div class="form-row">
             <div class="form-group">
               <label class="form-label">보내는분 문구 (리본)</label>
               <input type="text" id="eo-ribbon" class="form-control" value="${UI.escHtml(o.ribbonText || '')}" ${rdonly('조회 전용')}>
@@ -922,10 +906,7 @@ ${pages}
               <input type="text" id="eo-occasion" class="form-control" value="${UI.escHtml(o.occasionText || '')}" ${rdonly('조회 전용')} placeholder="예: 삼가 고인의 명복을 빕니다">
             </div>
           </div>
-          <div class="form-group" style="margin-bottom:0.75rem">
-            <label class="form-label">금액 (원)</label>
-            <input type="number" id="eo-price" class="form-control" value="${o.price ?? ''}" placeholder="예: 80000" min="0" step="1000" ${rdonly('조회 전용')}>
-          </div>
+
           ${driverPhotoLinks}
         </div>
         <div class="eo-right">
@@ -933,8 +914,19 @@ ${pages}
         </div>
       </div>`;
 
+    /* 헤더 제목: 주문서 수정 + 주문번호 · 접수자 chip */
+    const titleHtml = `
+      <span class="eo-title-main">주문서 ${isDriver ? '조회' : '수정'}</span>
+      <span class="eo-title-meta">
+        <span class="eo-title-chip eo-chip-id">#${UI.escHtml(String(orderId))}</span>
+        <span class="eo-title-chip eo-chip-user" title="접수자">
+          <span class="eo-chip-label">접수자</span>
+          <span class="eo-chip-value">${UI.escHtml(o.createdByName || '-')}</span>
+        </span>
+      </span>`;
+
     const overlay = UI.modal({
-      title: `주문서 ${isDriver ? '조회' : '수정'} — #${orderId}`,
+      title: titleHtml,
       content,
       confirmText: isDriver ? '닫기' : '저장',
       cancelText: isDriver ? '' : '취소',
@@ -1037,7 +1029,8 @@ ${pages}
       const occasionText   = overlay.querySelector('#eo-occasion').value.trim();
       const priceRaw       = overlay.querySelector('#eo-price')?.value;
       const driverIdRaw    = overlay.querySelector('#eo-driver')?.value ?? (o.assignedDriverId || '');
-      const newStatus      = overlay.querySelector('#eo-status') ? +overlay.querySelector('#eo-status').value : o.status;
+      /* 현재 상태는 모달에서 편집 불가 — 변경은 상태 전환 전용 버튼/액션으로만 수행 */
+      const newStatus      = o.status;
 
       if (!chainName)       { UI.toast('체인명을 입력해 주세요.', 'warning'); return; }
       if (!productId)       { UI.toast('상품을 선택해 주세요.', 'warning'); return; }
