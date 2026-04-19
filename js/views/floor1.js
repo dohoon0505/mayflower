@@ -352,7 +352,7 @@ const Floor1View = {
             ${dayBadge}
             <span class="ocard-datetime">🕐 ${dt}</span>
             <span class="ocard-product">${UI.escHtml(categoryName)}</span>
-            <span class="ocard-chain">${chainCode}</span>
+            ${Floor1View._session?.role === 'floor1' ? '' : `<span class="ocard-chain">${chainCode}</span>`}
             ${priceBadge}
           </div>
           <!-- Row 1: Address (full width) -->
