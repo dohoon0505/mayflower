@@ -85,12 +85,12 @@ const Floor1View = {
           </div>
           <div class="status-tab-group" id="f1-quick-dates">
             <button class="status-tab-btn active" data-quick="all">전체</button>
-            <button class="status-tab-btn" data-quick="today">오늘</button>
-            <button class="status-tab-btn" data-quick="yesterday">어제</button>
+            <button class="status-tab-btn" data-quick="today">당일건</button>
             <button class="status-tab-btn" data-quick="tomorrow">내일</button>
-            <button class="status-tab-btn" data-quick="this-month">이번 달</button>
-            <button class="status-tab-btn" data-quick="last-month">지난 달</button>
+            <button class="status-tab-btn" data-quick="yesterday">어제</button>
             <button class="status-tab-btn" data-quick="future">예약건</button>
+            <button class="status-tab-btn" data-quick="this-month">이번달</button>
+            <button class="status-tab-btn" data-quick="last-month">지난달</button>
           </div>
         </div>
 
@@ -1326,9 +1326,22 @@ ${pages}
     if (!ok) return;
 
     try {
-      await Api.deleteOrders(ids);
-      UI.toast(`${ids.length}건 삭제 완료`, 'success');
+      const res = await Api.deleteOrders(ids);
+      /* 체크박스 해제 → _updateBulkBar 가 이전 선택을 다시 잡지 않도록 */
+      document.querySelectorAll('.order-checkbox:checked').forEach(cb => { cb.checked = false; });
       Floor1View._removeBulkBar();
+
+      if (res.ok && !res.failed.length) {
+        UI.toast(`${res.ok}건 삭제 완료`, 'success');
+      } else if (res.ok && res.failed.length) {
+        UI.toast(`${res.ok}건 삭제, ${res.failed.length}건 실패`, 'warning');
+        console.warn('[bulk-delete] 일부 실패', res.failed);
+      } else {
+        const first = res.failed[0]?.error || '알 수 없는 오류';
+        UI.toast(`삭제 실패: ${first}`, 'error');
+      }
+      /* RTDB 구독이 자동 리렌더하지만, 혹시 렌더 타이밍이 어긋나면 강제 재조회 */
+      Floor1View._loadOrders();
     } catch (e) {
       console.warn('[bulk-delete] 실패', e);
       UI.toast(e?.message || '삭제 중 오류가 발생했습니다.', 'error');

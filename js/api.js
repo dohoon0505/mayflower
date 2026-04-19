@@ -240,14 +240,19 @@ const Api = {
 
   async deleteOrders(ids) {
     const list = Array.isArray(ids) ? ids.filter(Boolean) : [];
-    if (!list.length) return 0;
+    if (!list.length) return { ok: 0, failed: [] };
     const s = _requireSession();
     if (!Auth.can('deleteOrder', s.role)) throw { status: 403, message: '권한이 없습니다.' };
+    const failed = [];
+    let ok = 0;
     for (const id of list) {
-      try { await Api.deleteOrder(id); }
-      catch (e) { console.warn('[deleteOrders] 실패', id, e); }
+      try { await Api.deleteOrder(id); ok++; }
+      catch (e) {
+        console.warn('[deleteOrders] 실패', id, e);
+        failed.push({ id, error: e?.message || String(e) });
+      }
     }
-    return list.length;
+    return { ok, failed };
   },
 
   /* ── Photo uploads ─────────────────────────────────────── */
