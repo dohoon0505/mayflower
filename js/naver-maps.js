@@ -72,10 +72,20 @@
     return await driving(from, to);
   }
 
+  /* ── 편의: 두 주소 간 주행 예상시간 ───────────────────────────
+     fromAddress 가 비어있으면 OFFICE_ADDRESS 를 자동으로 최종배송지로 사용 */
+  async function estimateBetweenAddresses(fromAddress, toAddress) {
+    if (!toAddress) throw new Error('도착 주소가 비어있습니다.');
+    const origin = (fromAddress && String(fromAddress).trim()) || OFFICE_ADDRESS;
+    const [from, to] = await Promise.all([geocode(origin), geocode(toAddress)]);
+    return await driving(from, to);
+  }
+
   window.NaverMaps = {
     geocode,
     driving,
     estimateReturnFromAddress,
+    estimateBetweenAddresses,
     OFFICE_ADDRESS,
   };
 })();

@@ -821,6 +821,32 @@ tr:hover td { background: var(--bg-elevated); }
 .dp-tl-modal-body .dp-tl-done { color: var(--text-primary); font-weight: 700; white-space: nowrap; }
 .dp-tl-modal-body .dp-tl-empty { color: var(--text-muted); font-style: italic; text-align: center; padding: 1.5rem 0; }
 
+/* 배송중 행: 한 문장("최종배송지에서 X 까지 Y분 예정") + 오른쪽 배송중 뱃지 */
+.dp-tl-modal-body .dp-tl-item-ing {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+}
+.dp-tl-modal-body .dp-tl-sentence {
+  color: var(--text-primary);
+  line-height: 1.5;
+  font-size: 0.88rem;
+  word-break: keep-all;
+}
+.dp-tl-modal-body .dp-tl-sentence b { color: var(--primary, #2563eb); font-weight: 700; }
+.dp-tl-modal-body .dp-tl-from { color: var(--text-muted); font-weight: 600; }
+.dp-tl-modal-body .dp-tl-ing-eta {
+  font-weight: 700;
+  color: var(--primary, #2563eb);
+  background: #eff6ff;
+  padding: 1px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.dp-tl-modal-body .dp-tl-ing-eta.dp-tl-eta-fail {
+  color: #b91c1c;
+  background: #fef2f2;
+}
+
 /* Photo drop zone — portrait 4:5 */
 .photo-drop-zone-portrait {
   max-width: 280px;

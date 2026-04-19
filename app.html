@@ -114,20 +114,20 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-storage-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-functions-compat.js"></script>
-  <script src="js/firebase-config.js?v=29"></script>
+  <script src="js/firebase-config.js?v=30"></script>
 
-  <script src="js/store.js?v=29"></script>
-  <script src="js/auth.js?v=29"></script>
-  <script src="js/ui.js?v=29"></script>
-  <script src="js/api.js?v=29"></script>
-  <script src="js/router.js?v=29"></script>
-  <script src="js/chat.js?v=29"></script>
-  <script src="js/delivery-board.js?v=29"></script>
-  <script src="js/naver-maps.js?v=29"></script>
-  <script src="js/views/floor2.js?v=29"></script>
-  <script src="js/views/floor1.js?v=29"></script>
-  <script src="js/views/driver.js?v=29"></script>
-  <script src="js/views/admin.js?v=29"></script>
+  <script src="js/store.js?v=30"></script>
+  <script src="js/auth.js?v=30"></script>
+  <script src="js/ui.js?v=30"></script>
+  <script src="js/api.js?v=30"></script>
+  <script src="js/router.js?v=30"></script>
+  <script src="js/chat.js?v=30"></script>
+  <script src="js/delivery-board.js?v=30"></script>
+  <script src="js/naver-maps.js?v=30"></script>
+  <script src="js/views/floor2.js?v=30"></script>
+  <script src="js/views/floor1.js?v=30"></script>
+  <script src="js/views/driver.js?v=30"></script>
+  <script src="js/views/admin.js?v=30"></script>
 
   <script>
     /* ═══════════════════════════════════════════════════════
@@ -452,20 +452,37 @@
           .filter(o => o.status === 4 && o.updatedAt && DeliveryPanel._afterReset(o, resetTs))
           .sort((a, b) => new Date(a.updatedAt) - new Date(b.updatedAt));
 
-        const _row = (o, label, cls) => `
+        const _rowDone = (o) => `
           <div class="dp-tl-item">
-            <span class="dp-tl-time">${UI.fmtDatetime(o.status === 4 ? o.updatedAt : (o.deliveryDatetime || o.assignedAt || o.updatedAt))}</span>
+            <span class="dp-tl-time">${UI.fmtDatetime(o.updatedAt)}</span>
             <span class="dp-tl-addr">${UI.escHtml(o.deliveryAddress || '')}</span>
-            <span class="${cls}">${label}</span>
+            <span class="dp-tl-done">배송완료</span>
+          </div>`;
+
+        /* 최종배송지: 가장 최근 완료 주문의 배송지 (없으면 사무실 주소) */
+        const OFFICE_ADDR = (window.NaverMaps && window.NaverMaps.OFFICE_ADDRESS) || '대구 달서구 장기동 666-1';
+        const finalAddr = (completed.length && completed[completed.length - 1].deliveryAddress)
+          ? completed[completed.length - 1].deliveryAddress
+          : OFFICE_ADDR;
+
+        /* 배송중 행: "최종배송지에서 X 까지 Y분 예정" — Y 는 네이버 API 비동기 조회 */
+        const _rowIng = (o) => `
+          <div class="dp-tl-item dp-tl-item-ing">
+            <span class="dp-tl-sentence">
+              <span class="dp-tl-from">최종배송지</span>에서
+              <b>${UI.escHtml(o.deliveryAddress || '-')}</b> 까지
+              <span class="dp-tl-ing-eta" id="dp-tl-ing-eta-${UI.escHtml(o.id)}">계산 중…</span>
+            </span>
+            <span class="dp-tl-ing">배송중</span>
           </div>`;
 
         const sectionDelivering = delivering.length
           ? `<div class="dp-tl-section-title dp-tl-sec-ing">🚚 배송중 <span class="dp-tl-count">${delivering.length}</span></div>
-             <div class="dp-tl-group">${delivering.map(o => _row(o, '배송중', 'dp-tl-ing')).join('')}</div>`
+             <div class="dp-tl-group">${delivering.map(_rowIng).join('')}</div>`
           : '';
         const sectionCompleted = completed.length
           ? `<div class="dp-tl-section-title dp-tl-sec-done">✅ 배송완료 <span class="dp-tl-count">${completed.length}</span></div>
-             <div class="dp-tl-group">${completed.map(o => _row(o, '배송완료', 'dp-tl-done')).join('')}</div>`
+             <div class="dp-tl-group">${completed.map(_rowDone).join('')}</div>`
           : '';
 
         const rows = (sectionDelivering || sectionCompleted)
@@ -488,6 +505,29 @@
           size: 'modal-timeline',
         });
         overlay.querySelector('.modal-cancel').style.display = 'none';
+
+        /* 배송중 각 항목의 ETA 계산: 최종배송지(=완료된 마지막건 or 사무실) → 해당 배송지 */
+        if (delivering.length && window.NaverMaps) {
+          delivering.forEach(o => {
+            const elId = `dp-tl-ing-eta-${o.id}`;
+            const etaEl = overlay.querySelector(`[id="${elId}"]`);
+            if (!etaEl || !o.deliveryAddress) {
+              if (etaEl) etaEl.textContent = '소요시간 조회 불가';
+              return;
+            }
+            (async () => {
+              try {
+                const { durationMs } = await window.NaverMaps.estimateBetweenAddresses(finalAddr, o.deliveryAddress);
+                const mins = Math.max(1, Math.round(durationMs / 60000));
+                etaEl.textContent = `${mins}분 예정`;
+              } catch (e) {
+                console.warn('[Timeline ETA] 배송중 ETA 계산 실패:', e);
+                etaEl.classList.add('dp-tl-eta-fail');
+                etaEl.textContent = '소요시간 계산 불가';
+              }
+            })();
+          });
+        }
 
         /* 복귀 ETA 계산 — 마지막 배송완료 주소 → 사무실 */
         if (curBadge === 'returning' && completed.length && window.NaverMaps) {
