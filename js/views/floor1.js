@@ -25,6 +25,7 @@ const Floor1View = {
   /* ── Filter state ────────────────────────────────────────── */
   _filterState: {
     statusGroup: '',
+    driverFilter: '',    /* '' = 전체, driverId = 해당 기사 배차건만 */
     photoYes: true,
     photoNo: true,
     dateFrom: '',
@@ -33,6 +34,8 @@ const Floor1View = {
     searchRecipient: '',
     searchRibbon: '',
   },
+
+  _driverStatusSubscribed: false,
 
   /* ── Show: all orders ────────────────────────────────────── */
   showAllOrders() {
@@ -53,6 +56,8 @@ const Floor1View = {
           <div class="status-tab-group" id="f1-status-tabs">
             <button class="status-tab-btn active" data-sg="">전체</button>
             <button class="status-tab-btn" data-sg="0,1,2">주문접수</button>
+            <button class="status-tab-btn" data-sg="unassigned">배차전</button>
+            <button class="status-tab-btn" data-sg="assigned">배차완료</button>
             <button class="status-tab-btn" data-sg="3">배송중</button>
             <button class="status-tab-btn" data-sg="4">배송완료</button>
             <button class="status-tab-btn" data-sg="5,6">주문취소</button>
@@ -78,18 +83,26 @@ const Floor1View = {
             <span class="date-sep">~</span>
             <input type="date" id="f1-date-to" value="">
           </div>
-          <div class="quick-date-group">
-            <button class="quick-date-btn active" data-quick="all">전체</button>
-            <button class="quick-date-btn" data-quick="today">오늘</button>
-            <button class="quick-date-btn" data-quick="yesterday">어제</button>
-            <button class="quick-date-btn" data-quick="tomorrow">내일</button>
-            <button class="quick-date-btn" data-quick="this-month">이번 달</button>
-            <button class="quick-date-btn" data-quick="last-month">지난 달</button>
-            <button class="quick-date-btn" data-quick="future">예약건</button>
+          <div class="status-tab-group" id="f1-quick-dates">
+            <button class="status-tab-btn active" data-quick="all">전체</button>
+            <button class="status-tab-btn" data-quick="today">오늘</button>
+            <button class="status-tab-btn" data-quick="yesterday">어제</button>
+            <button class="status-tab-btn" data-quick="tomorrow">내일</button>
+            <button class="status-tab-btn" data-quick="this-month">이번 달</button>
+            <button class="status-tab-btn" data-quick="last-month">지난 달</button>
+            <button class="status-tab-btn" data-quick="future">예약건</button>
           </div>
         </div>
 
-        <!-- Row 3: Text search -->
+        <!-- Row 3: Driver filter (출근처리 기사만) -->
+        <div class="filter-row">
+          <span class="filter-label">기사별조회</span>
+          <div class="status-tab-group" id="f1-driver-tabs">
+            <!-- rendered by _renderDriverFilter() -->
+          </div>
+        </div>
+
+        <!-- Row 4: Text search -->
         <div class="filter-row" style="padding-top:0.6rem;padding-bottom:0.6rem">
           <div class="search-fields-group">
             <div class="search-field-item">
@@ -111,7 +124,73 @@ const Floor1View = {
 
     Floor1View._bindFilterEvents();
     Floor1View._applyQuickDate('all');
+    Floor1View._renderDriverFilter();
+    Floor1View._ensureDriverStatusSub();
     Floor1View._loadOrders();
+  },
+
+  /* ── 출근처리된 기사 목록 렌더 ─────────────────────────────
+     "출근처리" 정의: isActive === true 이면서 휴무(off-duty) 아님.
+     - remote /driverStatus.badge === 'off' 또는 offduty === true → 제외
+     - 그 외엔 localStorage 'maydaegu.driver.offduty.{id}' === '1' 이면 제외 */
+  _isDriverOnDuty(d) {
+    if (!d || d.isActive === false) return false;
+    const ds = (typeof DeliveryPanel !== 'undefined') ? (DeliveryPanel._driverStatus || {}) : {};
+    const rs = ds[d.id];
+    if (rs?.badge === 'off') return false;
+    if (rs?.offduty === true) return false;
+    try {
+      if (localStorage.getItem(`maydaegu.driver.offduty.${d.id}`) === '1') return false;
+    } catch (_) {}
+    return true;
+  },
+
+  _renderDriverFilter() {
+    const host = document.getElementById('f1-driver-tabs');
+    if (!host) return;
+
+    const drivers = (Store.getDrivers ? Store.getDrivers() : []) || [];
+    const active = drivers.filter(Floor1View._isDriverOnDuty);
+
+    const current = Floor1View._filterState.driverFilter || '';
+    const allActive = current === '' ? 'active' : '';
+
+    const driverBtns = active.map(d => {
+      const on = current === d.id ? 'active' : '';
+      return `<button class="status-tab-btn ${on}" data-driver-id="${UI.escHtml(d.id)}">${UI.escHtml(d.name || '-')}</button>`;
+    }).join('');
+
+    const emptyHint = active.length
+      ? ''
+      : `<span style="color:var(--text-muted);font-size:0.825rem;margin-left:0.25rem">출근처리된 기사가 없습니다.</span>`;
+
+    host.innerHTML = `
+      <button class="status-tab-btn ${allActive}" data-driver-id="">전체</button>
+      ${driverBtns}
+      ${emptyHint}`;
+
+    /* 선택한 기사가 출근 목록에서 빠진 경우 자동 해제 */
+    if (current && !active.some(d => d.id === current)) {
+      Floor1View._filterState.driverFilter = '';
+    }
+  },
+
+  _ensureDriverStatusSub() {
+    if (Floor1View._driverStatusSubscribed) return;
+    if (!window.FirebaseDB) return;
+    Floor1View._driverStatusSubscribed = true;
+    /* driverStatus 변경 → 기사별조회 필터 버튼 재구성 */
+    window.FirebaseDB.ref('driverStatus').on('value', () => {
+      if (document.getElementById('f1-driver-tabs')) {
+        Floor1View._renderDriverFilter();
+      }
+    });
+    /* 기사 마스터(/drivers) 변경 → 재구성 */
+    if (Store.onUpdate) {
+      Store.onUpdate('drivers', () => {
+        if (document.getElementById('f1-driver-tabs')) Floor1View._renderDriverFilter();
+      });
+    }
   },
 
   /* ── Bind filter events ──────────────────────────────────── */
@@ -145,13 +224,22 @@ const Floor1View = {
       Floor1View._loadOrders();
     });
 
-    document.querySelectorAll('.quick-date-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.quick-date-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        Floor1View._applyQuickDate(btn.dataset.quick);
-        Floor1View._loadOrders();
-      });
+    document.getElementById('f1-quick-dates').addEventListener('click', e => {
+      const btn = e.target.closest('.status-tab-btn');
+      if (!btn) return;
+      document.querySelectorAll('#f1-quick-dates .status-tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      Floor1View._applyQuickDate(btn.dataset.quick);
+      Floor1View._loadOrders();
+    });
+
+    document.getElementById('f1-driver-tabs').addEventListener('click', e => {
+      const btn = e.target.closest('.status-tab-btn');
+      if (!btn) return;
+      document.querySelectorAll('#f1-driver-tabs .status-tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      Floor1View._filterState.driverFilter = btn.dataset.driverId || '';
+      Floor1View._loadOrders();
     });
 
     ['f1-search-address','f1-search-recipient','f1-search-ribbon'].forEach(id => {
@@ -208,7 +296,7 @@ const Floor1View = {
   },
 
   _clearQuickActive() {
-    document.querySelectorAll('.quick-date-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('#f1-quick-dates .status-tab-btn').forEach(b => b.classList.remove('active'));
   },
 
   /* ── Load & filter orders ────────────────────────────────── */
@@ -219,9 +307,25 @@ const Floor1View = {
       const fs = Floor1View._filterState;
       let orders = all;
 
-      if (fs.statusGroup !== '') {
+      if (fs.statusGroup === 'unassigned') {
+        /* 배차전: 배차되지 않은 미완료 건 (취소/반품/완료 제외) */
+        orders = orders.filter(o =>
+          !o.assignedDriverId &&
+          o.status !== 4 && o.status !== 5 && o.status !== 6
+        );
+      } else if (fs.statusGroup === 'assigned') {
+        /* 배차완료: 기사에게 배차되었으나 아직 배송완료/취소 전 */
+        orders = orders.filter(o =>
+          !!o.assignedDriverId &&
+          o.status !== 4 && o.status !== 5 && o.status !== 6
+        );
+      } else if (fs.statusGroup !== '') {
         const allowed = fs.statusGroup.split(',').map(Number);
         orders = orders.filter(o => allowed.includes(o.status));
+      }
+
+      if (fs.driverFilter) {
+        orders = orders.filter(o => o.assignedDriverId === fs.driverFilter);
       }
 
       if (fs.photoYes && !fs.photoNo)  orders = orders.filter(o => !!o.deliveryPhotoUrl);

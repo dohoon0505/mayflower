@@ -164,10 +164,12 @@
 .date-sep { color: var(--text-muted); font-size: 0.8rem; }
 
 .quick-date-group { display: flex; gap: 3px; flex-wrap: wrap; }
+/* NOTE: .quick-date-btn 은 .status-tab-btn 과 동일한 스타일로 통일 (pill + dark active).
+   floor2 / driver 뷰 호환을 위해 클래스는 유지. */
 .quick-date-btn {
-  padding: 0.28rem 0.65rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.825rem; font-weight: 500;
+  padding: 0.28rem 0.9rem;
+  border-radius: 99px;
+  font-size: 0.875rem; font-weight: 600;
   border: 1.5px solid var(--border);
   background: transparent;
   color: var(--text-secondary);
@@ -176,7 +178,7 @@
   white-space: nowrap;
 }
 .quick-date-btn:hover { border-color: var(--primary); color: var(--primary); }
-.quick-date-btn.active { background: #e55039; border-color: #e55039; color: #fff; }
+.quick-date-btn.active { background: #0f172a; border-color: #0f172a; color: #fff; }
 
 /* Search fields row */
 .search-fields-group {

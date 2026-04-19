@@ -73,5 +73,7 @@
 @media (max-width: 600px) {
   .filter-row { padding: 0.625rem 0.875rem; }
   .quick-date-group { gap: 2px; }
-  .quick-date-btn { padding: 0.22rem 0.5rem; font-size: 0.78rem; }
+  .status-tab-group { gap: 2px; }
+  .quick-date-btn,
+  .status-tab-btn { padding: 0.22rem 0.6rem; font-size: 0.78rem; }
 }
