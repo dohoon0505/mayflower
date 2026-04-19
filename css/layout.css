@@ -617,7 +617,8 @@ html.large-text body { font-size: 1rem; }
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  max-height: 38%;
+  height: 320px;
+  max-height: 320px;
   overflow: hidden;
 }
 .db-header {
@@ -666,33 +667,34 @@ html.large-text body { font-size: 1rem; }
   display: grid;
   grid-template-columns: 1fr auto auto auto auto auto;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.45rem 0.55rem;
+  gap: 0.5rem;
+  padding: 0.6rem 0.7rem;
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-left: 3px solid var(--primary, #2563eb);
   border-radius: var(--radius-sm, 6px);
-  font-size: 0.82rem;
+  font-size: 0.98rem;
 }
 .db-loc {
   font-weight: 600; color: var(--text-primary);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   min-width: 0;
+  font-size: 1rem;
 }
 .db-qty {
   font-weight: 700; color: var(--primary, #2563eb);
   background: #eff6ff;
-  padding: 2px 8px; border-radius: 4px;
-  font-size: 0.78rem;
+  padding: 3px 10px; border-radius: 4px;
+  font-size: 0.95rem;
   white-space: nowrap;
 }
 .db-qty-btn {
-  width: 22px; height: 22px;
+  width: 28px; height: 28px;
   border: 1px solid var(--border);
   background: var(--bg-elevated);
   color: var(--text-secondary);
   border-radius: 4px;
-  font-size: 0.7rem;
+  font-size: 0.85rem;
   cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center;
   transition: background 0.12s, color 0.12s, border-color 0.12s;
@@ -707,16 +709,16 @@ html.large-text body { font-size: 1rem; }
   font-variant-numeric: tabular-nums;
   font-weight: 700;
   color: var(--text-primary);
-  font-size: 0.8rem;
+  font-size: 0.98rem;
   white-space: nowrap;
-  padding: 0 0.2rem;
+  padding: 0 0.25rem;
 }
 .db-done-btn {
   background: #fef2f2; color: #b91c1c;
   border: 1px solid #fecaca;
   border-radius: 5px;
-  padding: 3px 9px;
-  font-size: 0.74rem; font-weight: 700;
+  padding: 5px 12px;
+  font-size: 0.9rem; font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
   transition: background 0.12s;

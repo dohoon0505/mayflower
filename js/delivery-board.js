@@ -75,7 +75,7 @@ const DeliveryBoard = {
           <span class="db-qty">${qty}개</span>
           <button class="db-qty-btn db-up"   data-action="up"   title="수량 +1" aria-label="수량 증가">▲</button>
           <button class="db-qty-btn db-down" data-action="down" title="수량 -1" aria-label="수량 감소">▼</button>
-          <span class="db-time">${hh}:${mm}</span>
+          <span class="db-time">${hh}:${mm} 까지</span>
           <button class="db-done-btn" data-action="done" title="출차완료 처리">출차완료</button>
         </div>`;
     }).join('');
