@@ -294,11 +294,10 @@ const Floor1View = {
       ? `<span class="ocard-field-icon">📝</span><span data-copy="${UI.escHtml(o.occasionText)}" class="ocard-field-copy" title="클릭 시 클립보드 복사">${UI.escHtml(o.occasionText)}</span>`
       : `<span class="ocard-field-icon">📝</span><span style="color:var(--text-muted);font-style:italic">경조사어 없음</span>`;
 
-    /* 받는 분 정보 (row3 좌측에 표시) */
+    /* 받는 분 정보 (row3 좌측) — Address 와 동일 스타일 (노란 배경/복사 없음) */
     const recipientHtml = o.recipientName
-      ? `<span class="ocard-field-icon">👤</span><span>${UI.escHtml(o.recipientName)}</span>${o.recipientPhone ? `<span class="ocard-recipient-phone" data-copy="${UI.escHtml(o.recipientPhone)}" title="클릭 시 연락처 복사">${UI.escHtml(o.recipientPhone)}</span>` : ''}`
+      ? `<span class="ocard-field-icon">👤</span><span>${UI.escHtml(o.recipientName)}${o.recipientPhone ? ` / ${UI.escHtml(o.recipientPhone)}` : ''}</span>`
       : `<span class="ocard-field-icon">👤</span><span style="color:var(--text-muted);font-style:italic">받는 분 미입력</span>`;
-    const recipientFieldCls = o.recipientName ? 'ocard-field--recipient' : '';
 
     /* Day badge */
     const _n = new Date(), _pad = n => String(n).padStart(2, '0');
@@ -384,11 +383,11 @@ const Floor1View = {
             ${priceBadge}
             <button type="button" class="ocard-header-edit f1-action" data-id="${o.id}" data-action="edit" title="주문서 수정">✏️</button>
           </div>
-          <!-- Row 1: Address (full width) -->
+          <!-- Row 1: Address (full width, 클릭 시 복사) -->
           <div class="ocard-1col">
             <div class="ocard-field">
               <span class="ocard-field-icon">📍</span>
-              <span>${UI.escHtml(o.deliveryAddress)}</span>
+              <span data-copy="${UI.escHtml(o.deliveryAddress)}" class="ocard-field-copy" title="클릭 시 클립보드 복사">${UI.escHtml(o.deliveryAddress)}</span>
             </div>
           </div>
           <!-- Row 2: Ribbon | Occasion (2-col) -->
@@ -402,7 +401,7 @@ const Floor1View = {
           </div>
           <!-- Row 3: Recipient | Time -->
           <div class="ocard-2col">
-            <div class="ocard-field ${recipientFieldCls}">${recipientHtml}</div>
+            <div class="ocard-field">${recipientHtml}</div>
             <div class="ocard-field ${timeFieldCls}">
               <span class="ocard-field-icon">⏱</span>
               <span>${timeText}</span>

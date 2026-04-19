@@ -234,11 +234,10 @@ const DriverView = {
       ? `<span class="ocard-field-icon">📝</span><span data-copy="${UI.escHtml(o.occasionText)}" class="ocard-field-copy" title="클릭 시 클립보드 복사">${UI.escHtml(o.occasionText)}</span>`
       : `<span class="ocard-field-icon">📝</span><span style="color:var(--text-muted);font-style:italic">경조사어 없음</span>`;
 
-    /* 받는 분 정보 (row3 좌측) */
+    /* 받는 분 정보 (row3 좌측) — Address 와 동일 스타일 */
     const recipientHtml = o.recipientName
-      ? `<span class="ocard-field-icon">👤</span><span>${UI.escHtml(o.recipientName)}</span>${o.recipientPhone ? `<span class="ocard-recipient-phone" data-copy="${UI.escHtml(o.recipientPhone)}" title="클릭 시 연락처 복사">${UI.escHtml(o.recipientPhone)}</span>` : ''}`
+      ? `<span class="ocard-field-icon">👤</span><span>${UI.escHtml(o.recipientName)}${o.recipientPhone ? ` / ${UI.escHtml(o.recipientPhone)}` : ''}</span>`
       : `<span class="ocard-field-icon">👤</span><span style="color:var(--text-muted);font-style:italic">받는 분 미입력</span>`;
-    const recipientFieldCls = o.recipientName ? 'ocard-field--recipient' : '';
 
     const _n = new Date(), _pad = n => String(n).padStart(2, '0');
     const _today = `${_n.getFullYear()}-${_pad(_n.getMonth()+1)}-${_pad(_n.getDate())}`;
@@ -292,7 +291,7 @@ const DriverView = {
           <div class="ocard-1col">
             <div class="ocard-field">
               <span class="ocard-field-icon">📍</span>
-              <span>${UI.escHtml(o.deliveryAddress)}</span>
+              <span data-copy="${UI.escHtml(o.deliveryAddress)}" class="ocard-field-copy" title="클릭 시 클립보드 복사">${UI.escHtml(o.deliveryAddress)}</span>
             </div>
           </div>
           <div class="ocard-2col">
@@ -304,7 +303,7 @@ const DriverView = {
             </div>
           </div>
           <div class="ocard-2col">
-            <div class="ocard-field ${recipientFieldCls}">${recipientHtml}</div>
+            <div class="ocard-field">${recipientHtml}</div>
             <div class="ocard-field ${timeFieldCls}">
               <span class="ocard-field-icon">⏱</span>
               <span>${timeText}</span>
