@@ -414,10 +414,8 @@ const Floor1View = {
           ? '<span class="ocard-day-badge ocard-day-future">예약건</span>'
           : '';
 
-    /* Chain code (deterministic per order id — string hash) */
-    const _chainCodes = ['ㄲㅌ','ㅂㅎㄷ','ㄷㅍㄹㅇ','ㄷㄹ','ㅇㅎ','ㅄㅌ'];
-    const _chainIdx = String(o.id).split('').reduce((a, c) => a + c.charCodeAt(0), 0);
-    const chainCode = _chainCodes[_chainIdx % _chainCodes.length];
+    /* Chain name — DB 실제 값 그대로 사용 (주문서 수정 모달과 동일 소스) */
+    const chainCode = UI.escHtml(o.chainName || '');
 
     const _prod = Store.getProductById(o.productId);
     const _cat  = _prod ? Store.getCategoryById(_prod.category) : null;

@@ -133,15 +133,15 @@ const LedgerView = {
         <section class="lg-quickadd" aria-label="간편 추가">
           <div class="lg-qa-grid">
             <div class="lg-qa-field">
-              <label for="lg-in-client" class="lg-qa-label">거래처 <span class="lg-req">*</span></label>
-              <input type="text" id="lg-in-client" class="lg-input" placeholder="예: 우리꽃집" maxlength="40" autocomplete="off">
-            </div>
-            <div class="lg-qa-field">
               <span class="lg-qa-label">상품 <span class="lg-req">*</span></span>
               <div class="lg-seg" id="lg-in-product" role="radiogroup" aria-label="상품 종류">
                 <button type="button" class="lg-seg-btn lg-seg-j on" data-product="funeral"  role="radio" aria-checked="true">근조화환</button>
                 <button type="button" class="lg-seg-btn lg-seg-c"    data-product="congrats" role="radio" aria-checked="false">축하화환</button>
               </div>
+            </div>
+            <div class="lg-qa-field">
+              <label for="lg-in-client" class="lg-qa-label">거래처 <span class="lg-req">*</span></label>
+              <input type="text" id="lg-in-client" class="lg-input" placeholder="예: 우리꽃집" maxlength="40" autocomplete="off">
             </div>
             <div class="lg-qa-field">
               <label for="lg-in-location" class="lg-qa-label">장소 <span class="lg-req">*</span></label>
@@ -391,15 +391,15 @@ const LedgerView = {
   _openEditModal(e) {
     const content = `
       <div class="form-group">
-        <label for="lg-ed-client">거래처</label>
-        <input type="text" id="lg-ed-client" class="form-control" maxlength="40" value="${UI.escHtml(e.client || '')}">
-      </div>
-      <div class="form-group">
         <label>상품</label>
         <div class="lg-seg" id="lg-ed-product" role="radiogroup">
           <button type="button" class="lg-seg-btn lg-seg-j ${e.product === 'funeral'  ? 'on' : ''}" data-product="funeral"  role="radio" aria-checked="${e.product === 'funeral'}">근조화환</button>
           <button type="button" class="lg-seg-btn lg-seg-c ${e.product === 'congrats' ? 'on' : ''}" data-product="congrats" role="radio" aria-checked="${e.product === 'congrats'}">축하화환</button>
         </div>
+      </div>
+      <div class="form-group">
+        <label for="lg-ed-client">거래처</label>
+        <input type="text" id="lg-ed-client" class="form-control" maxlength="40" value="${UI.escHtml(e.client || '')}">
       </div>
       <div class="form-group">
         <label for="lg-ed-location">장소</label>
