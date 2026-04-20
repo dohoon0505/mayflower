@@ -1346,13 +1346,25 @@ ${pages}
             dot,
           });
         };
+        /* 배송일시는 모달이 항상 10분 단위·0초 로 round-trip 하므로
+         * 원본에 초/ms 가 포함되어 있거나 10분 경계가 아닌 값이면
+         * 사용자가 건드리지 않아도 ISO 문자열이 달라져 허위 "변경" 로그가 남는다.
+         * → 양쪽을 동일한 규칙으로 normalize 한 뒤 비교. */
+        const normDT = (iso) => {
+          if (!iso) return '';
+          const d = new Date(iso);
+          if (isNaN(d.getTime())) return String(iso);
+          d.setSeconds(0, 0);
+          d.setMinutes(Math.round(d.getMinutes() / 10) * 10);
+          return d.toISOString();
+        };
         cmp(o.storePhotoUrl,    newStoreUrl,       '매장사진 업로드', '매장사진 변경');
         cmp(o.deliveryPhotoUrl, newDelivUrl,       '현장사진 업로드', '현장사진 변경');
         cmp((o.memo||'').trim(), nextMemo,         '메모 작성',     '메모 변경');
         cmp(o.price ?? '',       nextPrice ?? '',  '금액 입력',     '금액 변경');
         cmp(o.chainName,         chainName,        '체인명 입력',   '체인명 변경');
         cmp(o.productId,         productId,        '상품 선택',     '상품 변경');
-        cmp(o.deliveryDatetime,  deliveryDatetime, '배송일시 설정', '배송일시 변경');
+        cmp(normDT(o.deliveryDatetime), normDT(deliveryDatetime), '배송일시 설정', '배송일시 변경');
         cmp(o.deliveryAddress,   deliveryAddress,  '배송지 입력',   '배송지 변경');
         cmp(o.recipientName,     recipientName,    '받는 분 성함 입력', '받는 분 성함 변경');
         cmp(o.recipientPhone,    recipientPhone,   '받는 분 연락처 입력','받는 분 연락처 변경');
