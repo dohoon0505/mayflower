@@ -4,10 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>메이대구</title>
-  <link rel="stylesheet" href="css/base.css?v=59">
-  <link rel="stylesheet" href="css/layout.css?v=59">
-  <link rel="stylesheet" href="css/components.css?v=59">
-  <link rel="stylesheet" href="css/views.css?v=59">
+  <link rel="stylesheet" href="css/base.css?v=60">
+  <link rel="stylesheet" href="css/layout.css?v=60">
+  <link rel="stylesheet" href="css/components.css?v=60">
+  <link rel="stylesheet" href="css/views.css?v=60">
   <script>
     /* 큰글씨모드 조기 적용 — CSS 파싱 직후 즉시 반영해 깜빡임 방지 */
     (function () {
@@ -114,21 +114,21 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-storage-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-functions-compat.js"></script>
-  <script src="js/firebase-config.js?v=59"></script>
+  <script src="js/firebase-config.js?v=60"></script>
 
-  <script src="js/store.js?v=59"></script>
-  <script src="js/auth.js?v=59"></script>
-  <script src="js/ui.js?v=59"></script>
-  <script src="js/api.js?v=59"></script>
-  <script src="js/router.js?v=59"></script>
-  <script src="js/chat.js?v=59"></script>
-  <script src="js/delivery-board.js?v=59"></script>
-  <script src="js/naver-maps.js?v=59"></script>
-  <script src="js/views/floor2.js?v=59"></script>
-  <script src="js/views/floor1.js?v=59"></script>
-  <script src="js/views/driver.js?v=59"></script>
-  <script src="js/views/admin.js?v=59"></script>
-  <script src="js/views/ledger.js?v=59"></script>
+  <script src="js/store.js?v=60"></script>
+  <script src="js/auth.js?v=60"></script>
+  <script src="js/ui.js?v=60"></script>
+  <script src="js/api.js?v=60"></script>
+  <script src="js/router.js?v=60"></script>
+  <script src="js/chat.js?v=60"></script>
+  <script src="js/delivery-board.js?v=60"></script>
+  <script src="js/naver-maps.js?v=60"></script>
+  <script src="js/views/floor2.js?v=60"></script>
+  <script src="js/views/floor1.js?v=60"></script>
+  <script src="js/views/driver.js?v=60"></script>
+  <script src="js/views/admin.js?v=60"></script>
+  <script src="js/views/ledger.js?v=60"></script>
 
   <script>
     /* ═══════════════════════════════════════════════════════
@@ -348,7 +348,9 @@
       },
 
       /* 공통 뱃지 판정 — render()와 openTimeline()이 공유
-         우선순위: /driverStatus.badge 가 있으면 그것 사용, 없으면 주문 기반 계산 */
+         우선순위: /driverStatus.badge 가 있으면 그것 사용, 없으면 주문 기반 계산
+         단, "배송대기로 리셋" 이후 remote.lastUpdate 가 resetTs 이전이면
+             stale 로 간주하여 무시하고 주문 기반 계산으로 폴백한다. */
       _computeBadge(d, allOrders) {
         const resetTs    = DeliveryPanel._getResetTs(d.id);
         const myOrders   = allOrders.filter(o => o.assignedDriverId === d.id);
@@ -357,10 +359,12 @@
         const completed  = myOrders.filter(o => o.status === 4 && DeliveryPanel._afterReset(o, resetTs));
         const isOff      = DeliveryPanel._getOffDuty(d.id);
 
-        /* driver Flutter 앱이 기록한 실시간 뱃지 우선 */
+        /* driver Flutter 앱이 기록한 실시간 뱃지 우선 (단, reset 이후 신선한 값일 때만) */
         const remote = DeliveryPanel._driverStatus[d.id];
         const allowed = ['delivering', 'assigned', 'returning', 'waiting', 'off'];
-        if (remote?.badge && allowed.includes(remote.badge)) {
+        const remoteStale = resetTs && remote?.lastUpdate
+          && new Date(remote.lastUpdate) < new Date(resetTs);
+        if (remote?.badge && allowed.includes(remote.badge) && !remoteStale) {
           return { badge: remote.badge, assigned, delivering, completed };
         }
 
