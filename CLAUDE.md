@@ -33,7 +33,8 @@
 | `floor2` | 2층 수주 | 웹 (JS) | 주문 생성, 내 주문 조회 |
 | `floor1` | 1층 제작 | 웹 (JS) | 전체 주문 열람, 상태 전환, 기사 배차, 매장사진 업로드 |
 | `admin` | 관리자 | 웹 (JS) | 모든 권한 + 사용자/상품/카테고리/기사 CRUD |
-| `driver` | 배송기사 | **모바일 (Flutter)** | 내 배송 목록, 배송완료 사진 업로드, 위치 송신 |
+| `driver` | 배송기사 | **모바일 (Flutter / Android Kotlin)** | 내 배송 목록, 배송완료 사진 업로드, 위치 송신 |
+| `photo`  | 사진전용 | **모바일 (Android Kotlin)** | 인수증 인쇄가 완료된 주문의 리본문구 조회 전용 (검색) |
 
 ### 동작 원리 1줄
 
@@ -1109,3 +1110,114 @@ firebase.database().ref('users').limitToFirst(1).once('value').then(s => console
 5. 이 문서의 "남은 과제" 목록에서 작업 항목 선택
 
 스키마/룰 변경 시에는 반드시 §1-8 의 해당 섹션 + §10.8 의 플래그 목록을 함께 업데이트.
+
+---
+
+# § 11. 사진전용(photo) 역할 — 모바일 APP 명세
+
+> 2026-04-20 신설. **Android Kotlin** 으로 개발되며 드라이버 Flutter 앱과 별개의 APK.
+> 회원가입 → 관리자 승인 플로우는 driver 와 완전 동일하며, 웹 접근 시 자동 로그아웃 + `index.html?error=photo_only` 리다이렉트.
+
+## 11.1 역할 개요
+
+| 항목 | 값 |
+|------|-----|
+| role 코드 | `'photo'` |
+| 라벨 | `사진전용` |
+| 플랫폼 | Android (Kotlin) — iOS 는 추후 검토 |
+| 웹 로그인 | **차단** (Auth.login 에서 `photo_only` 반환 / app.html 진입 시 강제 로그아웃) |
+| 쓰기 권한 | **없음** (read-only) |
+| 가입 경로 | 웹 회원가입 → admin 페이지 `👥 사용자 승인` 에서 role=photo 로 승인 |
+
+## 11.2 APP UI 명세
+
+최소 1 화면 (리스트 스크린) + 로그인 스크린.
+
+### (a) 로그인 스크린
+- username / password 2 필드 + 로그인 버튼
+- 합성 이메일: `${username}@maydaegu.internal` (드라이버 앱과 동일 규약)
+- `signInWithEmailAndPassword` 후 `/users/{uid}.role === 'photo'` 확인 → 아니면 `signOut()` + "이 계정은 사진전용이 아닙니다" 토스트
+- `isApproved === true` / `isActive === true` 검증 (드라이버 앱과 동일)
+
+### (b) 리스트 스크린 — 리본문구 뷰어
+
+```
+┌─────────────────────────────────────┐
+│ 🔍 [검색란 — ribbon 텍스트 일부]     │   ← 상단 고정 검색 바
+├─────────────────────────────────────┤
+│ 2026-04-20 14:30                    │
+│ 주식회사 싱크플로 대표이사 김도훈   │   ← ribbonText 만 큰 글씨
+│ [촬영]                              │
+├─────────────────────────────────────┤
+│ 2026-04-20 13:10                    │
+│ 나의나음 대표원장 이주원            │
+├─────────────────────────────────────┤
+│ …                                  │
+└─────────────────────────────────────┘
+```
+
+- **표시 대상**: `/orders/{id}` 중 `receiptPrintedAt != null` (=인수증 인쇄 완료) **AND** `ribbonText` 가 비어있지 않은 건
+- **표시 필드**: `deliveryDatetime` (작게) + `ribbonText` (크게). 그 외 필드(수령자/주소/금액 등)는 전부 숨김
+- **정렬**: `receiptPrintedAt DESC` (최신 인쇄가 위)
+- **검색**: 검색어는 `ribbonText` 에 부분일치(lowercase contains). 기타 필드 검색 불필요
+
+### 웹의 디자인 톤앤매너 적용
+
+- 배경: `#ffffff` / 표면: `#f8fafc` / 구분선: `#e2e8f0`
+- 주요 색: Primary `#2563eb` (검색 포커스 링·활성 상태), Text primary `#0f172a`, Text secondary `#475569`
+- 폰트: Pretendard (없으면 system default sans-serif) · 본문 15sp · 리본 17sp · 타임스탬프 12sp (text-muted)
+- 리스트 카드: 8dp radius, 1dp border `#e2e8f0`, 12dp padding, 8dp 세로 간격
+- 검색바: 높이 44dp, 8dp radius, `#f8fafc` 배경, focus 시 Primary 1.5dp border
+- 모서리/그림자 강조는 최소화 (floor1 주문카드와 동일 톤)
+
+## 11.3 RTDB 구독 패턴
+
+Flutter 드라이버 앱과 동일한 "read `/orders` once + on('value') listen" 패턴.
+
+```kotlin
+// OrdersRepository.kt 의사코드
+private val ordersRef = Firebase.database.reference.child("orders")
+
+fun subscribeRibbonFeed(onUpdate: (List<RibbonItem>) -> Unit) {
+  ordersRef.addValueEventListener(object : ValueEventListener {
+    override fun onDataChange(snap: DataSnapshot) {
+      val items = snap.children.mapNotNull { c ->
+        val receiptPrinted = c.child("receiptPrintedAt").getValue(String::class.java)
+        val ribbon         = c.child("ribbonText").getValue(String::class.java)?.trim().orEmpty()
+        if (receiptPrinted.isNullOrBlank() || ribbon.isBlank()) return@mapNotNull null
+        RibbonItem(
+          id               = c.key!!,
+          ribbonText       = ribbon,
+          deliveryDatetime = c.child("deliveryDatetime").getValue(String::class.java),
+          receiptPrintedAt = receiptPrinted,
+        )
+      }.sortedByDescending { it.receiptPrintedAt ?: "" }
+      onUpdate(items)
+    }
+    override fun onCancelled(err: DatabaseError) { /* log + toast */ }
+  })
+}
+```
+
+> **주의**: `/orders` 전체를 구독합니다. 건수가 1만 건 이상 누적되면 네트워크 비용 부담이 됨. 추후 RTDB Query (`orderByChild("receiptPrintedAt").startAt(...)`) 로 최근 N일 필터링 도입 권장.
+
+## 11.4 Firebase Rules 영향
+
+photo role 은 **읽기만** 필요하며, 현재 `/orders .read = auth != null` 규칙이 이미 만족하므로 **database.rules.json 변경 불필요**. 쓰기는 시도할 일이 없어 별도 가드 불필요.
+
+향후 보안 강화 시 `/orders` 에 필드별 read rules 도입 시에는 photo role 을 고려한 예외 처리 필요 (예: photo 는 `ribbonText`, `deliveryDatetime`, `receiptPrintedAt` 만 읽도록). 현재는 규칙 단순성을 위해 유지.
+
+## 11.5 웹 ↔ APP 동기화
+
+1. floor1 / admin 이 주문 편집 모달에서 **인수증 인쇄** 버튼을 누르면 `Api.markReceiptPrinted(orderId)` 가 `/orders/{id}.receiptPrintedAt = now` 를 set
+2. 이 시점에 photo 앱의 `on('value')` 콜백이 발화 → 리스트에 즉시 신규 카드 추가 (추가 API 호출 없음)
+3. ribbonText 변경 시에도 동일하게 자동 갱신 (주문서 수정 모달에서 리본 수정 시)
+
+추가 쓰기 경로 없음. photo 앱은 **consumer-only** 노드.
+
+## 11.6 알려진 한계 / 후속 과제
+
+- 인쇄 완료 취소 (`receiptPrintedAt = null`) API 미구현 → 실수로 눌렀을 때 관리자 Firebase Console 에서 직접 삭제해야 함. 수요 발생 시 `Api.unmarkReceiptPrinted` 추가
+- photo 앱 오프라인 캐시: Firebase Android SDK 의 `setPersistenceEnabled(true)` 한 줄로 활성화 권장
+- 다건 선택·삭제 / 좋아요 / 메모 등 기능은 현재 스코프 밖
+- iOS 포팅 시 Swift / Firebase iOS SDK 로 동일 로직 이식 (스키마·URL·경로 전부 공유)

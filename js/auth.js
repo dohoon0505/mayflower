@@ -87,6 +87,13 @@ const Auth = {
           return { success: false, message: '배송기사 계정은 모바일 앱에서만 이용 가능합니다.' };
         }
 
+        /* 사진전용 웹 로그인 차단 — 모바일 앱 전용 */
+        if (session.role === 'photo') {
+          await window.FirebaseAuth.signOut();
+          Auth._session = null;
+          return { success: false, message: '사진전용 계정은 모바일 앱에서만 이용 가능합니다.' };
+        }
+
         return { success: true, ...session };
       } catch (e) {
         /* 승인/활성/역할 검증 실패 → 즉시 signOut */

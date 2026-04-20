@@ -41,7 +41,7 @@ const AdminView = {
   _renderUserTable(users) {
     const roleBadge = (r) => {
       if (!r) return '<span class="text-muted">—</span>';
-      const labels = { admin: '관리자', floor1: '1층 제작', floor2: '2층 수주', driver: '배송기사' };
+      const labels = { admin: '관리자', floor1: '1층 제작', floor2: '2층 수주', driver: '배송기사', photo: '사진전용' };
       return `<span class="badge badge-role">${labels[r] || r}</span>`;
     };
     const rows = users.map(u => `
@@ -58,6 +58,7 @@ const AdminView = {
                 <option value="floor2">2층 수주</option>
                 <option value="floor1">1층 제작</option>
                 <option value="driver">배송기사</option>
+                <option value="photo">사진전용</option>
                 <option value="admin">관리자</option>
               </select>
               <button class="btn btn-success btn-xs u-approve" data-id="${u.id}">승인</button>` : ''}
@@ -110,6 +111,7 @@ const AdminView = {
                 <option value="floor2" ${u?.role==='floor2'?'selected':''}>2층 수주</option>
                 <option value="floor1" ${u?.role==='floor1'?'selected':''}>1층 제작</option>
                 <option value="driver" ${u?.role==='driver'?'selected':''}>배송기사</option>
+                <option value="photo"  ${u?.role==='photo' ?'selected':''}>사진전용</option>
                 <option value="admin"  ${u?.role==='admin' ?'selected':''}>관리자</option>
               </select>
             </div>`,

@@ -16,6 +16,7 @@ const LoginView = {
     if (!err) return;
     const errEl = document.getElementById('login-err');
     if (err === 'driver_only')    errEl.textContent = '배송기사 계정은 모바일 앱에서만 이용 가능합니다.';
+    else if (err === 'photo_only') errEl.textContent = '사진전용 계정은 모바일 앱에서만 이용 가능합니다.';
     else if (err === 'unauth')    errEl.textContent = '로그인이 필요합니다.';
     else if (err === 'not_approved') errEl.textContent = '승인 대기 중입니다.';
     if (errEl.textContent) errEl.style.display = 'block';
